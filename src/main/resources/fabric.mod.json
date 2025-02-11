@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "npc-system",
+  "version": "${version}",
+  "name": "npc-system",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "All-Rights-Reserved",
+  "icon": "assets/npc-system/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "team.jackdaw.npcsystem.client.npcsystemClient"
+    ],
+    "main": [
+      "team.jackdaw.npcsystem.NPCSystem"
+    ]
+  },
+  "mixins": [
+    "npc-system.mixins.json",
+    {
+      "config": "npc-system.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
