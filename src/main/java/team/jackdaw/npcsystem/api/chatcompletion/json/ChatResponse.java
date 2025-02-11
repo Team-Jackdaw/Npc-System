@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.json;
+package team.jackdaw.npcsystem.api.chatcompletion.json;
 
 import com.google.gson.Gson;
 import java.util.List;

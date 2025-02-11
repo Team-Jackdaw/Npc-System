@@ -4,6 +4,7 @@
   "package": "team.jackdaw.npcsystem.mixin",
   "compatibilityLevel": "JAVA_17",
   "mixins": [
+    "PlayerSendMessageMixin"
   ],
   "injectors": {
     "defaultRequire": 1

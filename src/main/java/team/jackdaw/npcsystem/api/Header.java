@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A class to build headers for the OpenAI API
+ * A class to build headers for the API
  */
 public class Header {
     private final Map<String, String> header = new HashMap<>();
@@ -27,12 +27,25 @@ public class Header {
     }
 
     /**
-     * Build the default headers for the OpenAI API
-     * @return The default headers for the OpenAI API
+     * Build the default headers for the API
+     * @return The default headers for the API
      */
     public static Map<String, String> buildDefault() {
         return Header.builder()
                 .add(Type.CONTENT_TYPE, null)
+                .build();
+    }
+
+    /**
+     * Build the beta headers for the API
+     * @param apiKey The API key to use
+     * @return The beta headers for the API
+     */
+    public static Map<String, String> buildBeta(@NotNull String apiKey) {
+        return Header.builder()
+                .add(Type.CONTENT_TYPE, null)
+                .add(Type.AUTHORIZATION, apiKey)
+                .add(Type.OPENAI_BETA, null)
                 .build();
     }
 

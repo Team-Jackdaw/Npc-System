@@ -43,6 +43,8 @@ dependencies {
     // logging dependencies
     implementation "commons-logging:commons-logging:1.2"
     include "commons-logging:commons-logging:1.2"
+    // db dependencies
+    implementation "io.weaviate:client:4.7.0"
     // testing dependencies
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
     testImplementation 'com.google.code.gson:gson:2.8.9'

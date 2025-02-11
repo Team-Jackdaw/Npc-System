@@ -103,7 +103,7 @@ public class FunctionManager {
             try {
                 Files.createDirectories(folder);
             } catch (IOException e) {
-                logger.error("[chat-with-npc] Failed to create the functions directory");
+                logger.error("[npc-system] Failed to create the functions directory");
                 logger.error(e.getMessage());
                 throw new RuntimeException(e);
             }
@@ -118,7 +118,7 @@ public class FunctionManager {
                     try {
                         json = Files.readString(file.toPath());
                     } catch (IOException e) {
-                        logger.error("[chat-with-npc] Failed to read the function file: " + name);
+                        logger.error("[npc-system] Failed to read the function file: " + name);
                         logger.error(e.getMessage());
                         continue;
                     }
@@ -201,7 +201,7 @@ public class FunctionManager {
                             double doubleValue = Double.parseDouble(value.toString());
                             intValue = (int) doubleValue;
                         } catch (NumberFormatException e) {
-                            NPCSystem.LOGGER.error("[chat-with-npc] Failed to parse the value of " + key + " in function " + name);
+                            NPCSystem.LOGGER.error("[npc-system] Failed to parse the value of " + key + " in function " + name);
                             return;
                         }
                     }

@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.client;
+package team.jackdaw.npcsystem;
 
 import net.fabricmc.api.ClientModInitializer;
 
