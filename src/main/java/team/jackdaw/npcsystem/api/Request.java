@@ -22,8 +22,8 @@ public class Request {
      */
     public static @NotNull String sendRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) throws Exception {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(10 * 1000)
-                .setSocketTimeout(10 * 1000)
+                .setConnectTimeout(30 * 1000)
+                .setSocketTimeout(30 * 1000)
                 .setCookieSpec("ignoreCookies")
                 .build();
 

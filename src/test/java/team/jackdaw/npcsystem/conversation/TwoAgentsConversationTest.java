@@ -20,27 +20,34 @@ public class TwoAgentsConversationTest {
         Ollama.CHAT_MODEL = "qwen2.5:14b";
         WeaviateDB db = new WeaviateDB("http", "jackdaw-v3:8080");
 
-        // 根据"Document"数据库中的背景信息，用LLM创建两个角色（Ribo Lee和Sensei Tony）的基本信息。
+        // 设置
+        String language = "Chinese";
+        String wordLimit = "100";
+        int maxTurns = 100;
+
         try {
+            // 根据"Document"数据库中的背景信息，用LLM创建两个角色（Ribo Lee和Sensei Tony）的基本信息。
             String contextRibo = RAG.completion(db, """
                             Tell me the ground truth, background, information that Ribo Lee will know. Just reply with one paragraph, without other instructions.
                             """,
-                    5, "Document");
-            String promptRibo = "You are Ribo Lee. You are a spirited teenager. You speak confidently. You know the follow thing:\n" + contextRibo + """
-                    You are now having a conversation with Tony. And you want to ask him about the current state of the Empire's foreign wars.
-                    Limit each of your responses to no more than 30 words.
+                    10, "Document");
+            String promptRibo = String.format("""
+                    You are Ribo Lee. You are a spirited teenager. You speak confidently. You know the follow thing:
+                    %s
+                    You are now having a conversation with Tony. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to ask him about the current state of the Empire's foreign wars.
+                    Limit each of your responses to no more than %s words. Please speak %s.
                     The conversation is start by you.
-                    """;
-            System.out.println("Prompt of Ribo: " + promptRibo);
+                    """, contextRibo, wordLimit, language);
             String contextTony = RAG.completion(db, """
                             Tell me the ground truth, background, information that Sensei Tony will know. Just reply with one paragraph, without other instructions.
                             """,
-                    5, "Document");
-            String promptTony = "You are Sensei Tony. You're a calm person. Speak succinctly and forcefully without babbling. You know the follow thing: " + contextTony + """
-                    You are now having a conversation with Ribo. And you want to ask him about his background and his plan.
-                    Limit each of your responses to no more than 30 words.
-                    """;
-            System.out.println("Prompt of Tony: " + promptTony);
+                    10, "Document");
+            String promptTony = String.format("""
+                    You are Sensei Tony. You're a calm person. Speak succinctly and forcefully without babbling. You know the follow thing:
+                    %s
+                    You are now having a conversation with Ribo. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to ask him about his background and his plan.
+                    Limit each of your responses to no more than %s words. Please speak %s.
+                    """, contextTony, wordLimit, language);
 
             // 构建他们的消息记录
             List<Message> messagesRibo = Ollama.messageBuilder()
@@ -68,23 +75,7 @@ public class TwoAgentsConversationTest {
             String newMessageToTony;
             ChatResponse response;
 
-            newMessageToTony = Ollama.chat(messagesRibo, null).message.content;
-            System.out.println("Ribo: " + newMessageToTony + "\n");
-            messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
-            messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
-
-            for (int i = 0; i < 100; i++) {
-                // Tony回复Ribo
-                response = Ollama.chat(messagesTony, List.of(stopTool));
-                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
-                    newMessageToRibo = "See you later.";
-                    i = 100;
-                } else {
-                    newMessageToRibo = response.message.content;
-                }
-                System.out.println("Tony: " + newMessageToRibo + "\n");
-                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.ASSISTANT, newMessageToRibo).build();
-                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.USER, newMessageToRibo).build();
+            for (int i = 0; i < maxTurns; i++) {
                 // Ribo回复Tony
                 response = Ollama.chat(messagesRibo, List.of(stopTool));
                 if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
@@ -96,6 +87,17 @@ public class TwoAgentsConversationTest {
                 System.out.println("Ribo: " + newMessageToTony + "\n");
                 messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
                 messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
+                // Tony回复Ribo
+                response = Ollama.chat(messagesTony, List.of(stopTool));
+                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
+                    newMessageToRibo = "See you later.";
+                    i = 100;
+                } else {
+                    newMessageToRibo = response.message.content;
+                }
+                System.out.println("Tony: " + newMessageToRibo + "\n");
+                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.ASSISTANT, newMessageToRibo).build();
+                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.USER, newMessageToRibo).build();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
