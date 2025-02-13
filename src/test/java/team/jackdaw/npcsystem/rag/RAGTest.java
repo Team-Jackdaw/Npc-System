@@ -1,11 +1,12 @@
 package team.jackdaw.npcsystem.rag;
 
-import io.weaviate.client.Config;
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.api.Ollama;
 
+import java.util.List;
+
 public class RAGTest {
-    private static final WeaviateDB db = new WeaviateDB(new Config("http", "jackdaw-v3:8080"));
+    private static final WeaviateDB db = new WeaviateDB("http", "jackdaw-v3:8080");
 
     static {
         Ollama.API_URL = "http://192.168.122.74:11434";
@@ -123,19 +124,32 @@ public class RAGTest {
                                 
                 """;
         try {
-            RAG.record(db, text);
+            RAG.record(db, text, "Document");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
-    public void testStory() {
-        String question = """
-                Who is Ribo?
+    public void testQuery() {
+        String text = """
+                Who is king of the empire currently? What is his relation to Ribo?
                 """;
         try {
-            String res = RAG.completion(db, question, 3);
+            List<String> res = RAG.query(db, text, 3, "Document");
+            System.out.println(res);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testQuestion() {
+        String question = """
+                Who is the king of the empire currently? How he came to power?
+                """;
+        try {
+            String res = RAG.completion(db, question, 3, "Document");
             System.out.println(res);
         } catch (Exception e) {
             throw new RuntimeException(e);

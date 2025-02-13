@@ -1,7 +1,5 @@
 package team.jackdaw.npcsystem.function;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import team.jackdaw.npcsystem.conversation.ConversationHandler;
 
 import java.util.Map;
@@ -51,7 +49,6 @@ import java.util.Map;
 public abstract class CustomFunction {
     public String description;
     public Map<String, Map<String, Object>> properties;
-    @Nullable
     public String[] required;
 
     /**
@@ -60,6 +57,6 @@ public abstract class CustomFunction {
      * @param args The arguments
      * @return The result you want to tell the OpenAI assistant
      */
-    public abstract Map<String, String> execute(@NotNull ConversationHandler conversation, @NotNull Map<String, Object> args);
+    public abstract Map<String, String> execute(ConversationHandler conversation, Map<String, Object> args);
 }
 

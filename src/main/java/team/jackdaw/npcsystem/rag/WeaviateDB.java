@@ -13,7 +13,6 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 import io.weaviate.client.v1.schema.model.Property;
 import io.weaviate.client.v1.schema.model.WeaviateClass;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
@@ -25,10 +24,20 @@ public class WeaviateDB {
         this.client = new WeaviateClient(config);
     }
 
-    public boolean createSchema() {
+    public WeaviateDB(String scheme, String host) {
+        this.client = new WeaviateClient(new Config(scheme, host));
+    }
+
+    /**
+     * Create a schema that will be used to store the text data and its embedded vector.
+     * @param name The name of the schema
+     * @param description The description of the schema
+     * @return true if the schema is created successfully, false otherwise
+     */
+    public boolean createSchema(String name, String description) {
         WeaviateClass documentClass = WeaviateClass.builder()
-                .className("Document")
-                .description("A document schema for RAG")
+                .className(name)
+                .description(description)
                 .properties(List.of(
                         Property.builder()
                                 .name("text")
@@ -40,32 +49,48 @@ public class WeaviateDB {
         return client.schema().classCreator().withClass(documentClass).run().getResult();
     }
 
-    public WeaviateClass getSchema() {
-        return client.schema().classGetter().withClassName("Document").run().getResult();
-    }
-
-    public boolean deleteSchema(boolean areYouSure) {
+    /**
+     * Delete a schema by its class name.
+     * @param className The name of the schema
+     * @param areYouSure If true, the schema will be deleted
+     * @return true if the schema is deleted successfully, false otherwise
+     */
+    public boolean deleteSchema(String className, boolean areYouSure) {
         if (!areYouSure) {
             return false;
         }
-        return client.schema().classDeleter().withClassName("Document").run().getResult();
+        return client.schema().classDeleter().withClassName(className).run().getResult();
     }
 
-    public ObjectGetResponse insertData(String text, Float[] vector) {
+    /**
+     * Insert an object into the schema.
+     * @param text The text data
+     * @param vector The embedded vector of the text
+     * @param className The name of the schema
+     * @return The response of the insertion
+     */
+    public ObjectGetResponse insertData(String text, Float[] vector, String className) {
         ObjectsBatcher batcher = client.batch().objectsBatcher();
         return batcher.withObject(WeaviateObject.builder()
-                        .className("Document")
+                        .className(className)
                         .properties(Map.of("text", text))
                         .vector(vector)
                         .build())
                 .run().getResult()[0];
     }
 
-    public ObjectGetResponse[] insertData(@NotNull List<String> texts, List<Float[]> vectors) {
+    /**
+     * Insert multiple objects into the schema.
+     * @param texts The list of text data
+     * @param vectors The list of embedded vectors of the text
+     * @param className The name of the schema
+     * @return The response of the insertion
+     */
+    public ObjectGetResponse[] insertData(List<String> texts, List<Float[]> vectors, String className) {
         ObjectsBatcher batcher = client.batch().objectsBatcher();
         for (int i = 0; i < texts.size(); i++) {
             batcher.withObject(WeaviateObject.builder()
-                            .className("Document")
+                            .className(className)
                             .properties(Map.of("text", texts.get(i)))
                             .vector(vectors.get(i))
                             .build());
@@ -73,7 +98,14 @@ public class WeaviateDB {
         return batcher.run().getResult();
     }
 
-    public GraphQLResponse query(@NotNull Float[] vector, int limit) {
+    /**
+     * Query the schema by a vector. The query will return the text data but query by the similarity of the vector.
+     * @param vector The vector to query
+     * @param limit The number of results to return
+     * @param className The name of the schema
+     * @return The response of the query
+     */
+    public GraphQLResponse query(Float[] vector, int limit, String className) {
         NearVectorArgument nearVector = NearVectorArgument.builder()
                 .vector(vector)
                 .build();
@@ -85,7 +117,7 @@ public class WeaviateDB {
                 .build();
 
         String query = GetBuilder.builder()
-                .className("Document")
+                .className(className)
                 .fields(fields)
                 .withNearVectorFilter(nearVector)
                 .limit(limit)
@@ -95,7 +127,14 @@ public class WeaviateDB {
         return client.graphQL().raw().withQuery(query).run().getResult();
     }
 
-    public GraphQLResponse query(@NotNull List<Float[]> vectors, int limit) {
+    /**
+     * Query the schema by multiple vectors. The query will return the text data but query by the similarity of the vectors.
+     * @param vectors The list of vectors to query
+     * @param limit The number of results to return
+     * @param className The name of the schema
+     * @return The response of the query
+     */
+    public GraphQLResponse query(List<Float[]> vectors, int limit, String className) {
         NearVectorArgument.NearVectorArgumentBuilder nearVectorBuilder = NearVectorArgument.builder();
         for (Float[] vector : vectors) {
             nearVectorBuilder.vector(vector);
@@ -109,7 +148,7 @@ public class WeaviateDB {
                 .build();
 
         String query = GetBuilder.builder()
-                .className("Document")
+                .className(className)
                 .fields(fields)
                 .withNearVectorFilter(vector)
                 .limit(limit)
@@ -119,7 +158,13 @@ public class WeaviateDB {
         return client.graphQL().raw().withQuery(query).run().getResult();
     }
 
-    public GraphQLResponse getObjects(int num) {
+    /**
+     * Get a number of objects from the schema.
+     * @param num The number of objects to get
+     * @param className The name of the schema
+     * @return The response of the query
+     */
+    public GraphQLResponse getObjects(int num, String className) {
         Fields fields = Fields.builder()
                 .fields(new Field[]{
                         Field.builder().name("text").build(),
@@ -127,7 +172,7 @@ public class WeaviateDB {
                 .build();
 
         String query = GetBuilder.builder()
-                .className("Document")
+                .className(className)
                 .fields(fields)
                 .limit(num)
                 .build()
@@ -136,6 +181,11 @@ public class WeaviateDB {
         return client.graphQL().raw().withQuery(query).run().getResult();
     }
 
+    /**
+     * Get the text data from the query response.
+     * @param res The response of the query
+     * @return The list of text data
+     */
     public static List<String> queryGetText(GraphQLResponse res) {
         return QueryGet.fromResponse(res).Get.Document.stream().map(c -> c.text).toList();
     }
@@ -148,7 +198,7 @@ public class WeaviateDB {
                 String text;
             }
         }
-        static QueryGet fromResponse(@NotNull GraphQLResponse res) {
+        static QueryGet fromResponse(GraphQLResponse res) {
             return new Gson().fromJson(new Gson().toJson(res.getData()), QueryGet.class);
         }
     }

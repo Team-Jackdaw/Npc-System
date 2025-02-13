@@ -1,4 +1,4 @@
 package team.jackdaw.npcsystem.ai.agent;
 
-public class Observe {
+public interface ConversationWindows {
 }
