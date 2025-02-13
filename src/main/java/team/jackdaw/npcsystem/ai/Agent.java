@@ -1,7 +1,7 @@
 package team.jackdaw.npcsystem.ai;
 
 import team.jackdaw.npcsystem.ai.agent.Action;
-import team.jackdaw.npcsystem.ai.agent.ConversationWindows;
+import team.jackdaw.npcsystem.ai.agent.ConversationWindow;
 import team.jackdaw.npcsystem.ai.agent.Status;
 
 public interface Agent {
@@ -29,5 +29,5 @@ public interface Agent {
      * Open the conversation windows.
      * @return the conversation windows
      */
-    ConversationWindows getConversationWindows();
+    ConversationWindow getConversationWindows();
 }

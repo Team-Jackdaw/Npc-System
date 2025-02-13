@@ -50,6 +50,15 @@ public class Ollama {
     }
 
     /**
+     * Create a message builder from exist messages.
+     * @param messages The messages to be added to the builder.
+     * @return ChatCompletion.MessageBuilder
+     */
+    public static ChatCompletion.MessageBuilder messageBuilder(List<Message> messages) {
+        return ChatCompletion.messageBuilder(messages);
+    }
+
+    /**
      * Embed the input texts to vectors. Please update the API_URL and EMBEDDING_MODEL before you use the API.
      * @param input The input to be embedded.
      * @return EmbeddingResponse

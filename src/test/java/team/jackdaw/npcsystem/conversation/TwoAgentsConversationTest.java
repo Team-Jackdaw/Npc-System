@@ -2,7 +2,6 @@ package team.jackdaw.npcsystem.conversation;
 
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.api.Ollama;
-import team.jackdaw.npcsystem.api.chatcompletion.ChatCompletion;
 import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
 import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
 import team.jackdaw.npcsystem.api.chatcompletion.json.Role;
@@ -71,8 +70,8 @@ public class TwoAgentsConversationTest {
 
             newMessageToTony = Ollama.chat(messagesRibo, null).message.content;
             System.out.println("Ribo: " + newMessageToTony + "\n");
-            messagesRibo = ChatCompletion.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
-            messagesTony = ChatCompletion.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
+            messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
+            messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
 
             for (int i = 0; i < 100; i++) {
                 // Tony回复Ribo
@@ -84,8 +83,8 @@ public class TwoAgentsConversationTest {
                     newMessageToRibo = response.message.content;
                 }
                 System.out.println("Tony: " + newMessageToRibo + "\n");
-                messagesTony = ChatCompletion.messageBuilder(messagesTony).addMessage(Role.ASSISTANT, newMessageToRibo).build();
-                messagesRibo = ChatCompletion.messageBuilder(messagesRibo).addMessage(Role.USER, newMessageToRibo).build();
+                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.ASSISTANT, newMessageToRibo).build();
+                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.USER, newMessageToRibo).build();
                 // Ribo回复Tony
                 response = Ollama.chat(messagesRibo, List.of(stopTool));
                 if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
@@ -95,8 +94,8 @@ public class TwoAgentsConversationTest {
                     newMessageToTony = response.message.content;
                 }
                 System.out.println("Ribo: " + newMessageToTony + "\n");
-                messagesRibo = ChatCompletion.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
-                messagesTony = ChatCompletion.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
+                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
+                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

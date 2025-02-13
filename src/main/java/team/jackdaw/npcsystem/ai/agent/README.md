@@ -23,3 +23,7 @@ Planner是每天Agent对当天行动的计划，这个计划由LLM模型根据�
 ## Executor
 
 Executor是Agent的执行系统，这个系统应该根据Planner中的计划、Observation中最近观察到的事情、Memory中的相关内容，使用LLM模型得到Agent当前应该选择的Action及其参数，这个系统应该是一个有限状态机。
+
+## ConversationWindow
+
+当Agent需要与其他Agent或玩家交流的时候，可以维护一个对话窗口。
