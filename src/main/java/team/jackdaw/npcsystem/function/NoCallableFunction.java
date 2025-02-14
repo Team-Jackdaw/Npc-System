@@ -1,6 +1,5 @@
 package team.jackdaw.npcsystem.function;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardCriterion;
@@ -13,8 +12,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.SettingManager;
-import team.jackdaw.npcsystem.conversation.ConversationHandler;
-import team.jackdaw.npcsystem.npc.NPCEntity;
+import team.jackdaw.npcsystem.ai.Agent;
+import team.jackdaw.npcsystem.ai.NPC;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.npcentity.NPCEntity;
 
 import java.util.Map;
 
@@ -28,11 +29,12 @@ class NoCallableFunction extends CustomFunction {
         this.properties = properties;
     }
 
-    public Map<String, String> execute(ConversationHandler conversation, Map<String, Object> args) {
+    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
         Map<String, String> failed = Map.of("status", "failed");
         Map<String, String> ok = Map.of("status", "success");
-        NPCEntity npc = conversation.getNpc();
-        Entity entity = npc.getEntity();
+        Agent agent = conversation.getAgent();
+        if (!(agent instanceof NPC npc)) return failed;
+        NPCEntity entity = npc.getEntity();
         PlayerEntity player = entity.world.getClosestPlayer(entity, SettingManager.range);
         MinecraftServer server = entity.getServer();
         if (server == null) return failed;

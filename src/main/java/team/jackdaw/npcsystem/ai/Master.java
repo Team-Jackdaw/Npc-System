@@ -1,4 +1,8 @@
 package team.jackdaw.npcsystem.ai;
 
-public interface Master {
+public class Master implements Agent {
+    @Override
+    public ConversationWindow getConversationWindows() {
+        return null;
+    }
 }

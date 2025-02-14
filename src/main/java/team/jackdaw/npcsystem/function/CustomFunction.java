@@ -1,6 +1,6 @@
 package team.jackdaw.npcsystem.function;
 
-import team.jackdaw.npcsystem.conversation.ConversationHandler;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 
 import java.util.Map;
 
@@ -35,7 +35,7 @@ import java.util.Map;
  *             required = new String[] { "param1", "param2" };
  *         }
  *
- *     public Map< String, String > execute(@NotNull ConversationHandler conversation, @NotNull Map args) {
+ *     public Map< String, String > execute(ConversationWindow conversation, Map args) {
  *         // Do something with the arguments
  *         }
  *     }
@@ -57,6 +57,6 @@ public abstract class CustomFunction {
      * @param args The arguments
      * @return The result you want to tell the OpenAI assistant
      */
-    public abstract Map<String, String> execute(ConversationHandler conversation, Map<String, Object> args);
+    public abstract Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args);
 }
 

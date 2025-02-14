@@ -1,9 +1,14 @@
 package team.jackdaw.npcsystem.ai;
 
-import team.jackdaw.npcsystem.ai.assistant.MarkObservation;
+import team.jackdaw.npcsystem.ai.assistant.Mark;
 
-public interface Assistant {
+public class Assistant implements Agent {
     static int markObservation(String observation) {
-        return MarkObservation.markObservation(observation);
+        return Mark.markObservation(observation);
+    }
+
+    @Override
+    public ConversationWindow getConversationWindows() {
+        return null;
     }
 }

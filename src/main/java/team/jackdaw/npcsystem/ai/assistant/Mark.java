@@ -8,13 +8,13 @@ import team.jackdaw.npcsystem.api.completion.json.CompletionResponse;
 
 import java.util.Map;
 
-public class MarkObservation {
-    public static int markObservation(String observation) {
+public class Mark {
+    public static int markInteger(String input, String systemPrompt) {
         try {
             CompletionRequest req = new CompletionRequest();
             req.model = Ollama.CHAT_MODEL;
-            req.system = "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a daily live memory.";
-            req.prompt = observation;
+            req.system = systemPrompt;
+            req.prompt = input;
             req.stream = false;
             String formatJson = """
                     {
@@ -37,5 +37,9 @@ public class MarkObservation {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static int markObservation(String observation) {
+        return markInteger(observation, "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a daily live memory.");
     }
 }

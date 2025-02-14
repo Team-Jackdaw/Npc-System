@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.api.json.Function;
 import team.jackdaw.npcsystem.api.json.Tool;
-import team.jackdaw.npcsystem.conversation.ConversationHandler;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 
 import java.io.File;
 import java.io.IOException;
@@ -119,7 +119,7 @@ public class FunctionManager {
      * @param conversation The conversation handler
      * @param args The arguments
      */
-    public static Map<String, String> callFunction(ConversationHandler conversation, String name, Map<String, Object> args) {
+    public static Map<String, String> callFunction(ConversationWindow conversation, String name, Map<String, Object> args) {
         CustomFunction function = functionRegistry.get(name);
         if (function == null) {
             throw new IllegalArgumentException("Function not found: " + name);
