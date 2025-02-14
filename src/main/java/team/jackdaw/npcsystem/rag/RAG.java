@@ -36,7 +36,7 @@ public class RAG {
     public static List<String> query(WeaviateDB db, String text, int topK, String className) throws Exception {
         List<String> chunks = SimpleChunking.chunkText(text, CHUNK_SIZE);
         List<Float[]> vectors = Ollama.embed(chunks).embeddings.stream().map(f -> f.toArray(Float[]::new)).toList();
-        return WeaviateDB.queryGetText(db.query(vectors, topK, className));
+        return WeaviateDB.queryGetText(db.query(vectors, topK, className), className);
     }
 
     /**

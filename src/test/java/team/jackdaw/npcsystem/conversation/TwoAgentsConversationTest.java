@@ -7,47 +7,60 @@ import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
 import team.jackdaw.npcsystem.api.chatcompletion.json.Role;
 import team.jackdaw.npcsystem.api.json.Tool;
 import team.jackdaw.npcsystem.rag.RAG;
-import team.jackdaw.npcsystem.rag.WeaviateDB;
 
 import java.util.List;
 
+import static team.jackdaw.npcsystem.Config.db;
+import static team.jackdaw.npcsystem.Config.setOllamaConfig;
+
 public class TwoAgentsConversationTest {
+
+    static {
+        setOllamaConfig();
+    }
 
     @Test
     public void testConversation() {
-        // 连接到Ollama模型和Weaviate数据库
-        Ollama.API_URL = "http://192.168.122.74:11434";
-        Ollama.CHAT_MODEL = "qwen2.5:14b";
-        WeaviateDB db = new WeaviateDB("http", "jackdaw-v3:8080");
-
         // 设置
+        String className = "ScottEmpire";
         String language = "Chinese";
-        String wordLimit = "100";
-        int maxTurns = 100;
+        int wordLimit = 100;
+        int maxTurns = 10;
 
         try {
+            // 根据“Document”数据库中的信息，用LLM选出两个角色（Ribo Lee和Sensei Tony）可以交谈的一个话题。
+            String topic = RAG.completion(db, """
+                            Choose a topic that Ribo Lee and Sensei Tony can talk about. Just reply with one sentence, without other instructions.
+                            """,
+                    5, className);
+            System.out.println("The topic is: " + topic + "\n");
+
             // 根据"Document"数据库中的背景信息，用LLM创建两个角色（Ribo Lee和Sensei Tony）的基本信息。
             String contextRibo = RAG.completion(db, """
                             Tell me the ground truth, background, information that Ribo Lee will know. Just reply with one paragraph, without other instructions.
                             """,
-                    10, "Document");
+                    5, className);
             String promptRibo = String.format("""
-                    You are Ribo Lee. You are a spirited teenager. You speak confidently. You know the follow thing:
+                    You are Ribo Lee. You are a spirited teenager. You speak confidently. You are willing to share anything you know and enthusiastically ask things. You know the follow thing:
                     %s
-                    You are now having a conversation with Tony. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to ask him about the current state of the Empire's foreign wars.
+                    You are now having a conversation with Tony. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to talk about %s.
+                    You don't leave easily until you get the intel.
                     Limit each of your responses to no more than %s words. Please speak %s.
                     The conversation is start by you.
-                    """, contextRibo, wordLimit, language);
+                    """, contextRibo, topic, wordLimit, language);
+            System.out.println("Ribo prompt: " + promptRibo + "\n");
             String contextTony = RAG.completion(db, """
                             Tell me the ground truth, background, information that Sensei Tony will know. Just reply with one paragraph, without other instructions.
                             """,
-                    10, "Document");
+                    5, className);
             String promptTony = String.format("""
-                    You are Sensei Tony. You're a calm person. Speak succinctly and forcefully without babbling. You know the follow thing:
+                    You are Sensei Tony. You're a calm person. Speak succinctly and forcefully without babbling. You are willing to share anything you know and enthusiastically ask things. You know the follow thing:
                     %s
-                    You are now having a conversation with Ribo. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to ask him about his background and his plan.
+                    You are now having a conversation with Ribo. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend.
+                    You don't leave easily until you get the intel.
                     Limit each of your responses to no more than %s words. Please speak %s.
                     """, contextTony, wordLimit, language);
+            System.out.println("Tony prompt: " + promptTony + "\n");
 
             // 构建他们的消息记录
             List<Message> messagesRibo = Ollama.messageBuilder()
@@ -62,8 +75,8 @@ public class TwoAgentsConversationTest {
                     {
                         "type": "function",
                         "function": {
-                            "name": "stop_conversation",
-                            "description": "This function stops the conversation. Call this function when you want to stop the conversation."
+                            "name": "say_good_bye",
+                            "description": "Call this function when you want to say good bye to the other. When you find the conversation is repeating something, you should also call this function."
                         }
                     }
                       """;
@@ -78,9 +91,9 @@ public class TwoAgentsConversationTest {
             for (int i = 0; i < maxTurns; i++) {
                 // Ribo回复Tony
                 response = Ollama.chat(messagesRibo, List.of(stopTool));
-                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
+                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("say_good_bye")) {
                     newMessageToTony = "See you later.";
-                    i = 100;
+                    i = maxTurns;
                 } else {
                     newMessageToTony = response.message.content;
                 }
@@ -89,9 +102,9 @@ public class TwoAgentsConversationTest {
                 messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
                 // Tony回复Ribo
                 response = Ollama.chat(messagesTony, List.of(stopTool));
-                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("stop_conversation")) {
+                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("say_good_bye")) {
                     newMessageToRibo = "See you later.";
-                    i = 100;
+                    i = maxTurns;
                 } else {
                     newMessageToRibo = response.message.content;
                 }

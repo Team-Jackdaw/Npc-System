@@ -1,8 +1,8 @@
 # Agent
 
-在这个包中应该实现一个Agent的基本功能，包括Observation短期记忆，Memory长期记忆，一个Reflect系统，一个Planner系统，一个Executor系统。
+在这个包中应该实现一个Agent的大脑功能，包括Observation短期记忆，Memory长期记忆，Status当前状态，一个Reflect系统，一个Planner系统，一个ActionSelector系统。
 
-并且该Agent应该具有交流能力，即根据他的Observation、Memory的内容，能够与玩家或别的Agent进行交流。
+并且该Agent应该具有交流能力并可以维护一个ConversationWindow，即根据他的Observation、Memory、Status的内容，能够与玩家或别的Agent进行交流。
 
 ## Observation
 
@@ -18,12 +18,12 @@ Reflect用于对一定总分的一些Observation进行反思，这个系统使�
 
 ## Planner
 
-Planner是每天Agent对当天行动的计划，这个计划由LLM模型根据该Agent的Memory中的内容提炼出来，应该对当天每一个时间段都有一个详细的计划。
+Planner是每天Agent对当天行动的计划，这个计划由LLM模型根据该Agent的Memory中的内容和Status提炼出来，应该对当天每一个时间段都有一个详细的计划。
 
-## Executor
+## ActionSelector
 
-Executor是Agent的执行系统，这个系统应该根据Planner中的计划、Observation中最近观察到的事情、Memory中的相关内容，使用LLM模型得到Agent当前应该选择的Action及其参数，这个系统应该是一个有限状态机。
+ActionSelector是Agent的下一步动作选择系统，这个系统应该根据Planner中的计划、Observation中最近观察到的事情、Memory中的相关内容、Status当前状态，使用LLM模型得到Agent当前应该选择的Action及其参数。
 
 ## ConversationWindow
 
-当Agent需要与其他Agent或玩家交流的时候，可以维护一个对话窗口。
+当Agent需要与其他Agent或玩家交流的时候，可以维护一个对话窗口，根据他的Observation、Memory、Status交流。

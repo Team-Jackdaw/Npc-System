@@ -1,20 +1,27 @@
 package team.jackdaw.npcsystem.rag;
 
 import org.junit.jupiter.api.Test;
-import team.jackdaw.npcsystem.api.Ollama;
 
 import java.util.List;
 
+import static team.jackdaw.npcsystem.Config.setOllamaConfig;
+import static team.jackdaw.npcsystem.Config.db;
+
 public class RAGTest {
-    private static final WeaviateDB db = new WeaviateDB("http", "jackdaw-v3:8080");
+    private static final String schemaName = "ScottEmpire";
 
     static {
-        Ollama.API_URL = "http://192.168.122.74:11434";
+        setOllamaConfig();
+    }
+
+    @Test
+    public void testCreateSchema() {
+        boolean res = db.createSchema(schemaName, "A schema for RAG");
+        System.out.println(res);
     }
 
     @Test
     public void testBackground() {
-        RAG.CHUNK_SIZE = 150;
         String text = """
                 Background:
                 A coup d'état in the Scott Empire saw the Prince seize power and murder the old King's family, leaving only the youngest of the young royals (Reb Alexander Lee) to escape on a ship. The mutineers silenced anyone who knew about the events of that year, falsely claiming to the public that the king had been assassinated. After years of displacement, Reb attends the University of Skeet in the city of Skeet, the capital of the Scottish Empire, as a foreign student. He met Mr. Tony at the university, and was introduced by Mr. Tony to join a fraternity organization at Helena's Tavern. And he also explores the mystery of his birth in Sketch City.
@@ -124,7 +131,7 @@ public class RAGTest {
                                 
                 """;
         try {
-            RAG.record(db, text, "Document");
+            RAG.record(db, text, schemaName);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -136,7 +143,7 @@ public class RAGTest {
                 Who is king of the empire currently? What is his relation to Ribo?
                 """;
         try {
-            List<String> res = RAG.query(db, text, 3, "Document");
+            List<String> res = RAG.query(db, text, 3, schemaName);
             System.out.println(res);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -149,10 +156,16 @@ public class RAGTest {
                 Who is the king of the empire currently? How he came to power?
                 """;
         try {
-            String res = RAG.completion(db, question, 3, "Document");
+            String res = RAG.completion(db, question, 3, schemaName);
             System.out.println(res);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testDeleteSchema() {
+        boolean res = db.deleteSchema(schemaName, true);
+        System.out.println(res);
     }
 }

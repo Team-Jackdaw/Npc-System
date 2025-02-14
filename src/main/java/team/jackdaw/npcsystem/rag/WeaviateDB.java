@@ -186,20 +186,8 @@ public class WeaviateDB {
      * @param res The response of the query
      * @return The list of text data
      */
-    public static List<String> queryGetText(GraphQLResponse res) {
-        return QueryGet.fromResponse(res).Get.Document.stream().map(c -> c.text).toList();
-    }
-
-    static class QueryGet {
-        Get Get;
-        static class Get {
-            List<Chunk> Document;
-            static class Chunk {
-                String text;
-            }
-        }
-        static QueryGet fromResponse(GraphQLResponse res) {
-            return new Gson().fromJson(new Gson().toJson(res.getData()), QueryGet.class);
-        }
+    public static List<String> queryGetText(GraphQLResponse res, String className) {
+        Map<String, Map<String, List<Map<String, String>>>> get = new Gson().fromJson(new Gson().toJson(res.getData()), Map.class);
+        return get.get("Get").get(className).stream().map(c -> c.get("text")).toList();
     }
 }
