@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 public class NPCSystem implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("npc-system");
     public static final Path workingDirectory = Paths.get(System.getProperty("user.dir"), "config", "npc-system");
+    public static final long outOfTime = 300000L;
     public static final boolean debug = false;
     @Override
     public void onInitialize() {

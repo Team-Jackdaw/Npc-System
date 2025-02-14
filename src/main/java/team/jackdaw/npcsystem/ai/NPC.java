@@ -1,13 +1,20 @@
 package team.jackdaw.npcsystem.ai;
 
+import lombok.Getter;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.Status;
 import team.jackdaw.npcsystem.npcentity.NPCEntity;
 
+import java.util.List;
+import java.util.UUID;
+
 public class NPC implements Agent {
 
+    @Getter
     private Status status;
+    @Getter
     private NPCEntity entity;
+    private List<String> tools;
 
     /**
      * Input the latest thing the intelligence has observed (in natural language). And store it in Observation Storage.
@@ -37,24 +44,23 @@ public class NPC implements Agent {
 
     }
 
-    /**
-     * Get the real entity of the NPC in game.
-     * @return the entity of the NPC
-     */
-    public NPCEntity getEntity() {
-        return entity;
-    }
-
-    /**
-     * Get the status of the NPC.
-     * @return the status of the NPC
-     */
-    public Status getStatus() {
-        return status;
+    @Override
+    public UUID getUUID() {
+        return entity.getUuid();
     }
 
     @Override
     public ConversationWindow getConversationWindows() {
         return null;
+    }
+
+    @Override
+    public void addTool(String tool) {
+
+    }
+
+    @Override
+    public List<String> getTools() {
+        return tools;
     }
 }
