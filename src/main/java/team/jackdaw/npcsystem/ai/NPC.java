@@ -1,6 +1,5 @@
 package team.jackdaw.npcsystem.ai;
 
-import lombok.Getter;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.Status;
 import team.jackdaw.npcsystem.npcentity.NPCEntity;
@@ -10,9 +9,7 @@ import java.util.UUID;
 
 public class NPC implements Agent {
 
-    @Getter
     private Status status;
-    @Getter
     private NPCEntity entity;
     private List<String> tools;
 
@@ -42,6 +39,22 @@ public class NPC implements Agent {
      */
     public void addEvent(String event) {
 
+    }
+
+    /**
+     * Get the status of the NPC.
+     * @return the status of the NPC
+     */
+    public Status getStatus() {
+        return status;
+    }
+
+    /**
+     * Get the entity of the NPC.
+     * @return the entity of the NPC
+     */
+    public NPCEntity getEntity() {
+        return entity;
     }
 
     @Override

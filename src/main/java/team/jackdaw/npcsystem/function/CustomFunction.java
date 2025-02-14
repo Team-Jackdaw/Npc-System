@@ -1,6 +1,5 @@
 package team.jackdaw.npcsystem.function;
 
-import lombok.Getter;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 
 import java.util.Map;
@@ -58,7 +57,6 @@ public abstract class CustomFunction {
      * <p>
      * The permission level 3 means the function can be called by the Master only.
      */
-    @Getter
     protected int permissionLevel = 1;
 
     /**
@@ -68,6 +66,20 @@ public abstract class CustomFunction {
      * @return The result you want to tell the OpenAI assistant
      */
     public abstract Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args);
+
+    /**
+     * Get the permission level of the function. The default is 1.
+     * <p>
+     * Usually, 1 means the function can be called by any Agents.
+     * <p>
+     * The permission level 2 means the function can be called by high level Agent like Assistant and Master.
+     * <p>
+     * The permission level 3 means the function can be called by the Master only.
+     * @return The permission level
+     */
+    public int getPermissionLevel() {
+        return permissionLevel;
+    }
 
 }
 
