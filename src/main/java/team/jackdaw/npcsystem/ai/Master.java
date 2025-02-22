@@ -1,7 +1,5 @@
 package team.jackdaw.npcsystem.ai;
 
-import team.jackdaw.npcsystem.ai.master.MasterCW;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,8 +28,8 @@ public class Master implements Agent {
 
     @Override
     public ConversationWindow getConversationWindows() {
-        if (ConversationManager.isConversing(uuid)) return ConversationManager.getConversation(uuid);
-        return new MasterCW();
+        ConversationManager.startConversation(this);
+        return ConversationManager.getConversation(this.uuid);
     }
 
     @Override

@@ -1,11 +1,16 @@
 package team.jackdaw.npcsystem.rag;
 
 import org.junit.jupiter.api.Test;
+import team.jackdaw.npcsystem.api.Ollama;
+import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
+import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
+import team.jackdaw.npcsystem.api.chatcompletion.json.Role;
+import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;
 
-import static team.jackdaw.npcsystem.Config.setOllamaConfig;
 import static team.jackdaw.npcsystem.Config.db;
+import static team.jackdaw.npcsystem.Config.setOllamaConfig;
 
 public class RAGTest {
     private static final String schemaName = "ScottEmpire";
@@ -158,6 +163,95 @@ public class RAGTest {
         try {
             String res = RAG.completion(db, question, 3, schemaName);
             System.out.println(res);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testConversation() {
+        String language = "Chinese";
+        int wordLimit = 100;
+        int maxTurns = 10;
+
+        try {
+            String topic = RAG.completion(db, """
+                            Choose a topic that Ribo Lee and Sensei Tony can talk about. Just reply with one sentence, without other instructions.
+                            """,
+                    5, schemaName);
+            System.out.println("The topic is: " + topic + "\n");
+
+            String contextRibo = RAG.completion(db, """
+                            Tell me the ground truth, background, information that Ribo Lee will know. Just reply with one paragraph, without other instructions.
+                            """,
+                    5, schemaName);
+            String promptRibo = String.format("""
+                    You are Ribo Lee. You are a spirited teenager. You speak confidently. You are willing to share anything you know and enthusiastically ask things. You know the follow thing:
+                    %s
+                    You are now having a conversation with Tony. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend. And you want to talk about %s.
+                    You don't leave easily until you get the intel.
+                    Limit each of your responses to no more than %s words. Please speak %s.
+                    The conversation is start by you.
+                    """, contextRibo, topic, wordLimit, language);
+            System.out.println("Ribo prompt: " + promptRibo + "\n");
+            String contextTony = RAG.completion(db, """
+                            Tell me the ground truth, background, information that Sensei Tony will know. Just reply with one paragraph, without other instructions.
+                            """,
+                    5, schemaName);
+            String promptTony = String.format("""
+                    You are Sensei Tony. You're a calm person. Speak succinctly and forcefully without babbling. You are willing to share anything you know and enthusiastically ask things. You know the follow thing:
+                    %s
+                    You are now having a conversation with Ribo. He's an old friend of yours, and your conversations should be in the same tone as they would be with an old friend.
+                    You don't leave easily until you get the intel.
+                    Limit each of your responses to no more than %s words. Please speak %s.
+                    """, contextTony, wordLimit, language);
+            System.out.println("Tony prompt: " + promptTony + "\n");
+
+            List<Message> messagesRibo = Ollama.messageBuilder()
+                    .addMessage(Role.SYSTEM, promptRibo)
+                    .build();
+            List<Message> messagesTony = Ollama.messageBuilder()
+                    .addMessage(Role.SYSTEM, promptTony)
+                    .build();
+
+            String stopJson = """
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "say_good_bye",
+                            "description": "Call this function when you want to say good bye to the other. When you find the conversation is repeating something, you should also call this function."
+                        }
+                    }
+                      """;
+
+            Tool stopTool = Tool.fromJson(stopJson);
+
+            String newMessageToRibo;
+            String newMessageToTony;
+            ChatResponse response;
+
+            for (int i = 0; i < maxTurns; i++) {
+                response = Ollama.chat(messagesRibo, List.of(stopTool));
+                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("say_good_bye")) {
+                    newMessageToTony = "See you later.";
+                    i = maxTurns;
+                } else {
+                    newMessageToTony = response.message.content;
+                }
+                System.out.println("Ribo: " + newMessageToTony + "\n");
+                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.ASSISTANT, newMessageToTony).build();
+                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.USER, newMessageToTony).build();
+                response = Ollama.chat(messagesTony, List.of(stopTool));
+                if (response.message.tool_calls != null && response.message.tool_calls.get(0).function.name.equals("say_good_bye")) {
+                    newMessageToRibo = "See you later.";
+                    i = maxTurns;
+                } else {
+                    newMessageToRibo = response.message.content;
+                }
+                System.out.println("Tony: " + newMessageToRibo + "\n");
+                messagesTony = Ollama.messageBuilder(messagesTony).addMessage(Role.ASSISTANT, newMessageToRibo).build();
+                messagesRibo = Ollama.messageBuilder(messagesRibo).addMessage(Role.USER, newMessageToRibo).build();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

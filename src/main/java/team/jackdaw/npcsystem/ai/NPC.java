@@ -5,6 +5,7 @@ import team.jackdaw.npcsystem.ai.npc.Status;
 import team.jackdaw.npcsystem.npcentity.NPCEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class NPC implements Agent {
@@ -29,6 +30,15 @@ public class NPC implements Agent {
      * @return the next action to take
      */
     public Action nextAction() {
+        return null;
+    }
+
+    /**
+     * Get the schedule of this day.
+     *
+     * @return the schedule
+     */
+    public Map<Integer, Action> getSchedule() {
         return null;
     }
 

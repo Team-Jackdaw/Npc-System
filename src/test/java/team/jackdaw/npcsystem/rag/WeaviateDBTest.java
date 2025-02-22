@@ -30,19 +30,6 @@ public class WeaviateDBTest {
     }
 
     @Test
-    public void testDeleteSchema() {
-        boolean res = db.deleteSchema("Document", true);
-        System.out.println(res);
-    }
-
-    @Test
-    public void testSchemaObjects() {
-        GraphQLResponse res = db.getObjects(100, "Document");
-        List<String> objects = WeaviateDB.queryGetText(res, "Document");
-        System.out.println(objects);
-    }
-
-    @Test
     public void testInsertData() {
         Float[] vector = new Float[768];
         Arrays.fill(vector, 0.1f);
@@ -66,5 +53,11 @@ public class WeaviateDBTest {
         Arrays.fill(vector2, 0.2f);
         GraphQLResponse res = db.query(List.of(vector, vector2), 5, "Document");
         System.out.println(WeaviateDB.queryGetText(res, "Document"));
+    }
+
+    @Test
+    public void testDeleteSchema() {
+        boolean res = db.deleteSchema("Document", true);
+        System.out.println(res);
     }
 }
