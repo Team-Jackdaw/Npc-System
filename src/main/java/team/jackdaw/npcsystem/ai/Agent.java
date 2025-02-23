@@ -30,4 +30,9 @@ public interface Agent {
      * @return The tools' names
      */
     List<String> getTools();
+
+    /**
+     * Discard this agent, every data should be saved carefully.
+     */
+    boolean discard();
 }

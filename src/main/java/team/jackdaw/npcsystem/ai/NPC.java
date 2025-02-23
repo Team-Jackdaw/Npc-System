@@ -1,5 +1,7 @@
 package team.jackdaw.npcsystem.ai;
 
+import net.minecraft.util.annotation.Debug;
+import org.jetbrains.annotations.TestOnly;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.Status;
 import team.jackdaw.npcsystem.npcentity.NPCEntity;
@@ -11,8 +13,19 @@ import java.util.UUID;
 public class NPC implements Agent {
 
     private Status status;
-    private NPCEntity entity;
+    private final NPCEntity entity;
     private List<String> tools;
+
+    public NPC(NPCEntity npcEntity) {
+        entity = npcEntity;
+    }
+
+    @Deprecated
+    @Debug
+    @TestOnly
+    public NPC() {
+        entity = null;
+    }
 
     /**
      * Input the latest thing the intelligence has observed (in natural language). And store it in Observation Storage.
@@ -36,7 +49,7 @@ public class NPC implements Agent {
     /**
      * Get the schedule of this day.
      *
-     * @return the schedule
+     * @return the schedule map with every entry (start time, action)
      */
     public Map<Integer, Action> getSchedule() {
         return null;
@@ -85,5 +98,10 @@ public class NPC implements Agent {
     @Override
     public List<String> getTools() {
         return tools;
+    }
+
+    @Override
+    public boolean discard() {
+        return false;
     }
 }

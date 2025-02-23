@@ -25,7 +25,7 @@ public class WeaviateDB {
     }
 
     public WeaviateDB(String scheme, String host) {
-        this.client = new WeaviateClient(new Config(scheme, host));
+        this(new Config(scheme, host));
     }
 
     /**

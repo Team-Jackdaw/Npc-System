@@ -1,31 +1,19 @@
 package team.jackdaw.npcsystem.api;
 
-import team.jackdaw.npcsystem.api.chatcompletion.ChatCompletion;
-import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
-import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
-import team.jackdaw.npcsystem.api.completion.Completion;
-import team.jackdaw.npcsystem.api.completion.json.CompletionRequest;
-import team.jackdaw.npcsystem.api.completion.json.CompletionResponse;
-import team.jackdaw.npcsystem.api.embedding.Embedding;
-import team.jackdaw.npcsystem.api.embedding.json.EmbeddingRequest;
-import team.jackdaw.npcsystem.api.embedding.json.EmbeddingResponse;
-import team.jackdaw.npcsystem.api.json.Tool;
+import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.api.json.*;
 
 import java.util.List;
 
-public class Ollama {
-    public static String API_URL = "http://localhost:11434";
-    public static String CHAT_MODEL = "mistral";
-    public static String EMBEDDING_MODEL = "nomic-embed-text";
-
+public interface Ollama {
     /**
      * Request completion from the Ollama API. Please update the API_URL, CHAT_MODEL before you use the API.
      * @param prompt The prompt to be completed.
      * @return CompletionResponse
      * @throws Exception If the request fails.
      */
-    public static CompletionResponse completion(String prompt) throws Exception {
-        return Completion.completionRequest(API_URL, CHAT_MODEL, prompt);
+    static CompletionResponse completion(String prompt) throws Exception {
+        return Completion.completionRequest(SettingManager.apiURL, SettingManager.chat_model, prompt);
     }
 
     /**
@@ -34,8 +22,8 @@ public class Ollama {
      * @return CompletionResponse
      * @throws Exception If the request fails.
      */
-    public static CompletionResponse completion(CompletionRequest request) throws Exception {
-        return Completion.completionRequest(API_URL, request);
+    static CompletionResponse completion(CompletionRequest request) throws Exception {
+        return Completion.completionRequest(SettingManager.apiURL, request);
     }
 
     /**
@@ -45,15 +33,15 @@ public class Ollama {
      * @return ChatResponse
      * @throws Exception If the request fails.
      */
-    public static ChatResponse chat(List<Message> messages, List<Tool> tools) throws Exception {
-        return ChatCompletion.chatRequest(API_URL, CHAT_MODEL, messages, tools);
+    static ChatResponse chat(List<Message> messages, List<Tool> tools) throws Exception {
+        return ChatCompletion.chatRequest(SettingManager.apiURL, SettingManager.chat_model, messages, tools);
     }
 
     /**
      * Create a message builder to create messages for the chat API.
      * @return ChatCompletion.MessageBuilder
      */
-    public static ChatCompletion.MessageBuilder messageBuilder() {
+    static MessageBuilder messageBuilder() {
         return ChatCompletion.messageBuilder();
     }
 
@@ -62,7 +50,7 @@ public class Ollama {
      * @param messages The messages to be added to the builder.
      * @return ChatCompletion.MessageBuilder
      */
-    public static ChatCompletion.MessageBuilder messageBuilder(List<Message> messages) {
+    static MessageBuilder messageBuilder(List<Message> messages) {
         return ChatCompletion.messageBuilder(messages);
     }
 
@@ -72,8 +60,8 @@ public class Ollama {
      * @return EmbeddingResponse
      * @throws Exception If the request fails.
      */
-    public static EmbeddingResponse embed(List<String> input) throws Exception {
-        return Embedding.embedRequest(API_URL, EMBEDDING_MODEL, input);
+    static EmbeddingResponse embed(List<String> input) throws Exception {
+        return Embedding.embedRequest(SettingManager.apiURL, SettingManager.embedding_model, input);
     }
 
     /**
@@ -82,7 +70,7 @@ public class Ollama {
      * @return EmbeddingResponse
      * @throws Exception If the request fails.
      */
-    public static EmbeddingResponse embed(EmbeddingRequest request) throws Exception {
-        return Embedding.embedRequest(API_URL, request);
+    static EmbeddingResponse embed(EmbeddingRequest request) throws Exception {
+        return Embedding.embedRequest(SettingManager.apiURL, request);
     }
 }

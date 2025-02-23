@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.completion.json;
+package team.jackdaw.npcsystem.api.json;
 
 import com.google.gson.Gson;
 

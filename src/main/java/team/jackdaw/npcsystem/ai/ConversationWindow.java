@@ -1,7 +1,7 @@
 package team.jackdaw.npcsystem.ai;
 
-import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
-import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
+import team.jackdaw.npcsystem.api.json.ChatResponse;
+import team.jackdaw.npcsystem.api.json.Message;
 import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;

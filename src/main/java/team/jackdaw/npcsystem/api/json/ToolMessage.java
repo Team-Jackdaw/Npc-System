@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.chatcompletion.json;
+package team.jackdaw.npcsystem.api.json;
 
 import org.jetbrains.annotations.NotNull;
 

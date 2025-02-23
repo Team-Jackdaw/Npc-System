@@ -2,9 +2,9 @@ package team.jackdaw.npcsystem.rag;
 
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.api.Ollama;
-import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
-import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
-import team.jackdaw.npcsystem.api.chatcompletion.json.Role;
+import team.jackdaw.npcsystem.api.json.ChatResponse;
+import team.jackdaw.npcsystem.api.json.Message;
+import team.jackdaw.npcsystem.api.json.Role;
 import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;

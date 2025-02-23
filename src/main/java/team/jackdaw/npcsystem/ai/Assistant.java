@@ -29,4 +29,9 @@ public class Assistant implements Agent {
     public List<String> getTools() {
         return null;
     }
+
+    @Override
+    public boolean discard() {
+        return false;
+    }
 }

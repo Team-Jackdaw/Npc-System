@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.embedding.json;
+package team.jackdaw.npcsystem.api.json;
 
 import com.google.gson.Gson;
 

@@ -6,7 +6,8 @@ import net.minecraft.registry.Registry;
 import team.jackdaw.npcsystem.ai.npc.Action;
 
 public class NPCActivity extends Activity {
-    public static final Activity CHAT = register("chat");
+    public static final Activity CORE = register("npc_core");
+    public static final Activity CHAT = register("npc_chat");
 
     public NPCActivity(String id) {
         super(id);

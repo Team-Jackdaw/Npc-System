@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.chatcompletion.json;
+package team.jackdaw.npcsystem.api.json;
 
 public enum Role {
     SYSTEM, USER, ASSISTANT, TOOL

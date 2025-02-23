@@ -26,6 +26,6 @@ public class NPCSystem implements ModInitializer {
                 throw new RuntimeException(e);
             }
         }
-        SettingManager.sync();
+//        SettingManager.sync();
     }
 }

@@ -9,6 +9,10 @@ public class Master implements Agent {
     private final List<String> tools = new ArrayList<>();
     private final UUID uuid = UUID.randomUUID();
 
+    static {
+        AgentManager.registerAgent(getMaster());
+    }
+
     private Master() {
 
     }
@@ -40,5 +44,10 @@ public class Master implements Agent {
     @Override
     public List<String> getTools() {
         return tools;
+    }
+
+    @Override
+    public boolean discard() {
+        return false;
     }
 }

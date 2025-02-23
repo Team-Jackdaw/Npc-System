@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ConversationManager {
-    public static final ConcurrentHashMap<UUID, ConversationWindow> conversationMap = new ConcurrentHashMap<>();
-    public static final long outOfTime = NPCSystem.outOfTime;
+public interface ConversationManager {
+    ConcurrentHashMap<UUID, ConversationWindow> conversationMap = new ConcurrentHashMap<>();
+    long outOfTime = NPCSystem.outOfTime;
 
     /**
      * Start a conversation for an NPC
      *
      * @param agent The Entity to start a conversation with
      */
-    public static void startConversation(Agent agent) {
+    static void startConversation(Agent agent) {
         if (isConversing(agent.getUUID())) return;
         ConversationWindow conversationWindow = agent.getConversationWindows();
         conversationMap.put(agent.getUUID(), conversationWindow);
@@ -30,7 +30,7 @@ public class ConversationManager {
      * @param npcUUID The NPC to check
      * @return True if the NPC is chatting, false otherwise
      */
-    public static boolean isConversing(UUID npcUUID) {
+    static boolean isConversing(UUID npcUUID) {
         return conversationMap.containsKey(npcUUID);
     }
 
@@ -40,7 +40,7 @@ public class ConversationManager {
      * @param uuid The UUID of the conversation
      * @return The conversation with the UUID
      */
-    public static ConversationWindow getConversation(UUID uuid) {
+    static ConversationWindow getConversation(UUID uuid) {
         return conversationMap.get(uuid);
     }
 
@@ -50,7 +50,7 @@ public class ConversationManager {
      * @param entity The player to check
      * @return The closest conversation to the player
      */
-    public static ConversationWindow getConversation(Entity entity) {
+    static ConversationWindow getConversation(Entity entity) {
         List<ConversationWindow> conversations = getConversations(entity);
         if (conversations.isEmpty()) return null;
         return conversations.stream().sorted((conversation1, conversation2) -> {
@@ -68,7 +68,7 @@ public class ConversationManager {
      * @param entity The entity to check
      * @return True if there is a Conversation nearby, false otherwise
      */
-    public static boolean isConversationNearby(Entity entity) {
+    static boolean isConversationNearby(Entity entity) {
         List<UUID> entities = getEntitiesInRange(entity, SettingManager.range).stream().map(Entity::getUuid).toList();
         return conversationMap.keySet().stream().anyMatch(entities::contains);
     }
@@ -79,12 +79,12 @@ public class ConversationManager {
      * @param entity The entity to check
      * @return A list of Conversations within the range of the player
      */
-    public static List<ConversationWindow> getConversations(Entity entity) {
+    static List<ConversationWindow> getConversations(Entity entity) {
         List<UUID> entities = getEntitiesInRange(entity, SettingManager.range).stream().map(Entity::getUuid).toList();
         return conversationMap.keySet().stream().filter(entities::contains).map(conversationMap::get).toList();
     }
 
-    public static List<NPCEntity> getEntitiesInRange(Entity theEntity, double range) {
+    static List<NPCEntity> getEntitiesInRange(Entity theEntity, double range) {
         return theEntity.world.getEntitiesByClass(NPCEntity.class, theEntity.getBoundingBox().expand(range), entity -> entity.getCustomName() != null);
     }
 
@@ -92,7 +92,7 @@ public class ConversationManager {
      * End a conversation with a specific UUID. This will also remove the NPCEntity the UUID represented from NPCEntityManager.
      * @param uuid The UUID of the conversation
      */
-    public static void endConversation(UUID uuid) {
+    static void endConversation(UUID uuid) {
         conversationMap.get(uuid).discard();
         conversationMap.remove(uuid);
     }
@@ -100,7 +100,7 @@ public class ConversationManager {
     /**
      * End all conversations that are out of time
      */
-    public static void endOutOfTimeConversations() {
+    static void endOutOfTimeConversations() {
         if (conversationMap.isEmpty()) return;
         conversationMap.forEach((uuid, ConversationWindow) -> {
             if (ConversationWindow.getUpdateTime() + outOfTime < System.currentTimeMillis()) {
@@ -112,7 +112,7 @@ public class ConversationManager {
     /**
      * End all conversations
      */
-    public static void endAllConversations() {
+    static void endAllConversations() {
         if (conversationMap.isEmpty()) return;
         conversationMap.forEach((uuid, ConversationWindow) -> endConversation(uuid));
     }

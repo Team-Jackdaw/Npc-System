@@ -3,8 +3,8 @@ package team.jackdaw.npcsystem.ai.master;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.Master;
-import team.jackdaw.npcsystem.api.chatcompletion.json.ChatResponse;
-import team.jackdaw.npcsystem.api.chatcompletion.json.Message;
+import team.jackdaw.npcsystem.api.json.ChatResponse;
+import team.jackdaw.npcsystem.api.json.Message;
 import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;

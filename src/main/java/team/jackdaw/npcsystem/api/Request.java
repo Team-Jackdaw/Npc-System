@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-public class Request {
+public interface Request {
     /**
      * Send a request to a URL
      *
@@ -20,7 +20,7 @@ public class Request {
      * @return The response from the API in Json format
      * @throws Exception If the request fails
      */
-    public static @NotNull String sendRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) throws Exception {
+    static @NotNull String sendRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) throws Exception {
         RequestConfig requestConfig = RequestConfig.custom()
                 .setConnectTimeout(30 * 1000)
                 .setSocketTimeout(30 * 1000)
@@ -61,7 +61,7 @@ public class Request {
     /**
      * The action of the request
      */
-    public enum Action {
+    enum Action {
         /**
          * Get request
          */

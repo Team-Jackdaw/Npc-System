@@ -1,10 +1,10 @@
 package team.jackdaw.npcsystem.ai.assistant;
 
 import com.google.gson.Gson;
+import team.jackdaw.npcsystem.SettingManager;
 import team.jackdaw.npcsystem.api.Ollama;
-import team.jackdaw.npcsystem.api.completion.Completion;
-import team.jackdaw.npcsystem.api.completion.json.CompletionRequest;
-import team.jackdaw.npcsystem.api.completion.json.CompletionResponse;
+import team.jackdaw.npcsystem.api.json.CompletionRequest;
+import team.jackdaw.npcsystem.api.json.CompletionResponse;
 
 import java.util.Map;
 
@@ -12,7 +12,7 @@ public class Mark {
     public static int markInteger(String input, String systemPrompt) {
         try {
             CompletionRequest req = new CompletionRequest();
-            req.model = Ollama.CHAT_MODEL;
+            req.model = SettingManager.chat_model;
             req.system = systemPrompt;
             req.prompt = input;
             req.stream = false;
@@ -30,7 +30,7 @@ public class Mark {
                       }
                     """;
             req.format = new Gson().fromJson(formatJson, Map.class);
-            CompletionResponse res = Completion.completionRequest(Ollama.API_URL, req);
+            CompletionResponse res = Ollama.completion(req);
             Map grade = new Gson().fromJson(res.response, Map.class);
             Double gradeValue = (Double) grade.get("grade");
             return gradeValue.intValue();

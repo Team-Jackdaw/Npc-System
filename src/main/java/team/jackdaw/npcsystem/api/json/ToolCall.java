@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.api.assistant.json;
+package team.jackdaw.npcsystem.api.json;
 
 public class ToolCall {
     public String id;
