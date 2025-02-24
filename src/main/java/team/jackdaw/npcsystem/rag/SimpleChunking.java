@@ -3,8 +3,8 @@ package team.jackdaw.npcsystem.rag;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SimpleChunking {
-    public static List<String> chunkText(String text, int maxWords) {
+class SimpleChunking {
+    static List<String> chunkText(String text, int maxWords) {
         String[] words = text.split("\\s+");
         List<String> chunks = new ArrayList<>();
         StringBuilder chunk = new StringBuilder();

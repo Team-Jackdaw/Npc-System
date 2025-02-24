@@ -1,57 +1,55 @@
 package team.jackdaw.npcsystem.function;
 
+import team.jackdaw.npcsystem.BaseManager;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.api.json.Function;
 import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class FunctionManager {
-    private static final Map<String, CustomFunction> functionRegistry = new HashMap<>();
+public class FunctionManager extends BaseManager<String, CustomFunction> {
+    private static final FunctionManager INSTANCE = new FunctionManager();
+    private FunctionManager() {}
 
-    public static ArrayList<String> getRegistryList() {
-        return new ArrayList<>(functionRegistry.keySet());
+    public static FunctionManager getInstance() {
+        return INSTANCE;
     }
 
-    /**
-     * Register a function that can be used by the NPC. It will be called by the OpenAI Assistant.
-     * @param name The name of the function
-     * @param function The function
-     */
-    public static void registerFunction(String name, CustomFunction function) {
-        functionRegistry.put(name, function);
+    public ArrayList<String> getRegistryList() {
+        return new ArrayList<>(map.keySet());
     }
 
     /**
      * Call a function by its name. It will be executed by the OpenAI Assistant and work on the conversation.
-     * @param name The name of the function
+     *
+     * @param functionName The name of the function
      * @param conversation The conversation handler
-     * @param args The arguments
+     * @param args         The arguments
      */
-    public static Map<String, String> callFunction(ConversationWindow conversation, String name, Map<String, Object> args) {
-        CustomFunction function = functionRegistry.get(name);
+    public Map<String, String> callFunction(ConversationWindow conversation, String functionName, Map<String, Object> args) {
+        CustomFunction function = get(functionName);
         if (function == null) {
-            throw new IllegalArgumentException("Function not found: " + name);
+            throw new IllegalArgumentException("Function not found: " + functionName);
         }
-        if (NPCSystem.debug) NPCSystem.LOGGER.info("Calling function: " + name + " with args: " + args);
+        if (NPCSystem.debug) NPCSystem.LOGGER.info("Calling function: " + functionName + " with args: " + args);
         return function.execute(conversation, args);
     }
 
     /**
-     * Get the JSON string of a function by its name.
-     * @param name The name of the function
+     * Get the JSON string of a function by its functionName.
+     *
+     * @param functionName The functionName of the function
      * @return The JSON string
      */
-    public static Tool getTools(String name) {
-        CustomFunction function = functionRegistry.get(name);
+    public Tool getTools(String functionName) {
+        CustomFunction function = get(functionName);
         Tool tool = new Tool();
         tool.type = "function";
         tool.function = new Function();
-        tool.function.name = name;
+        tool.function.name = functionName;
         tool.function.description = function.description;
         tool.function.parameters = new Function.Parameters();
         tool.function.parameters.type = "object";

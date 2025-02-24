@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.npcentity;
+package team.jackdaw.npcsystem.entity;
 
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.registry.Registries;
@@ -6,8 +6,8 @@ import net.minecraft.registry.Registry;
 import team.jackdaw.npcsystem.ai.npc.Action;
 
 public class NPCActivity extends Activity {
-    public static final Activity CORE = register("npc_core");
-    public static final Activity CHAT = register("npc_chat");
+    public static final Activity SOCIAL = register("social");
+    public static final Activity DONOTHING = register("donothing");
 
     public NPCActivity(String id) {
         super(id);

@@ -1,17 +1,16 @@
-package team.jackdaw.npcsystem.npcentity.task;
+package team.jackdaw.npcsystem.entity.task;
 
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.EntityLookTarget;
-import net.minecraft.entity.ai.brain.LivingTargetCache;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.WalkTarget;
 import net.minecraft.entity.ai.brain.task.SingleTickTask;
 import net.minecraft.entity.ai.brain.task.TaskTriggerer;
 import net.minecraft.util.math.GlobalPos;
+import team.jackdaw.npcsystem.entity.NPCEntity;
+import team.jackdaw.npcsystem.entity.NPCMemoryModuleType;
 
-public class MeetNPCTask {
-    private static final float WALK_SPEED = 0.3F;
+public class MeetNPCTask{
 
     public MeetNPCTask() {
     }
@@ -19,27 +18,24 @@ public class MeetNPCTask {
     public static SingleTickTask<LivingEntity> create() {
         return TaskTriggerer.task(
                 (context) -> context
+                        // Memories that required for the task
                         .group(
                                 context.queryMemoryOptional(MemoryModuleType.WALK_TARGET),
                                 context.queryMemoryOptional(MemoryModuleType.LOOK_TARGET),
                                 context.queryMemoryValue(MemoryModuleType.MEETING_POINT),
-                                context.queryMemoryValue(MemoryModuleType.VISIBLE_MOBS),
+                                context.queryMemoryValue(NPCMemoryModuleType.NEAREST_VISIBLE_TARGETABLE_NPC),
                                 context.queryMemoryAbsent(MemoryModuleType.INTERACTION_TARGET)
                         )
-                        .apply(context, (walkTarget, lookTarget, meetingPoint, visibleMobs, interactionTarget) -> (world, entity, time) -> {
+                        .apply(context, (walkTarget, lookTarget, meetingPoint, npc, interactionTarget) -> (world, entity, time) -> {
                             GlobalPos globalPos = context.getValue(meetingPoint);
-                            LivingTargetCache livingTargetCache = context.getValue(visibleMobs);
+                            NPCEntity otherNPC = (NPCEntity) context.getValue(npc);
                             if (world.getRandom().nextInt(100) == 0
                                     && world.getRegistryKey() == globalPos.getDimension()
                                     && globalPos.getPos().isWithinDistance(entity.getPos(), 4.0)
-                                    && livingTargetCache.anyMatch((target) -> EntityType.VILLAGER.equals(target.getType()))
                             ) {
-                                livingTargetCache.findFirst((target) -> EntityType.VILLAGER.equals(target.getType()) && target.squaredDistanceTo(entity) <= 32.0)
-                                        .ifPresent((target) -> {
-                                            interactionTarget.remember(target);
-                                            lookTarget.remember(new EntityLookTarget(target, true));
-                                            walkTarget.remember(new WalkTarget(new EntityLookTarget(target, false), 0.3F, 1));
-                                        });
+                                interactionTarget.remember(otherNPC);
+                                lookTarget.remember(new EntityLookTarget(otherNPC, true));
+                                walkTarget.remember(new WalkTarget(new EntityLookTarget(otherNPC, false), 0.3F, 1));
                                 return true;
                             } else {
                                 return false;

@@ -15,9 +15,9 @@ import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.SettingManager;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.ai.NPC;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.api.json.Tool;
-import team.jackdaw.npcsystem.npcentity.NPCEntity;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,13 +25,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
-class NoCallableFunction extends CustomFunction {
+public class NoCallableFunction extends CustomFunction {
     private static final Logger logger = NPCSystem.LOGGER;
     private static final Path folder = NPCSystem.workingDirectory.resolve("functions");
-    String name;
-    String call;
+    private final String name;
+    private String call;
 
-    NoCallableFunction(String name, String description, Map<String, Map<String, Object>> properties) {
+    private NoCallableFunction(String name, String description, Map<String, Map<String, Object>> properties) {
         this.name = name;
         this.description = description;
         this.properties = properties;
@@ -77,12 +77,12 @@ class NoCallableFunction extends CustomFunction {
      *
      * @param json The JSON string
      */
-    public static void registerFromJson(String json) {
+    private static void registerFromJson(String json) {
         Tool tool = Tool.fromJson(json);
         NoCallableFunction function = new NoCallableFunction(tool.function.name, tool.function.description, tool.function.parameters.properties);
         if (tool.call != null) function.call = tool.call;
         function.required = tool.function.parameters.required;
-        FunctionManager.registerFunction(tool.function.name, function);
+        FunctionManager.getInstance().register(tool.function.name, function);
     }
 
     /**

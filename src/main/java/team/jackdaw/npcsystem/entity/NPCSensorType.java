@@ -1,11 +1,11 @@
-package team.jackdaw.npcsystem.npcentity;
+package team.jackdaw.npcsystem.entity;
 
 import net.minecraft.entity.ai.brain.sensor.Sensor;
 import net.minecraft.entity.ai.brain.sensor.SensorType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
-import team.jackdaw.npcsystem.npcentity.sensor.NearestNPCSensor;
+import team.jackdaw.npcsystem.entity.sensor.NearestNPCSensor;
 
 import java.util.function.Supplier;
 

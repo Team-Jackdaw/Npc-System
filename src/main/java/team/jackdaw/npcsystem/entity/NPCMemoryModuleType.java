@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.npcentity;
+package team.jackdaw.npcsystem.entity;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;

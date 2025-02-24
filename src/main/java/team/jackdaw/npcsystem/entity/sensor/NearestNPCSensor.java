@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.npcentity.sensor;
+package team.jackdaw.npcsystem.entity.sensor;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -10,8 +10,8 @@ import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.sensor.Sensor;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.server.world.ServerWorld;
-import team.jackdaw.npcsystem.npcentity.NPCEntity;
-import team.jackdaw.npcsystem.npcentity.NPCMemoryModuleType;
+import team.jackdaw.npcsystem.entity.NPCEntity;
+import team.jackdaw.npcsystem.entity.NPCMemoryModuleType;
 
 import java.util.Comparator;
 import java.util.List;

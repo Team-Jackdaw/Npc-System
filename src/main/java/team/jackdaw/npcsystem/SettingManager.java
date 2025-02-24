@@ -1,12 +1,7 @@
 package team.jackdaw.npcsystem;
 
 import com.google.gson.Gson;
-
-import org.slf4j.Logger;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import team.jackdaw.npcsystem.entity.TextBubbleEntity;
 
 /**
  * Manages the config files for the modules provided by this plugin.
@@ -20,15 +15,21 @@ import java.nio.file.Files;
 public class SettingManager {
 //    private static final Logger logger = NPCSystem.LOGGER;
 //    private static final File configFile = NPCSystem.workingDirectory.resolve("config.json").toFile();
+    public static final long outOfTime = 300000L;
     public static boolean enabled = true;
-    public static String apiURL = "localhost:11434";
+    public static String dbURL = "http://localhost:8080";
+    public static String apiURL = "http://localhost:11434";
     public static String chat_model = "qwen2.5:7b";
     public static String embedding_model = "nomic-embed-text";
     public static double range = 10.0;
+    public static boolean isBubble = true;
+    public static boolean isChatBar = false;
+    public static TextBubbleEntity.TextBackgroundColor bubbleColor = TextBubbleEntity.TextBackgroundColor.DEFAULT;
+    public static long timeLastingPerChar = 500L;
 
-    /**
-     * Load the setting from the config file.
-     */
+//    /**
+//     * Load the setting from the config file.
+//     */
 //    public static void sync() {
 //        if (configFile.exists()) {
 //            try {
@@ -44,9 +45,9 @@ public class SettingManager {
 //        }
 //    }
 
-    /**
-     * Write the setting to the config file.
-     */
+//    /**
+//     * Write the setting to the config file.
+//     */
 //    public static void save() {
 //        try {
 //            if (!configFile.exists()) {
@@ -67,6 +68,10 @@ public class SettingManager {
         private String chat_model;
         private String embedding_model;
         private double range;
+        private boolean isBubble;
+        private boolean isChatBar;
+        private String textBackgroundColor;
+        private long timeLastingPerChar;
 
         private static String toJson() {
             Config config = new Config();
@@ -75,6 +80,10 @@ public class SettingManager {
             config.chat_model = SettingManager.chat_model;
             config.embedding_model = SettingManager.embedding_model;
             config.range = SettingManager.range;
+            config.isBubble = SettingManager.isBubble;
+            config.isChatBar = SettingManager.isChatBar;
+            config.textBackgroundColor = SettingManager.bubbleColor.name();
+            config.timeLastingPerChar = SettingManager.timeLastingPerChar;
             Gson gson = new Gson();
             return gson.toJson(config);
         }
@@ -85,6 +94,10 @@ public class SettingManager {
             SettingManager.chat_model = chat_model;
             SettingManager.embedding_model = embedding_model;
             SettingManager.range = range;
+            SettingManager.isBubble = isBubble;
+            SettingManager.isChatBar = isChatBar;
+            SettingManager.bubbleColor = TextBubbleEntity.TextBackgroundColor.valueOf(textBackgroundColor);
+            SettingManager.timeLastingPerChar = timeLastingPerChar;
         }
 
     }

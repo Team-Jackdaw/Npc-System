@@ -1,11 +1,10 @@
-package team.jackdaw.npcsystem.npcentity;
+package team.jackdaw.npcsystem.entity;
 
-import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.ScheduleBuilder;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
-import team.jackdaw.npcsystem.ai.NPC;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.ai.npc.Action;
 
 import java.util.Map;
@@ -33,6 +32,6 @@ public class NPCSchedule extends Schedule {
     }
 
     static {
-        NPC_DEFAULT = register("npc_default").withActivity(0, Activity.IDLE).build();
+        NPC_DEFAULT = register("npc_default").withActivity(0, NPCActivity.DONOTHING).build();
     }
 }

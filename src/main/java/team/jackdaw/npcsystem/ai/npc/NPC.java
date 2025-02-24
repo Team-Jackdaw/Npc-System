@@ -1,10 +1,11 @@
-package team.jackdaw.npcsystem.ai;
+package team.jackdaw.npcsystem.ai.npc;
 
 import net.minecraft.util.annotation.Debug;
-import org.jetbrains.annotations.TestOnly;
+import team.jackdaw.npcsystem.ai.Agent;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.Status;
-import team.jackdaw.npcsystem.npcentity.NPCEntity;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,7 @@ import java.util.UUID;
 public class NPC implements Agent {
 
     private Status status;
-    private final NPCEntity entity;
+    private NPCEntity entity;
     private List<String> tools;
 
     public NPC(NPCEntity npcEntity) {
@@ -22,7 +23,6 @@ public class NPC implements Agent {
 
     @Deprecated
     @Debug
-    @TestOnly
     public NPC() {
         entity = null;
     }
@@ -78,6 +78,14 @@ public class NPC implements Agent {
      */
     public NPCEntity getEntity() {
         return entity;
+    }
+
+    /**
+     * Use for only update the entity (with a same UUID) in case the previous one has removed (unloaded).
+     * @param entity new entity (should have same UUID)
+     */
+    public void setEntity(NPCEntity entity) {
+        this.entity = entity;
     }
 
     @Override

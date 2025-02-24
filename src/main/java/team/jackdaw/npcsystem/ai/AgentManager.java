@@ -1,60 +1,26 @@
 package team.jackdaw.npcsystem.ai;
 
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+import team.jackdaw.npcsystem.BaseManager;
 
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
-public interface AgentManager {
-    ConcurrentHashMap<UUID, Agent> AgentMap = new ConcurrentHashMap<>();
+public class AgentManager extends BaseManager<UUID, Agent> {
+    private static final AgentManager INSTANCE = new AgentManager();
 
-    /**
-     * Check if an Agent is registered
-     *
-     * @param uuid The UUID of the Agent
-     * @return True if the Agent is registered, false otherwise
-     */
-    static boolean isRegistered(UUID uuid) {
-        return AgentMap.containsKey(uuid);
-    }
+    private AgentManager() {}
 
-    /**
-     * Get an Agent entity by its UUID.
-     *
-     * @param uuid The UUID of the Agent entity
-     * @return The Agent entity
-     */
-    static @Nullable Agent getAgentEntity(UUID uuid) {
-        return AgentMap.get(uuid);
-    }
-
-    /**
-     * Initialize an Agent entity if the Agent is not registered.
-     *
-     * @param agent The Agent to initialize
-     */
-    static void registerAgent(Agent agent) {
+    public void register(@NotNull Agent agent) {
         if (isRegistered(agent.getUUID())) return;
-        AgentMap.put(agent.getUUID(), agent);
+        register(agent.getUUID(), agent);
     }
 
-    /**
-     * Remove an Agent from the map.
-     *
-     * @param uuid The UUID of the Agent entity to remove
-     */
-    static void removeAgentEntity(UUID uuid) {
-        if (!AgentMap.containsKey(uuid)) return;
-        if (AgentMap.get(uuid).discard()) {
-            AgentMap.remove(uuid);
-        }
+    public static AgentManager getInstance() {
+        return INSTANCE;
     }
 
-    /**
-     * End all Agent.
-     */
-    static void endAllAgentEntity() {
-        if (AgentMap.isEmpty()) return;
-        AgentMap.forEach((uuid, Agent) -> removeAgentEntity(uuid));
+    @Override
+    protected boolean discard(UUID uuid){
+        return get(uuid).discard();
     }
 }

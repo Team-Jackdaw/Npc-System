@@ -1,4 +1,9 @@
-package team.jackdaw.npcsystem.ai;
+package team.jackdaw.npcsystem.ai.master;
+
+import team.jackdaw.npcsystem.ai.Agent;
+import team.jackdaw.npcsystem.ai.AgentManager;
+import team.jackdaw.npcsystem.ai.ConversationManager;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,7 +15,7 @@ public class Master implements Agent {
     private final UUID uuid = UUID.randomUUID();
 
     static {
-        AgentManager.registerAgent(getMaster());
+        AgentManager.getInstance().register(getMaster());
     }
 
     private Master() {
@@ -32,8 +37,8 @@ public class Master implements Agent {
 
     @Override
     public ConversationWindow getConversationWindows() {
-        ConversationManager.startConversation(this);
-        return ConversationManager.getConversation(this.uuid);
+        ConversationManager.getInstance().register(this);
+        return ConversationManager.getInstance().get(uuid);
     }
 
     @Override

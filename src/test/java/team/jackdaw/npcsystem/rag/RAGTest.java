@@ -1,6 +1,7 @@
 package team.jackdaw.npcsystem.rag;
 
 import org.junit.jupiter.api.Test;
+import team.jackdaw.npcsystem.SettingManager;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.ChatResponse;
 import team.jackdaw.npcsystem.api.json.Message;
@@ -9,14 +10,16 @@ import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;
 
-import static team.jackdaw.npcsystem.Config.db;
 import static team.jackdaw.npcsystem.Config.setOllamaConfig;
 
 public class RAGTest {
     private static final String schemaName = "ScottEmpire";
+    private static final WeaviateDB db;
 
     static {
         setOllamaConfig();
+        String[] url = SettingManager.dbURL.split("(.+?)://(.*)");
+        db = new WeaviateDB(url[0], url[1]);
     }
 
     @Test
@@ -136,7 +139,7 @@ public class RAGTest {
                                 
                 """;
         try {
-            RAG.record(db, text, schemaName);
+            RAG.record(text, schemaName);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -148,7 +151,7 @@ public class RAGTest {
                 Who is king of the empire currently? What is his relation to Ribo?
                 """;
         try {
-            List<String> res = RAG.query(db, text, 3, schemaName);
+            List<String> res = RAG.query(text, 3, schemaName);
             System.out.println(res);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -161,7 +164,7 @@ public class RAGTest {
                 Who is the king of the empire currently? How he came to power?
                 """;
         try {
-            String res = RAG.completion(db, question, 3, schemaName);
+            String res = RAG.completion(question, 3, schemaName);
             System.out.println(res);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -175,13 +178,13 @@ public class RAGTest {
         int maxTurns = 10;
 
         try {
-            String topic = RAG.completion(db, """
+            String topic = RAG.completion("""
                             Choose a topic that Ribo Lee and Sensei Tony can talk about. Just reply with one sentence, without other instructions.
                             """,
                     5, schemaName);
             System.out.println("The topic is: " + topic + "\n");
 
-            String contextRibo = RAG.completion(db, """
+            String contextRibo = RAG.completion("""
                             Tell me the ground truth, background, information that Ribo Lee will know. Just reply with one paragraph, without other instructions.
                             """,
                     5, schemaName);
@@ -194,7 +197,7 @@ public class RAGTest {
                     The conversation is start by you.
                     """, contextRibo, topic, wordLimit, language);
             System.out.println("Ribo prompt: " + promptRibo + "\n");
-            String contextTony = RAG.completion(db, """
+            String contextTony = RAG.completion("""
                             Tell me the ground truth, background, information that Sensei Tony will know. Just reply with one paragraph, without other instructions.
                             """,
                     5, schemaName);

@@ -17,14 +17,14 @@ import io.weaviate.client.v1.schema.model.WeaviateClass;
 import java.util.List;
 import java.util.Map;
 
-public class WeaviateDB {
-    public WeaviateClient client;
+class WeaviateDB {
+    WeaviateClient client;
 
-    public WeaviateDB(Config config) {
+    WeaviateDB(Config config) {
         this.client = new WeaviateClient(config);
     }
 
-    public WeaviateDB(String scheme, String host) {
+    WeaviateDB(String scheme, String host) {
         this(new Config(scheme, host));
     }
 
@@ -34,7 +34,7 @@ public class WeaviateDB {
      * @param description The description of the schema
      * @return true if the schema is created successfully, false otherwise
      */
-    public boolean createSchema(String name, String description) {
+    boolean createSchema(String name, String description) {
         WeaviateClass documentClass = WeaviateClass.builder()
                 .className(name)
                 .description(description)
@@ -55,7 +55,7 @@ public class WeaviateDB {
      * @param areYouSure If true, the schema will be deleted
      * @return true if the schema is deleted successfully, false otherwise
      */
-    public boolean deleteSchema(String className, boolean areYouSure) {
+    boolean deleteSchema(String className, boolean areYouSure) {
         if (!areYouSure) {
             return false;
         }
@@ -69,7 +69,7 @@ public class WeaviateDB {
      * @param className The name of the schema
      * @return The response of the insertion
      */
-    public ObjectGetResponse insertData(String text, Float[] vector, String className) {
+    ObjectGetResponse insertData(String text, Float[] vector, String className) {
         ObjectsBatcher batcher = client.batch().objectsBatcher();
         return batcher.withObject(WeaviateObject.builder()
                         .className(className)
@@ -86,7 +86,7 @@ public class WeaviateDB {
      * @param className The name of the schema
      * @return The response of the insertion
      */
-    public ObjectGetResponse[] insertData(List<String> texts, List<Float[]> vectors, String className) {
+    ObjectGetResponse[] insertData(List<String> texts, List<Float[]> vectors, String className) {
         ObjectsBatcher batcher = client.batch().objectsBatcher();
         for (int i = 0; i < texts.size(); i++) {
             batcher.withObject(WeaviateObject.builder()
@@ -105,7 +105,7 @@ public class WeaviateDB {
      * @param className The name of the schema
      * @return The response of the query
      */
-    public GraphQLResponse query(Float[] vector, int limit, String className) {
+    GraphQLResponse query(Float[] vector, int limit, String className) {
         NearVectorArgument nearVector = NearVectorArgument.builder()
                 .vector(vector)
                 .build();
@@ -134,7 +134,7 @@ public class WeaviateDB {
      * @param className The name of the schema
      * @return The response of the query
      */
-    public GraphQLResponse query(List<Float[]> vectors, int limit, String className) {
+    GraphQLResponse query(List<Float[]> vectors, int limit, String className) {
         NearVectorArgument.NearVectorArgumentBuilder nearVectorBuilder = NearVectorArgument.builder();
         for (Float[] vector : vectors) {
             nearVectorBuilder.vector(vector);
@@ -164,7 +164,7 @@ public class WeaviateDB {
      * @param className The name of the schema
      * @return The response of the query
      */
-    public GraphQLResponse getObjects(int num, String className) {
+    GraphQLResponse getObjects(int num, String className) {
         Fields fields = Fields.builder()
                 .fields(new Field[]{
                         Field.builder().name("text").build(),
@@ -186,7 +186,7 @@ public class WeaviateDB {
      * @param res The response of the query
      * @return The list of text data
      */
-    public static List<String> queryGetText(GraphQLResponse res, String className) {
+    static List<String> queryGetText(GraphQLResponse res, String className) {
         Map<String, Map<String, List<Map<String, String>>>> get = new Gson().fromJson(new Gson().toJson(res.getData()), Map.class);
         return get.get("Get").get(className).stream().map(c -> c.get("text")).toList();
     }

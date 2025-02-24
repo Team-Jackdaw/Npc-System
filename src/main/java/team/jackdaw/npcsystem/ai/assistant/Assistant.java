@@ -1,5 +1,7 @@
-package team.jackdaw.npcsystem.ai;
+package team.jackdaw.npcsystem.ai.assistant;
 
+import team.jackdaw.npcsystem.ai.Agent;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.assistant.Mark;
 
 import java.util.List;
