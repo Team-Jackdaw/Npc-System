@@ -1,6 +1,9 @@
 package team.jackdaw.npcsystem;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import team.jackdaw.npcsystem.function.NoCallableFunction;
@@ -25,7 +28,23 @@ public class NPCSystem implements ModInitializer {
                 throw new RuntimeException(e);
             }
         }
-//        SettingManager.sync();
+        // sync
+        ConfigManager.sync();
         NoCallableFunction.sync();
+        // register commands
+        CommandRegistrationCallback.EVENT.register(CommandSet::setupCommand);
+        // register events
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            while (!AsyncTask.isTaskQueueEmpty()) {
+                AsyncTask.TaskResult result = AsyncTask.pollTaskQueue();
+                result.execute();
+            }
+        });
+        // start live cycle manager
+        LiveCycleManager.start(Config.updateInterval);
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            LiveCycleManager.shutdown();
+            LiveCycleManager.saveAll();
+        });
     }
 }

@@ -1,4 +1,4 @@
 package team.jackdaw.npcsystem.ai.npc;
 
-public interface Action {
+public class Action {
 }

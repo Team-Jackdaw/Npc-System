@@ -1,7 +1,7 @@
 package team.jackdaw.npcsystem.ai.assistant;
 
 import com.google.gson.Gson;
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.CompletionRequest;
 import team.jackdaw.npcsystem.api.json.CompletionResponse;
@@ -12,7 +12,7 @@ public class Mark {
     public static int markInteger(String input, String systemPrompt) {
         try {
             CompletionRequest req = new CompletionRequest();
-            req.model = SettingManager.chat_model;
+            req.model = Config.chat_model;
             req.system = systemPrompt;
             req.prompt = input;
             req.stream = false;

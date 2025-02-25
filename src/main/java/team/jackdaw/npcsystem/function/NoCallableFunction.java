@@ -12,7 +12,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import org.slf4j.Logger;
 import team.jackdaw.npcsystem.NPCSystem;
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.NPC;
@@ -124,7 +124,7 @@ public class NoCallableFunction extends CustomFunction {
         Agent agent = conversation.getAgent();
         if (!(agent instanceof NPC npc)) return failed;
         NPCEntity entity = npc.getEntity();
-        PlayerEntity player = entity.world.getClosestPlayer(entity, SettingManager.range);
+        PlayerEntity player = entity.world.getClosestPlayer(entity, Config.range);
         MinecraftServer server = entity.getServer();
         if (server == null) return failed;
         // add the args to the closest players' scoreboard

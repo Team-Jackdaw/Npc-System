@@ -8,7 +8,7 @@ import net.minecraft.entity.ai.brain.task.SingleTickTask;
 import net.minecraft.entity.ai.brain.task.TaskTriggerer;
 import net.minecraft.util.math.GlobalPos;
 import team.jackdaw.npcsystem.entity.NPCEntity;
-import team.jackdaw.npcsystem.entity.NPCMemoryModuleType;
+import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 public class MeetNPCTask{
 
@@ -23,7 +23,7 @@ public class MeetNPCTask{
                                 context.queryMemoryOptional(MemoryModuleType.WALK_TARGET),
                                 context.queryMemoryOptional(MemoryModuleType.LOOK_TARGET),
                                 context.queryMemoryValue(MemoryModuleType.MEETING_POINT),
-                                context.queryMemoryValue(NPCMemoryModuleType.NEAREST_VISIBLE_TARGETABLE_NPC),
+                                context.queryMemoryValue(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC),
                                 context.queryMemoryAbsent(MemoryModuleType.INTERACTION_TARGET)
                         )
                         .apply(context, (walkTarget, lookTarget, meetingPoint, npc, interactionTarget) -> (world, entity, time) -> {

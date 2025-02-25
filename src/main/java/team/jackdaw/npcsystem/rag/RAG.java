@@ -1,6 +1,6 @@
 package team.jackdaw.npcsystem.rag;
 
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.Ollama;
 
 import java.util.List;
@@ -19,7 +19,7 @@ public interface RAG {
      * @throws Exception if the text cannot be recorded
      */
     static void record(String text, String className) throws Exception {
-        String[] url = SettingManager.dbURL.split("(.+?)://(.*)");
+        String[] url = Config.dbURL.split("://");
         WeaviateDB db = new WeaviateDB(url[0], url[1]);
         List<String> chunks = SimpleChunking.chunkText(text, CHUNK_SIZE);
         List<Float[]> vectors = Ollama.embed(chunks).embeddings.stream().map(f -> f.toArray(Float[]::new)).toList();
@@ -35,7 +35,7 @@ public interface RAG {
      * @throws Exception if the text cannot be queried
      */
     static List<String> query(String text, int topK, String className) throws Exception {
-        String[] url = SettingManager.dbURL.split("(.+?)://(.*)");
+        String[] url = Config.dbURL.split("://");
         WeaviateDB db = new WeaviateDB(url[0], url[1]);
         List<String> chunks = SimpleChunking.chunkText(text, CHUNK_SIZE);
         List<Float[]> vectors = Ollama.embed(chunks).embeddings.stream().map(f -> f.toArray(Float[]::new)).toList();

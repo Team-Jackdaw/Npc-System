@@ -1,7 +1,8 @@
 package team.jackdaw.npcsystem.rag;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.ChatResponse;
 import team.jackdaw.npcsystem.api.json.Message;
@@ -10,26 +11,35 @@ import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.List;
 
-import static team.jackdaw.npcsystem.Config.setOllamaConfig;
+import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class RAGTest {
     private static final String schemaName = "ScottEmpire";
-    private static final WeaviateDB db;
+    private static WeaviateDB db;
 
-    static {
+    @BeforeAll
+    static void beforeAll() {
         setOllamaConfig();
-        String[] url = SettingManager.dbURL.split("(.+?)://(.*)");
+        String[] url = Config.dbURL.split("://");
         db = new WeaviateDB(url[0], url[1]);
     }
 
     @Test
-    public void testCreateSchema() {
+    public void testRAG() {
+        testCreateSchema();
+        testBackground();
+        testQuery();
+        testQuestion();
+        testConversation();
+        testDeleteSchema();
+    }
+
+    static void testCreateSchema() {
         boolean res = db.createSchema(schemaName, "A schema for RAG");
         System.out.println(res);
     }
 
-    @Test
-    public void testBackground() {
+    static void testBackground() {
         String text = """
                 Background:
                 A coup d'état in the Scott Empire saw the Prince seize power and murder the old King's family, leaving only the youngest of the young royals (Reb Alexander Lee) to escape on a ship. The mutineers silenced anyone who knew about the events of that year, falsely claiming to the public that the king had been assassinated. After years of displacement, Reb attends the University of Skeet in the city of Skeet, the capital of the Scottish Empire, as a foreign student. He met Mr. Tony at the university, and was introduced by Mr. Tony to join a fraternity organization at Helena's Tavern. And he also explores the mystery of his birth in Sketch City.
@@ -145,8 +155,7 @@ public class RAGTest {
         }
     }
 
-    @Test
-    public void testQuery() {
+    static void testQuery() {
         String text = """
                 Who is king of the empire currently? What is his relation to Ribo?
                 """;
@@ -158,8 +167,7 @@ public class RAGTest {
         }
     }
 
-    @Test
-    public void testQuestion() {
+    static void testQuestion() {
         String question = """
                 Who is the king of the empire currently? How he came to power?
                 """;
@@ -171,8 +179,7 @@ public class RAGTest {
         }
     }
 
-    @Test
-    public void testConversation() {
+    static void testConversation() {
         String language = "Chinese";
         int wordLimit = 100;
         int maxTurns = 10;
@@ -260,8 +267,7 @@ public class RAGTest {
         }
     }
 
-    @Test
-    public void testDeleteSchema() {
+    static void testDeleteSchema() {
         boolean res = db.deleteSchema(schemaName, true);
         System.out.println(res);
     }

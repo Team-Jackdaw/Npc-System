@@ -11,7 +11,7 @@ import net.minecraft.entity.ai.brain.sensor.Sensor;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.server.world.ServerWorld;
 import team.jackdaw.npcsystem.entity.NPCEntity;
-import team.jackdaw.npcsystem.entity.NPCMemoryModuleType;
+import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Comparator;
 import java.util.List;
@@ -27,11 +27,11 @@ public class NearestNPCSensor extends Sensor<VillagerEntity> {
     protected void sense(ServerWorld world, VillagerEntity entity) {
         Brain<?> brain = entity.getBrain();
         List<LivingEntity> list = getVisibleNPC(entity).stream().sorted(Comparator.comparingDouble(entity::squaredDistanceTo)).toList();
-        brain.remember(NPCMemoryModuleType.NEAREST_NPC, this.getVisibleNPC(entity));
+        brain.remember(NPCRegistration.MEMORY_NEAREST_NPC, this.getVisibleNPC(entity));
         List<LivingEntity> list2 = list.stream().filter((npc) -> testTargetPredicate(entity, npc)).toList();
-        brain.remember(NPCMemoryModuleType.NEAREST_VISIBLE_NPC, list2.isEmpty() ? null : list2.get(0));
+        brain.remember(NPCRegistration.MEMORY_NEAREST_VISIBLE_NPC, list2.isEmpty() ? null : list2.get(0));
         Optional<LivingEntity> optional = list2.stream().filter((npc) -> testAttackableTargetPredicate(entity, npc)).findFirst();
-        brain.remember(NPCMemoryModuleType.NEAREST_VISIBLE_TARGETABLE_NPC, optional);
+        brain.remember(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC, optional);
     }
 
     private List<LivingEntity> getVisibleNPC(LivingEntity entities) {
@@ -48,6 +48,6 @@ public class NearestNPCSensor extends Sensor<VillagerEntity> {
 
     @Override
     public Set<MemoryModuleType<?>> getOutputMemoryModules() {
-        return ImmutableSet.of(NPCMemoryModuleType.NEAREST_NPC, NPCMemoryModuleType.NEAREST_VISIBLE_NPC, NPCMemoryModuleType.NEAREST_VISIBLE_TARGETABLE_NPC);
+        return ImmutableSet.of(NPCRegistration.MEMORY_NEAREST_NPC, NPCRegistration.MEMORY_NEAREST_VISIBLE_NPC, NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC);
     }
 }

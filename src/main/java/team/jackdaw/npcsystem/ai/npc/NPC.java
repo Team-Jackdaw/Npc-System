@@ -1,10 +1,7 @@
 package team.jackdaw.npcsystem.ai.npc;
 
-import net.minecraft.util.annotation.Debug;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.ai.npc.Action;
-import team.jackdaw.npcsystem.ai.npc.Status;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 
 import java.util.List;
@@ -22,7 +19,6 @@ public class NPC implements Agent {
     }
 
     @Deprecated
-    @Debug
     public NPC() {
         entity = null;
     }
@@ -110,6 +106,6 @@ public class NPC implements Agent {
 
     @Override
     public boolean discard() {
-        return false;
+        return true;
     }
 }

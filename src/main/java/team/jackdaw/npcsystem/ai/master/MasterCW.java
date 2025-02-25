@@ -43,7 +43,7 @@ public class MasterCW implements ConversationWindow {
     }
 
     @Override
-    public void discard() {
-
+    public boolean discard() {
+        return true;
     }
 }

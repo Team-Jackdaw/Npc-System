@@ -40,5 +40,5 @@ public interface ConversationWindow {
     /**
      * Discard the conversation
      */
-    void discard();
+    boolean discard();
 }

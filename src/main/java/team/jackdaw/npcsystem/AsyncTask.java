@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AsyncTask {
-    public static final ConcurrentLinkedQueue<TaskResult> taskQueue = new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedQueue<TaskResult> taskQueue = new ConcurrentLinkedQueue<>();
 
     /**
      * Call the task asynchronously. Then call the result in main thread if it is callable.

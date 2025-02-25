@@ -2,7 +2,6 @@ package team.jackdaw.npcsystem.ai.assistant;
 
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.ai.assistant.Mark;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,6 +33,6 @@ public class Assistant implements Agent {
 
     @Override
     public boolean discard() {
-        return false;
+        return true;
     }
 }

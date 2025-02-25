@@ -1,6 +1,6 @@
 package team.jackdaw.npcsystem.api;
 
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.json.*;
 
 import java.util.List;
@@ -13,7 +13,7 @@ public interface Ollama {
      * @throws Exception If the request fails.
      */
     static CompletionResponse completion(String prompt) throws Exception {
-        return Completion.completionRequest(SettingManager.apiURL, SettingManager.chat_model, prompt);
+        return Completion.completionRequest(Config.apiURL, Config.chat_model, prompt);
     }
 
     /**
@@ -23,7 +23,7 @@ public interface Ollama {
      * @throws Exception If the request fails.
      */
     static CompletionResponse completion(CompletionRequest request) throws Exception {
-        return Completion.completionRequest(SettingManager.apiURL, request);
+        return Completion.completionRequest(Config.apiURL, request);
     }
 
     /**
@@ -34,7 +34,7 @@ public interface Ollama {
      * @throws Exception If the request fails.
      */
     static ChatResponse chat(List<Message> messages, List<Tool> tools) throws Exception {
-        return ChatCompletion.chatRequest(SettingManager.apiURL, SettingManager.chat_model, messages, tools);
+        return ChatCompletion.chatRequest(Config.apiURL, Config.chat_model, messages, tools);
     }
 
     /**
@@ -61,7 +61,7 @@ public interface Ollama {
      * @throws Exception If the request fails.
      */
     static EmbeddingResponse embed(List<String> input) throws Exception {
-        return Embedding.embedRequest(SettingManager.apiURL, SettingManager.embedding_model, input);
+        return Embedding.embedRequest(Config.apiURL, Config.embedding_model, input);
     }
 
     /**
@@ -71,6 +71,6 @@ public interface Ollama {
      * @throws Exception If the request fails.
      */
     static EmbeddingResponse embed(EmbeddingRequest request) throws Exception {
-        return Embedding.embedRequest(SettingManager.apiURL, request);
+        return Embedding.embedRequest(Config.apiURL, request);
     }
 }

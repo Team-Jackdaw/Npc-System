@@ -53,6 +53,6 @@ public class Master implements Agent {
 
     @Override
     public boolean discard() {
-        return false;
+        return true;
     }
 }

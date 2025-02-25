@@ -9,7 +9,7 @@ import team.jackdaw.npcsystem.api.json.Tool;
 import java.util.ArrayList;
 import java.util.List;
 
-import static team.jackdaw.npcsystem.Config.setOllamaConfig;
+import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class ChatCompletionTest {
 

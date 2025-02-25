@@ -11,7 +11,7 @@
   "environment": "*",
   "entrypoints": {
     "client": [
-      "team.jackdaw.npcsystem.npcsystemClient"
+      "team.jackdaw.npcsystem.NPCSystemClient"
     ],
     "main": [
       "team.jackdaw.npcsystem.NPCSystem"

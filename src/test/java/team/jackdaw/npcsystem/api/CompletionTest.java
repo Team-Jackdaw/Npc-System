@@ -2,13 +2,13 @@ package team.jackdaw.npcsystem.api;
 
 import com.google.gson.Gson;
 import org.junit.jupiter.api.Test;
-import team.jackdaw.npcsystem.SettingManager;
+import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.json.CompletionRequest;
 import team.jackdaw.npcsystem.api.json.CompletionResponse;
 
 import java.util.Map;
 
-import static team.jackdaw.npcsystem.Config.setOllamaConfig;
+import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class CompletionTest {
 static {
@@ -29,7 +29,7 @@ static {
     public void testMarkRequest() {
         try {
             CompletionRequest req = new CompletionRequest();
-            req.model = SettingManager.chat_model;
+            req.model = Config.chat_model;
             req.system = "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a daily live memory.";
             req.prompt = "I went to the park with my friends today.";
             req.stream = false;
