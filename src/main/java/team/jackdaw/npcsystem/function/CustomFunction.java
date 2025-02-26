@@ -28,7 +28,7 @@ import java.util.Map;
  *                      "type", "string"
  *                 ),
  *                 "param2", Map.of(
- *                      "description", "This is the second parameter"
+ *                      "description", "This is the second parameter",
  *                      "type", "string"
  *                 )
  *             );
