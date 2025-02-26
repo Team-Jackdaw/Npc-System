@@ -2,25 +2,23 @@ package team.jackdaw.npcsystem.ai.npc;
 
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.entity.NPCEntity;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class NPC implements Agent {
-
+    private final UUID uuid;
     private Status status;
-    private NPCEntity entity;
     private List<String> tools;
 
-    public NPC(NPCEntity npcEntity) {
-        entity = npcEntity;
+    public NPC(UUID uuid) {
+        this.uuid = uuid;
     }
 
     @Deprecated
     public NPC() {
-        entity = null;
+        this.uuid = UUID.randomUUID();
     }
 
     /**
@@ -31,15 +29,6 @@ public class NPC implements Agent {
      */
     public void observe(long time, String observation) {
 
-    }
-
-    /**
-     * Get the next action to take.
-     *
-     * @return the next action to take
-     */
-    public Action nextAction() {
-        return null;
     }
 
     /**
@@ -68,25 +57,9 @@ public class NPC implements Agent {
         return status;
     }
 
-    /**
-     * Get the entity of the NPC.
-     * @return the entity of the NPC
-     */
-    public NPCEntity getEntity() {
-        return entity;
-    }
-
-    /**
-     * Use for only update the entity (with a same UUID) in case the previous one has removed (unloaded).
-     * @param entity new entity (should have same UUID)
-     */
-    public void setEntity(NPCEntity entity) {
-        this.entity = entity;
-    }
-
     @Override
     public UUID getUUID() {
-        return entity.getUuid();
+        return uuid;
     }
 
     @Override

@@ -31,7 +31,6 @@ public class NPCRegistration {
     );
 
     public static final Activity ACTIVITY_SOCIAL = Registry.register(Registries.ACTIVITY, "social", new Activity("social"));
-    public static final Activity ACTIVITY_DONOTHING = Registry.register(Registries.ACTIVITY, "donothing", new Activity("donothing"));
 
     public static final MemoryModuleType<List<LivingEntity>> MEMORY_NEAREST_NPC = Registry.register(
             Registries.MEMORY_MODULE_TYPE,
@@ -57,7 +56,7 @@ public class NPCRegistration {
 
     public static final Schedule SCHEDULE_NPC_DEFAULT =
             new ScheduleBuilder(Registry.register(Registries.SCHEDULE, "npc_default", new Schedule()))
-                    .withActivity(0, ACTIVITY_DONOTHING)
+                    .withActivity(0, ACTIVITY_SOCIAL)
                     .build();
 
     static {

@@ -21,7 +21,7 @@ public class Config {
     public static String embedding_model = "nomic-embed-text";
     public static double range = 10.0;
     public static boolean isBubble = true;
-    public static boolean isChatBar = false;
+    public static boolean isChatBar = true;
     public static TextBubbleEntity.TextBackgroundColor bubbleColor = TextBubbleEntity.TextBackgroundColor.DEFAULT;
     public static long timeLastingPerChar = 500L;
 

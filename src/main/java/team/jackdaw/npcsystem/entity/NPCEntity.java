@@ -3,15 +3,18 @@ package team.jackdaw.npcsystem.entity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Dynamic;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ai.brain.*;
+import net.minecraft.entity.ai.brain.Activity;
+import net.minecraft.entity.ai.brain.Brain;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.sensor.Sensor;
 import net.minecraft.entity.ai.brain.sensor.SensorType;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.VillagerProfession;
@@ -19,11 +22,8 @@ import net.minecraft.world.World;
 import net.minecraft.world.poi.PointOfInterestType;
 import net.minecraft.world.poi.PointOfInterestTypes;
 import team.jackdaw.npcsystem.Config;
-import team.jackdaw.npcsystem.ai.AgentManager;
-import team.jackdaw.npcsystem.ai.npc.Action;
-import team.jackdaw.npcsystem.ai.npc.NPC;
+import team.jackdaw.npcsystem.NPC_AI;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
 
@@ -93,37 +93,13 @@ public class NPCEntity extends VillagerEntity {
 
     public NPCEntity(EntityType<? extends VillagerEntity> entityType, World world) {
         super(entityType, world);
-    }
-
-    private NPC getOrRegisterNPC() {
-        NPC ai = (NPC) AgentManager.getInstance().get(uuid);
-        if (ai == null) {
-            ai = new NPC(this);
-            AgentManager.getInstance().register(ai);
-        }
-        if (!ai.getEntity().equals(this)) {
-            ai.setEntity(this);
-        }
-        return ai;
-    }
-
-    private static Activity scheduleMapping(Action action) {
-        return null;
-    }
-
-    private Schedule getSchedule() {
-        if (getOrRegisterNPC().getSchedule() == null) {
-            return NPCRegistration.SCHEDULE_NPC_DEFAULT;
-        }
-        Schedule schedule = new Schedule();
-        ScheduleBuilder builder = new ScheduleBuilder(schedule);
-        getOrRegisterNPC().getSchedule().forEach((time, action) -> builder.withActivity(time, scheduleMapping(action)));
-        return builder.build();
-
+        NbtCompound nbt = writeNbt(new NbtCompound());
+        nbt.putBoolean("Invulnerable", true);
+        readNbt(nbt);
     }
 
     protected Brain<?> deserializeBrain(Dynamic<?> dynamic) {
-        getOrRegisterNPC();
+        NPC_AI.getOrRegisterNPC(this);
         Brain<VillagerEntity> brain = this.createBrainProfile().deserialize(dynamic);
         this.initBrain(brain);
         return brain;
@@ -134,24 +110,26 @@ public class NPCEntity extends VillagerEntity {
     }
 
     private void initBrain(Brain<VillagerEntity> brain) {
-        brain.setSchedule(getSchedule());
+        brain.setSchedule(NPC_AI.getSchedule(this));
         VillagerProfession npcProfession = this.getVillagerData().getProfession();
-        brain.setTaskList(Activity.CORE, NPCTaskListProvider.createCoreTasks(npcProfession, 0.5F));
-        brain.setTaskList(NPCRegistration.ACTIVITY_DONOTHING, NPCTaskListProvider.creatDoNoThingTasks(npcProfession, 0.5F));
-        brain.setTaskList(Activity.WORK, NPCTaskListProvider.createWorkTasks(npcProfession, 0.5F), ImmutableSet.of(Pair.of(MemoryModuleType.JOB_SITE, MemoryModuleState.VALUE_PRESENT)));
-        brain.setTaskList(Activity.REST, NPCTaskListProvider.createRestTasks(npcProfession, 0.5F));
-        brain.setTaskList(Activity.IDLE, NPCTaskListProvider.createIdleTasks(npcProfession, 0.5F));
         brain.setTaskList(NPCRegistration.ACTIVITY_SOCIAL, NPCTaskListProvider.createSocialTasks(npcProfession, 0.5F));
-        brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
-        brain.setDefaultActivity(NPCRegistration.ACTIVITY_DONOTHING);
-        brain.doExclusively(NPCRegistration.ACTIVITY_DONOTHING);
+        brain.setCoreActivities(ImmutableSet.of(NPCRegistration.ACTIVITY_SOCIAL));
+        brain.setDefaultActivity(NPCRegistration.ACTIVITY_SOCIAL);
+        brain.doExclusively(NPCRegistration.ACTIVITY_SOCIAL);
         brain.refreshActivities(this.world.getTimeOfDay(), this.world.getTime());
     }
 
+    @Override
+    public void reinitializeBrain(ServerWorld world) {
+        Brain<VillagerEntity> brain = this.getBrain();
+        brain.stopAllTasks(world, this);
+        this.brain = brain.copy();
+        this.initBrain(this.getBrain());
+    }
+
     public void updateScheduleFromAgent() {
-        Schedule npcSchedule = getSchedule();
-        this.brain.setSchedule(npcSchedule);
-        brain.doExclusively(NPCRegistration.ACTIVITY_DONOTHING);
+        this.brain.setSchedule(NPC_AI.getSchedule(this));
+        brain.doExclusively(Activity.IDLE);
         brain.refreshActivities(this.world.getTimeOfDay(), this.world.getTime());
     }
 
@@ -166,23 +144,10 @@ public class NPCEntity extends VillagerEntity {
         }
         if (Config.isChatBar) {
             String npcName = this.getCustomName() != null ? this.getCustomName().toString() : "SomeOne";
-            findNearbyPlayers(range).forEach(player -> player.sendMessage(Text.of("<" + npcName + "> " + message)));
+            this.world.getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(range), player -> true)
+                    .forEach(player -> player.sendMessage(Text.of("<" + npcName + "> " + message)));
         }
         this.updateTime = System.currentTimeMillis();
     }
-
-    public List<PlayerEntity> findNearbyPlayers(double range) {
-        return this.world.getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(range), player -> true);
-    }
-
-    public List<NPCEntity> findNearbyNPC(double range) {
-        return this.world
-                .getEntitiesByClass(VillagerEntity.class, this.getBoundingBox().expand(range), villager -> true)
-                .stream()
-                .filter(villagerEntity -> villagerEntity instanceof NPCEntity)
-                .map(npc -> (NPCEntity) npc)
-                .toList();
-    }
-
 
 }

@@ -2,7 +2,7 @@ package team.jackdaw.npcsystem;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BaseManager<K, V> {
+public class BaseManager<K, V> {
     protected final ConcurrentHashMap<K, V> map = new ConcurrentHashMap<>();
 
     public boolean isRegistered(K key) {

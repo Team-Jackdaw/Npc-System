@@ -13,6 +13,7 @@ import net.minecraft.util.math.Vec3d;
 import org.slf4j.Logger;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.Config;
+import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.NPC;
@@ -123,7 +124,8 @@ public class NoCallableFunction extends CustomFunction {
         Map<String, String> ok = Map.of("status", "success");
         Agent agent = conversation.getAgent();
         if (!(agent instanceof NPC npc)) return failed;
-        NPCEntity entity = npc.getEntity();
+        NPCEntity entity = NPC_AI.getNPCEntity(npc);
+        if (entity == null) return failed;
         PlayerEntity player = entity.world.getClosestPlayer(entity, Config.range);
         MinecraftServer server = entity.getServer();
         if (server == null) return failed;
