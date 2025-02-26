@@ -1,14 +1,12 @@
 package team.jackdaw.npcsystem.entity.task;
 
 import com.google.common.collect.ImmutableMap;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.*;
 import net.minecraft.entity.ai.brain.task.MultiTickTask;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.server.world.ServerWorld;
 import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.entity.NPCEntity;
-import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Optional;
 
@@ -30,7 +28,7 @@ public class MeetNPCTask extends MultiTickTask<VillagerEntity> {
         super(
                 // 使用不可变Map指定需要的记忆状态
                 ImmutableMap.of(
-                        NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC, MemoryModuleState.VALUE_PRESENT,
+//                        NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC, MemoryModuleState.VALUE_PRESENT,
                         MemoryModuleType.INTERACTION_TARGET, MemoryModuleState.VALUE_ABSENT,
                         MemoryModuleType.LOOK_TARGET, MemoryModuleState.REGISTERED,
                         MemoryModuleType.WALK_TARGET, MemoryModuleState.REGISTERED
@@ -49,10 +47,10 @@ public class MeetNPCTask extends MultiTickTask<VillagerEntity> {
         Brain<?> brain = npc.getBrain();
         // 当存在“最近可见且可作为交互目标的NPC”记忆时，触发任务开始
         // 同时确保当前没有正在交互的目标（避免重复触发）
-        return brain.hasMemoryModule(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC)
-                && brain.hasMemoryModule(MemoryModuleType.INTERACTION_TARGET);
+//        return brain.hasMemoryModule(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC)
+//                && !brain.hasMemoryModule(MemoryModuleType.INTERACTION_TARGET);
+        return !brain.hasMemoryModule(MemoryModuleType.INTERACTION_TARGET);
     }
-
     /**
      * 当任务开始时执行。设置交互目标并启动对话。
      */
@@ -60,11 +58,13 @@ public class MeetNPCTask extends MultiTickTask<VillagerEntity> {
     protected void run(ServerWorld world, VillagerEntity npc, long gameTime) {
         Brain<?> brain = npc.getBrain();
         // 从记忆中获取最近可见的目标NPC实体
-        Optional<LivingEntity> targetOpt = brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC);
+//        Optional<LivingEntity> targetOpt = brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC);
+        NPCEntity npc1 = (NPCEntity) npc;
+        Optional<NPCEntity> targetOpt = npc1.getNearestNPC();
         if (targetOpt.isEmpty()) {
             return;  // 没有目标则不执行
         }
-        targetNPC = (NPCEntity) targetOpt.get();
+        targetNPC = targetOpt.get();
 
         // 设定前进目标和视线
         brain.remember(MemoryModuleType.LOOK_TARGET, new EntityLookTarget(targetNPC, true));

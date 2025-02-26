@@ -12,9 +12,10 @@ import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static java.lang.Thread.sleep;
 
 public interface NPC_AI {
     BaseManager<UUID, NPCEntity> NPC_ENTITY_MANAGER = new BaseManager<>();
@@ -71,9 +72,12 @@ public interface NPC_AI {
         AsyncTask.call(() -> {
             try {
                 // TODO: implement this method
-                entity.sendMessage("Hello, " + target.getName().getString() + "!", 10);
-                entity.wait(5000);
-                target.sendMessage("Hello, " + entity.getName().getString() + "!", 10);
+                for (int i = 0 ; i < 10 ; i++ ) {
+                    entity.sendMessage("Hello, " + target.getName().getString() + "!", 10);
+                    sleep(5000);
+                    target.sendMessage("Hello, " + entity.getName().getString() + "!", 10);
+                    sleep(5000);
+                }
             } catch (Exception e) {
                 NPCSystem.LOGGER.error("Conversation was interrupted!", e);
             }
@@ -81,14 +85,5 @@ public interface NPC_AI {
             return AsyncTask.nothingToDo();
         });
 
-    }
-
-    static NPCEntity getNearestNPC(NPCEntity entity) {
-        List<NPCEntity> list = NPC_ENTITY_MANAGER.map.values().stream().filter(npc -> npc != entity).toList();
-        if (!list.isEmpty()) {
-            return list.get(0);
-        } else {
-            return null;
-        }
     }
 }

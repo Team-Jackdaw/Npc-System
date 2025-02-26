@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.serialization.Dynamic;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Brain;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
@@ -16,6 +17,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.GlobalPos;
 import net.minecraft.village.VillagerProfession;
 import net.minecraft.world.World;
@@ -24,7 +26,10 @@ import net.minecraft.world.poi.PointOfInterestTypes;
 import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPC_AI;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiPredicate;
 
 public class NPCEntity extends VillagerEntity {
@@ -135,7 +140,7 @@ public class NPCEntity extends VillagerEntity {
 
     public void sendMessage(String message, double range) {
         if (Config.isBubble) {
-            if(this.textBubble.isRemoved()) {
+            if(this.textBubble == null || this.textBubble.isRemoved()) {
                 this.textBubble = new TextBubbleEntity(this);
             }
             textBubble.setTextBackgroundColor(Config.bubbleColor);
@@ -148,6 +153,18 @@ public class NPCEntity extends VillagerEntity {
                     .forEach(player -> player.sendMessage(Text.of("<" + npcName + "> " + message)));
         }
         this.updateTime = System.currentTimeMillis();
+    }
+
+    @Deprecated
+    public Optional<NPCEntity> getNearestNPC() {
+        System.out.println("Deprecated method getNearestNPC() is called.");
+        Box box = this.getBoundingBox().expand(16, 16, 16);
+        List<LivingEntity> list = this.getWorld().getEntitiesByClass(LivingEntity.class, box, e -> e != this && e.isAlive());
+        List<LivingEntity> npc_list = list.stream()
+                .filter(livingEntity -> livingEntity.getType().equals(NPCRegistration.ENTITY_NPC))
+                .sorted(Comparator.comparingDouble(this::squaredDistanceTo))
+                .toList();
+        return npc_list.stream().map(livingEntity -> (NPCEntity) livingEntity).findFirst();
     }
 
 }
