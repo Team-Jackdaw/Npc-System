@@ -72,8 +72,9 @@ public class NPCEntity extends VillagerEntity {
                 MemoryModuleType.LAST_WORKED_AT_POI,
                 MemoryModuleType.GOLEM_DETECTED_RECENTLY,
                 NPCRegistration.MEMORY_NEAREST_NPC,
-                NPCRegistration.MEMORY_NEAREST_VISIBLE_NPC,
-                NPCRegistration.MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC
+                NPCRegistration.MEMORY_CHATTING_TARGET,
+                NPCRegistration.MEMORY_IS_CHATTING,
+                NPCRegistration.MEMORY_LAST_CHAT_TIME
         );
         SENSORS = ImmutableList.of(
                 SensorType.NEAREST_LIVING_ENTITIES,
@@ -104,7 +105,6 @@ public class NPCEntity extends VillagerEntity {
     }
 
     protected Brain<?> deserializeBrain(Dynamic<?> dynamic) {
-        NPC_AI.getOrRegisterNPC(this);
         Brain<VillagerEntity> brain = this.createBrainProfile().deserialize(dynamic);
         this.initBrain(brain);
         return brain;
@@ -117,8 +117,15 @@ public class NPCEntity extends VillagerEntity {
     private void initBrain(Brain<VillagerEntity> brain) {
         brain.setSchedule(NPC_AI.getSchedule(this));
         VillagerProfession npcProfession = this.getVillagerData().getProfession();
+        brain.setTaskList(Activity.CORE, NPCTaskListProvider.createCoreTasks(npcProfession, 0.5F));
         brain.setTaskList(NPCRegistration.ACTIVITY_SOCIAL, NPCTaskListProvider.createSocialTasks(npcProfession, 0.5F));
-        brain.setCoreActivities(ImmutableSet.of(NPCRegistration.ACTIVITY_SOCIAL));
+        brain.setTaskList(Activity.REST, NPCTaskListProvider.createRestTasks(npcProfession, 0.5f));
+        brain.setTaskList(Activity.IDLE, NPCTaskListProvider.createIdleTasks(npcProfession, 0.5f));
+        brain.setTaskList(Activity.PANIC, NPCTaskListProvider.createPanicTasks(npcProfession, 0.5f));
+        brain.setTaskList(Activity.PRE_RAID, NPCTaskListProvider.createPreRaidTasks(npcProfession, 0.5f));
+        brain.setTaskList(Activity.RAID, NPCTaskListProvider.createRaidTasks(npcProfession, 0.5f));
+        brain.setTaskList(Activity.HIDE, NPCTaskListProvider.createHideTasks(npcProfession, 0.5f));
+        brain.setCoreActivities(ImmutableSet.of(Activity.CORE));
         brain.setDefaultActivity(NPCRegistration.ACTIVITY_SOCIAL);
         brain.doExclusively(NPCRegistration.ACTIVITY_SOCIAL);
         brain.refreshActivities(this.world.getTimeOfDay(), this.world.getTime());
@@ -139,6 +146,7 @@ public class NPCEntity extends VillagerEntity {
     }
 
     public void sendMessage(String message, double range) {
+        if (this.isRemoved()) return;
         if (Config.isBubble) {
             if(this.textBubble == null || this.textBubble.isRemoved()) {
                 this.textBubble = new TextBubbleEntity(this);
@@ -148,23 +156,25 @@ public class NPCEntity extends VillagerEntity {
             textBubble.update(message);
         }
         if (Config.isChatBar) {
-            String npcName = this.getCustomName() != null ? this.getCustomName().toString() : "SomeOne";
+            String npcName = Optional.ofNullable(this.getCustomName()).orElse(Text.of("Someone")).getString();
             this.world.getEntitiesByClass(PlayerEntity.class, this.getBoundingBox().expand(range), player -> true)
                     .forEach(player -> player.sendMessage(Text.of("<" + npcName + "> " + message)));
         }
         this.updateTime = System.currentTimeMillis();
     }
 
-    @Deprecated
-    public Optional<NPCEntity> getNearestNPC() {
-        System.out.println("Deprecated method getNearestNPC() is called.");
-        Box box = this.getBoundingBox().expand(16, 16, 16);
+    public List<NPCEntity> getNearestNPCs() {
+        Box box = this.getBoundingBox().expand(Config.range, Config.range, Config.range);
         List<LivingEntity> list = this.getWorld().getEntitiesByClass(LivingEntity.class, box, e -> e != this && e.isAlive());
-        List<LivingEntity> npc_list = list.stream()
+        return list.stream()
                 .filter(livingEntity -> livingEntity.getType().equals(NPCRegistration.ENTITY_NPC))
+                .map(livingEntity -> (NPCEntity) livingEntity)
                 .sorted(Comparator.comparingDouble(this::squaredDistanceTo))
                 .toList();
-        return npc_list.stream().map(livingEntity -> (NPCEntity) livingEntity).findFirst();
+    }
+
+    public Optional<NPCEntity> getNearestNPC() {
+        return getNearestNPCs().stream().findFirst();
     }
 
 }

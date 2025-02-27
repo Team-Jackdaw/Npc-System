@@ -2,10 +2,7 @@ package team.jackdaw.npcsystem.entity;
 
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 import net.fabricmc.fabric.api.object.builder.v1.entity.FabricEntityTypeBuilder;
-import net.minecraft.entity.EntityDimensions;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.SpawnGroup;
+import net.minecraft.entity.*;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.ai.brain.Schedule;
@@ -32,19 +29,27 @@ public class NPCRegistration {
 
     public static final Activity ACTIVITY_SOCIAL = Registry.register(Registries.ACTIVITY, "social", new Activity("social"));
 
-    public static final MemoryModuleType<List<LivingEntity>> MEMORY_NEAREST_NPC = Registry.register(
+    public static final MemoryModuleType<List<NPCEntity>> MEMORY_NEAREST_NPC = Registry.register(
             Registries.MEMORY_MODULE_TYPE,
             new Identifier("nearest_npc"),
             new MemoryModuleType(Optional.empty())
     );
-    public static final MemoryModuleType<LivingEntity> MEMORY_NEAREST_VISIBLE_NPC = Registry.register(
+
+    public static final MemoryModuleType<Entity> MEMORY_CHATTING_TARGET = Registry.register(
             Registries.MEMORY_MODULE_TYPE,
-            new Identifier("nearest_visible_npc"),
+            new Identifier("chatting_target"),
             new MemoryModuleType(Optional.empty())
     );
-    public static final MemoryModuleType<LivingEntity> MEMORY_NEAREST_VISIBLE_TARGETABLE_NPC = Registry.register(
+
+    public static final MemoryModuleType<Boolean> MEMORY_IS_CHATTING = Registry.register(
             Registries.MEMORY_MODULE_TYPE,
-            new Identifier("nearest_visible_targetable_npc"),
+            new Identifier("is_chatting"),
+            new MemoryModuleType(Optional.empty())
+    );
+
+    public static final MemoryModuleType<Long> MEMORY_LAST_CHAT_TIME = Registry.register(
+            Registries.MEMORY_MODULE_TYPE,
+            new Identifier("last_chat_time"),
             new MemoryModuleType(Optional.empty())
     );
 
@@ -56,7 +61,11 @@ public class NPCRegistration {
 
     public static final Schedule SCHEDULE_NPC_DEFAULT =
             new ScheduleBuilder(Registry.register(Registries.SCHEDULE, "npc_default", new Schedule()))
-                    .withActivity(0, ACTIVITY_SOCIAL)
+                    .withActivity(10, Activity.IDLE)
+                    .withActivity(2000, Activity.WORK)
+                    .withActivity(5000, ACTIVITY_SOCIAL)
+                    .withActivity(11000, Activity.IDLE)
+                    .withActivity(12000, Activity.REST)
                     .build();
 
     static {

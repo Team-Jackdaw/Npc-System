@@ -4,15 +4,21 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.ai.brain.Brain;
+import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
+import java.util.Optional;
+
 import static net.minecraft.server.command.CommandManager.literal;
+import static team.jackdaw.npcsystem.Config.range;
 
 public class CommandSet {
     private static final Text yes = Text.literal("Yes").formatted(Formatting.GREEN);
@@ -28,7 +34,51 @@ public class CommandSet {
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::spawn)
                 )
+                .then(literal("saveAll")
+                        .requires(CommandSet::hasOPPermission)
+                        .executes(CommandSet::saveAll)
+                )
+                .then(literal("debug")
+                        .requires(CommandSet::hasOPPermission)
+                        .executes(CommandSet::debug)
+                )
+
         );
+    }
+
+    private static int debug(CommandContext<ServerCommandSource> context) {
+        PlayerEntity player = context.getSource().getPlayer();
+        if (player != null) {
+            player.sendMessage(Text.literal("NPC Entity Registry: " + NPC_AI.NPC_ENTITY_MANAGER.map.keySet()));
+            player.world
+                    .getEntitiesByClass(NPCEntity.class, player.getBoundingBox().expand(range), entity -> true)
+                    .forEach(npc -> {
+                        Brain<?> brain = npc.getBrain();
+                                player.sendMessage(Text.literal(String.format("""
+                                                NPC: %s {
+                                                    UUID: %s
+                                                    INTERACTION: %s
+                                                    CHATTING: %s
+                                                    CHATTING_TARGET: %s
+                                                    NEAREST_NPC: %s
+                                                }
+                                                """,
+                                                Optional.ofNullable(npc.getCustomName()).orElse(Text.of("Someone")).getString(),
+                                                npc.getUuid(),
+                                                brain.getOptionalRegisteredMemory(MemoryModuleType.INTERACTION_TARGET).orElse(null),
+                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_IS_CHATTING).orElse(null),
+                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_CHATTING_TARGET).orElse(null),
+                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_NEAREST_NPC).orElse(null)))
+                                );
+                            }
+                    );
+        }
+        return 1;
+    }
+
+    private static int saveAll(CommandContext<ServerCommandSource> context) {
+        LiveCycleManager.asyncSaveAll();
+        return 1;
     }
 
     private static int spawn(CommandContext<ServerCommandSource> context) {
