@@ -177,4 +177,10 @@ public class NPCEntity extends VillagerEntity {
         return getNearestNPCs().stream().findFirst();
     }
 
+    @Override
+    public void remove(RemovalReason reason) {
+        super.remove(reason);
+        NPC_AI.removeNPC(this.getUuid());
+    }
+
 }

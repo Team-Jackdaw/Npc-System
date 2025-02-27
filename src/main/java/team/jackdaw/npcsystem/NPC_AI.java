@@ -3,6 +3,7 @@ package team.jackdaw.npcsystem;
 import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.ScheduleBuilder;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import team.jackdaw.npcsystem.ai.AgentManager;
@@ -83,6 +84,22 @@ public interface NPC_AI {
                     target.sendMessage("Hello, " + Optional.ofNullable(entity.getCustomName()).orElse(Text.of("Someone")).getString() + "!" + i, Config.range);
                     sleep(5000);
                 }
+                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+            } catch (Exception e) {
+                NPCSystem.LOGGER.error("Conversation was interrupted!", e);
+                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+            }
+            return AsyncTask.nothingToDo();
+        });
+
+    }
+
+    static void startPlayerConversation(NPCEntity entity, PlayerEntity player) {
+        AsyncTask.call(() -> {
+            try {
+                // TODO: implement this method
+                entity.sendMessage("Hello, " + player.getName().getString() + "!", Config.range);
+                sleep(10000);
                 entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
             } catch (Exception e) {
                 NPCSystem.LOGGER.error("Conversation was interrupted!", e);
