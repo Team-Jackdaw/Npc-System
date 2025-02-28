@@ -2,7 +2,6 @@ package team.jackdaw.npcsystem.rag;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.ChatResponse;
 import team.jackdaw.npcsystem.api.json.Message;
@@ -15,13 +14,10 @@ import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class RAGTest {
     private static final String schemaName = "ScottEmpire";
-    private static WeaviateDB db;
 
     @BeforeAll
     static void beforeAll() {
         setOllamaConfig();
-        String[] url = Config.dbURL.split("://");
-        db = new WeaviateDB(url[0], url[1]);
     }
 
     @Test
@@ -35,8 +31,7 @@ public class RAGTest {
     }
 
     static void testCreateSchema() {
-        boolean res = db.createSchema(schemaName, "A schema for RAG");
-        System.out.println(res);
+        RAG.initialize(schemaName);
     }
 
     static void testBackground() {
@@ -268,7 +263,6 @@ public class RAGTest {
     }
 
     static void testDeleteSchema() {
-        boolean res = db.deleteSchema(schemaName, true);
-        System.out.println(res);
+        RAG.terminate(schemaName);
     }
 }

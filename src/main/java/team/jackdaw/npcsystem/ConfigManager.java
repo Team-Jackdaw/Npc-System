@@ -49,6 +49,7 @@ public class ConfigManager {
 
     private static final class _Config {
         private boolean enabled;
+        private String dbURL;
         private String apiURL;
         private String chat_model;
         private String embedding_model;
@@ -61,6 +62,7 @@ public class ConfigManager {
         private static String toJson() {
             _Config config = new _Config();
             config.enabled = Config.enabled;
+            config.dbURL = Config.dbURL;
             config.apiURL = Config.apiURL;
             config.chat_model = Config.chat_model;
             config.embedding_model = Config.embedding_model;
@@ -75,6 +77,7 @@ public class ConfigManager {
 
         private void set() {
             Config.enabled = enabled;
+            Config.dbURL = dbURL;
             Config.apiURL = apiURL;
             Config.chat_model = chat_model;
             Config.embedding_model = embedding_model;

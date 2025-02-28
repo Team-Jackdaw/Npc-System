@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.NoCallableFunction;
+import team.jackdaw.npcsystem.function.RAGQueryFunction;
 import team.jackdaw.npcsystem.listener.PlayerSendMessageCallback;
 
 import java.io.IOException;
@@ -44,7 +46,7 @@ public class NPCSystem implements ModInitializer {
                     ConversationManager.getInstance().map
                             .values()
                             .stream()
-                            .filter(window -> window.getTarget().equals(player.getUuid()))
+                            .filter(window -> window.getTarget() != null && window.getTarget().equals(player.getUuid()))
                             .findFirst()
                             .orElse(null);
             if (conversationWindow == null || conversationWindow.isOnWait()) return ActionResult.PASS;
@@ -72,5 +74,7 @@ public class NPCSystem implements ModInitializer {
             LiveCycleManager.shutdown();
             LiveCycleManager.saveAll();
         });
+        // register functions
+        FunctionManager.getInstance().register("rag", new RAGQueryFunction());
     }
 }

@@ -13,6 +13,26 @@ public interface RAG {
     int CHUNK_SIZE = 150;
 
     /**
+     * Initialize the database with the class name.
+     * @param className class name of database
+     */
+    static void initialize(String className) {
+        String[] url = Config.dbURL.split("://");
+        WeaviateDB db = new WeaviateDB(url[0], url[1]);
+        db.createSchema(className, "Text and its embedded vector storage for " + className);
+    }
+
+    /**
+     * Terminate the database with the class name.
+     * @param className class name of database
+     */
+    static void terminate(String className) {
+        String[] url = Config.dbURL.split("://");
+        WeaviateDB db = new WeaviateDB(url[0], url[1]);
+        db.deleteSchema(className, true);
+    }
+
+    /**
      * Record the text into the database. The text will be chunked into smaller pieces based on the CHUNK_SIZE.
      * @param text text to be recorded
      * @param className class name of database (make sure the class is created in the database)

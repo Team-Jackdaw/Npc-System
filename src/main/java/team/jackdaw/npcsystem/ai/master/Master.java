@@ -3,6 +3,7 @@ package team.jackdaw.npcsystem.ai.master;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.rag.RAG;
 
 import java.util.UUID;
 
@@ -12,6 +13,8 @@ public class Master extends Agent {
     static {
         master = new Master();
         AgentManager.getInstance().register(master);
+        RAG.initialize("Master");
+        master.addTool("rag");
     }
 
     private Master() {
