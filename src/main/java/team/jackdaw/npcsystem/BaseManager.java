@@ -26,7 +26,7 @@ public class BaseManager<K, V> {
         return true;
     }
 
-    protected void remove(K key) {
+    public void remove(K key) {
         if (isRegistered(key) && discard(key)) {
             map.remove(key);
         }

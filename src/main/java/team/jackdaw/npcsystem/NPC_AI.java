@@ -4,28 +4,24 @@ import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.ScheduleBuilder;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import org.jetbrains.annotations.Nullable;
 import team.jackdaw.npcsystem.ai.AgentManager;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
-
-import static java.lang.Thread.sleep;
 
 public interface NPC_AI {
     BaseManager<UUID, NPCEntity> NPC_ENTITY_MANAGER = new BaseManager<>();
 
-    static @Nullable NPC getAI(NPCEntity entity) {
+    static NPC getAI(NPCEntity entity) {
         return (NPC) AgentManager.getInstance().get(entity.getUuid());
     }
 
-    static @Nullable NPCEntity getNPCEntity(NPC npc) {
+    static NPCEntity getNPCEntity(NPC npc) {
         return NPC_ENTITY_MANAGER.get(npc.getUUID());
     }
 
@@ -71,42 +67,52 @@ public interface NPC_AI {
     }
 
     static void startNPCConversation(NPCEntity entity, NPCEntity target) {
+        ConversationWindow entity_window = getAI(entity).getNewConversationWindows();
+        ConversationWindow target_window = getAI(target).getNewConversationWindows();
+        if (entity_window.isOnWait() || target_window.isOnWait()) {
+            return;
+        }
         AsyncTask.call(() -> {
-            try {
-                // TODO: implement this method
-                for (int i = 0 ; i < 5 ; i++ ) {
-                    Optional<Boolean> isChatting = entity.getBrain().getOptionalRegisteredMemory(NPCRegistration.MEMORY_IS_CHATTING);
-                    if (entity.isRemoved() || target.isRemoved() || !isChatting.orElse(false)) {
-                        break;
-                    }
-                    entity.sendMessage("Hello, " + Optional.ofNullable(target.getCustomName()).orElse(Text.of("Someone")).getString() + "!" + i, Config.range);
-                    sleep(5000);
-                    target.sendMessage("Hello, " + Optional.ofNullable(entity.getCustomName()).orElse(Text.of("Someone")).getString() + "!" + i, Config.range);
-                    sleep(5000);
-                }
-                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
-            } catch (Exception e) {
-                NPCSystem.LOGGER.error("Conversation was interrupted!", e);
-                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+            entity_window.setTarget(target.getUuid());
+            target_window.setTarget(entity.getUuid());
+            if (!entity_window.isOnWait()) {
+                entity_window.onWait();
+                entity_window.chat();
+                entity_window.broadcastMessage();
+                entity_window.offWait();
             }
+            do {
+                if(!entity_window.isOnWait() && !target_window.isOnWait()) {
+                    AsyncTask.sleep(3000);
+                    entity_window.onWait();
+                    target_window.onWait();
+                    target_window.chat(entity_window.getLastMessage());
+                    target_window.broadcastMessage();
+                    AsyncTask.sleep(3000);
+                    entity_window.chat(target_window.getLastMessage());
+                    entity_window.broadcastMessage();
+                    entity_window.offWait();
+                    target_window.offWait();
+                }
+            } while (entity.getBrain().getOptionalRegisteredMemory(NPCRegistration.MEMORY_IS_CHATTING).orElse(false));
             return AsyncTask.nothingToDo();
         });
-
     }
 
     static void startPlayerConversation(NPCEntity entity, PlayerEntity player) {
+        ConversationWindow window = getAI(entity).getNewConversationWindows();
+        if (window.isOnWait()) {
+            return;
+        }
         AsyncTask.call(() -> {
-            try {
-                // TODO: implement this method
-                entity.sendMessage("Hello, " + player.getName().getString() + "!", Config.range);
-                sleep(10000);
-                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
-            } catch (Exception e) {
-                NPCSystem.LOGGER.error("Conversation was interrupted!", e);
-                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+            window.setTarget(player.getUuid());
+            if (!window.isOnWait()) {
+                window.onWait();
+                window.chat();
+                window.broadcastMessage();
+                window.offWait();
             }
             return AsyncTask.nothingToDo();
         });
-
     }
 }

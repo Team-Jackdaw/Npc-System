@@ -2,28 +2,25 @@ package team.jackdaw.npcsystem.ai.master;
 
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.AgentManager;
-import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
-public class Master implements Agent {
-    private static final Master master = new Master();
-    private final List<String> tools = new ArrayList<>();
-    private final UUID uuid = UUID.randomUUID();
+public class Master extends Agent {
+    private static final Master master;
 
     static {
-        AgentManager.getInstance().register(getMaster());
+        master = new Master();
+        AgentManager.getInstance().register(master);
     }
 
     private Master() {
-
+        this.uuid = UUID.randomUUID();
     }
 
     /**
      * Get the unique master agent
+     *
      * @return the master agent
      */
     public static Master getMaster() {
@@ -31,28 +28,16 @@ public class Master implements Agent {
     }
 
     @Override
-    public UUID getUUID() {
-        return uuid;
+    public String getInstruction() {
+        return "Your are the master of this Minecraf world!";
     }
 
     @Override
-    public ConversationWindow getConversationWindows() {
-        ConversationManager.getInstance().register(this);
-        return ConversationManager.getInstance().get(uuid);
+    protected ConversationWindow createConversationWindows() {
+        return new MasterCW();
     }
 
     @Override
-    public void addTool(String tool) {
-        tools.add(tool);
-    }
-
-    @Override
-    public List<String> getTools() {
-        return tools;
-    }
-
-    @Override
-    public boolean discard() {
-        return true;
+    public void broadcastMessage(String message) {
     }
 }

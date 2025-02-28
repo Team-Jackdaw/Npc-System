@@ -1,19 +1,25 @@
 package team.jackdaw.npcsystem.ai.npc;
 
+import team.jackdaw.npcsystem.Config;
+import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.function.EndConversationFunction;
+import team.jackdaw.npcsystem.function.FunctionManager;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
-public class NPC implements Agent {
-    private final UUID uuid;
+public class NPC extends Agent {
+    static {
+        FunctionManager.getInstance().register("end_conversation", new EndConversationFunction());
+    }
     private Status status;
-    private List<String> tools;
 
     public NPC(UUID uuid) {
         this.uuid = uuid;
+        addTool("end_conversation");
     }
 
     @Deprecated
@@ -28,7 +34,6 @@ public class NPC implements Agent {
      * @param observation the observation
      */
     public void observe(long time, String observation) {
-
     }
 
     /**
@@ -46,7 +51,6 @@ public class NPC implements Agent {
      * @param event the event to add
      */
     public void addEvent(String event) {
-
     }
 
     /**
@@ -58,27 +62,17 @@ public class NPC implements Agent {
     }
 
     @Override
-    public UUID getUUID() {
-        return uuid;
+    public String getInstruction() {
+        return "Your are a Minecraft NPC. You can talk something that you may know. Please talk in Chinese and words limit to 30.";
     }
 
     @Override
-    public ConversationWindow getConversationWindows() {
-        return null;
+    public ConversationWindow createConversationWindows() {
+        return new ConversationWindow(uuid);
     }
 
     @Override
-    public void addTool(String tool) {
-
-    }
-
-    @Override
-    public List<String> getTools() {
-        return tools;
-    }
-
-    @Override
-    public boolean discard() {
-        return true;
+    public void broadcastMessage(String message) {
+        Objects.requireNonNull(NPC_AI.getNPCEntity(this)).sendMessage(message, Config.range);
     }
 }

@@ -23,6 +23,18 @@ public class AsyncTask {
     }
 
     /**
+     * Sleep the thread for a certain time.
+     * @param millis The time to sleep in milliseconds.
+     */
+    public static void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            NPCSystem.LOGGER.error("Thread sleep interrupted", e);
+        }
+    }
+
+    /**
      * Check if the task queue is empty.
      * @return True if the task queue is empty.
      */

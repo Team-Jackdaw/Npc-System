@@ -17,7 +17,7 @@ public class ConversationManager extends BaseManager<UUID, ConversationWindow> {
 
     public void register(@NotNull Agent agent) {
         if (isRegistered(agent.getUUID())) return;
-        ConversationWindow conversationWindow = agent.getConversationWindows();
+        ConversationWindow conversationWindow = agent.createConversationWindows();
         register(agent.getUUID(), conversationWindow);
     }
 

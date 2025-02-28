@@ -1,28 +1,31 @@
 package team.jackdaw.npcsystem;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.brain.Brain;
-import net.minecraft.entity.ai.brain.MemoryModuleType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import team.jackdaw.npcsystem.entity.NPCEntity;
+import team.jackdaw.npcsystem.ai.AgentManager;
+import team.jackdaw.npcsystem.ai.ConversationManager;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
-import java.util.Optional;
+import java.util.Objects;
 
+import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
-import static team.jackdaw.npcsystem.Config.range;
 
 public class CommandSet {
     private static final Text yes = Text.literal("Yes").formatted(Formatting.GREEN);
     private static final Text no = Text.literal("No").formatted(Formatting.RED);
+
     private static boolean hasOPPermission(ServerCommandSource source) {
         return source.hasPermissionLevel(2);
     }
@@ -42,36 +45,40 @@ public class CommandSet {
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::debug)
                 )
+                .then(literal("master")
+                        .requires(CommandSet::hasOPPermission)
+                        .then(argument("message", StringArgumentType.greedyString())
+                                .executes(CommandSet::master)
+                        )
+                )
 
         );
+    }
+
+    private static int master(CommandContext<ServerCommandSource> context) {
+        String message = context.getArgument("message", String.class);
+        ConversationWindow window = Master.getMaster().getConversationWindows();
+        if (window.isOnWait()) {
+            return 0;
+        }
+        AsyncTask.call(() -> {
+            if (!window.isOnWait()) {
+                window.onWait();
+                window.chat(message);
+                Objects.requireNonNull(context.getSource().getPlayer()).sendMessage(Text.of("<Master> " + window.getLastMessage()));
+                window.offWait();
+            }
+            return AsyncTask.nothingToDo();
+        });
+        return 1;
     }
 
     private static int debug(CommandContext<ServerCommandSource> context) {
         PlayerEntity player = context.getSource().getPlayer();
         if (player != null) {
             player.sendMessage(Text.literal("NPC Entity Registry: " + NPC_AI.NPC_ENTITY_MANAGER.map.keySet()));
-            player.world
-                    .getEntitiesByClass(NPCEntity.class, player.getBoundingBox().expand(range), entity -> true)
-                    .forEach(npc -> {
-                        Brain<?> brain = npc.getBrain();
-                                player.sendMessage(Text.literal(String.format("""
-                                                NPC: %s {
-                                                    UUID: %s
-                                                    INTERACTION: %s
-                                                    CHATTING: %s
-                                                    CHATTING_TARGET: %s
-                                                    NEAREST_NPC: %s
-                                                }
-                                                """,
-                                                Optional.ofNullable(npc.getCustomName()).orElse(Text.of("Someone")).getString(),
-                                                npc.getUuid(),
-                                                brain.getOptionalRegisteredMemory(MemoryModuleType.INTERACTION_TARGET).orElse(null),
-                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_IS_CHATTING).orElse(null),
-                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_CHATTING_TARGET).orElse(null),
-                                                brain.getOptionalRegisteredMemory(NPCRegistration.MEMORY_NEAREST_NPC).orElse(null)))
-                                );
-                            }
-                    );
+            player.sendMessage(Text.literal("NPC AI Registry: " + AgentManager.getInstance().map.keySet()));
+            player.sendMessage(Text.literal("Conversation: " + ConversationManager.getInstance().map.keySet()));
         }
         return 1;
     }

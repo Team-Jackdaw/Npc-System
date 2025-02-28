@@ -3,10 +3,7 @@ package team.jackdaw.npcsystem.function;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.api.Ollama;
-import team.jackdaw.npcsystem.api.json.ChatResponse;
-import team.jackdaw.npcsystem.api.json.Message;
-import team.jackdaw.npcsystem.api.json.Role;
-import team.jackdaw.npcsystem.api.json.Tool;
+import team.jackdaw.npcsystem.api.json.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,16 +27,16 @@ public class CustomFunctionTest {
         try {
             ChatResponse res = Ollama.chat(messages, tools);
             if (res.message.tool_calls != null) {
+                 MessageBuilder builder = Ollama.messageBuilder(messages);
                 for (ChatResponse.Message.ToolCall toolCall : res.message.tool_calls) {
                     String functionResult = FunctionManager.getInstance()
                             .callFunction(null, toolCall.function.name, toolCall.function.arguments)
-                            .get("weather");
-                    List<Message> messages2 = Ollama.messageBuilder(messages)
-                            .addToolMessage(toolCall.function.name, functionResult)
-                            .build();
-                    ChatResponse res2 = Ollama.chat(messages2, null);
-                    System.out.println(res2.message.content);
+                            .toString();
+                    builder.addToolMessage(toolCall.function.name, functionResult);
                 }
+                List<Message> messages2 = builder.build();
+                ChatResponse res2 = Ollama.chat(messages2, null);
+                System.out.println(res2.message.content);
             } else {
                 System.out.println(res.message.content);
             }
