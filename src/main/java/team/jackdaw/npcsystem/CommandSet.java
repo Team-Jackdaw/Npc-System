@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.CommandManager;
@@ -11,13 +12,9 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import team.jackdaw.npcsystem.ai.AgentManager;
-import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
-
-import java.util.Objects;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
@@ -41,10 +38,6 @@ public class CommandSet {
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::saveAll)
                 )
-                .then(literal("debug")
-                        .requires(CommandSet::hasOPPermission)
-                        .executes(CommandSet::debug)
-                )
                 .then(literal("master")
                         .requires(CommandSet::hasOPPermission)
                         .then(argument("message", StringArgumentType.greedyString())
@@ -57,6 +50,10 @@ public class CommandSet {
 
     private static int master(CommandContext<ServerCommandSource> context) {
         String message = context.getArgument("message", String.class);
+        context.getSource().sendMessage(Text.literal("")
+                .append(Text.literal("<->Master> ").formatted(Formatting.GREEN))
+                .append(Text.of(message)).formatted(Formatting.RESET)
+        );
         ConversationWindow window = Master.getMaster().getConversationWindows();
         if (window.isOnWait()) {
             return 0;
@@ -64,22 +61,19 @@ public class CommandSet {
         AsyncTask.call(() -> {
             if (!window.isOnWait()) {
                 window.onWait();
+                Entity target = context.getSource().getEntity();
+                if (target != null) window.setTarget(target.getUuid());
                 window.chat(message);
-                Objects.requireNonNull(context.getSource().getPlayer()).sendMessage(Text.of("<Master> " + window.getLastMessage()));
+                if (!window.getLastMessage().isEmpty())
+                    context.getSource().sendMessage(Text.literal("")
+                            .append(Text.literal("<Master> ").formatted(Formatting.RED))
+                            .append("").formatted(Formatting.RESET)
+                            .append(Text.of(window.getLastMessage()))
+                    );
                 window.offWait();
             }
             return AsyncTask.nothingToDo();
         });
-        return 1;
-    }
-
-    private static int debug(CommandContext<ServerCommandSource> context) {
-        PlayerEntity player = context.getSource().getPlayer();
-        if (player != null) {
-            player.sendMessage(Text.literal("NPC Entity Registry: " + NPC_AI.NPC_ENTITY_MANAGER.map.keySet()));
-            player.sendMessage(Text.literal("NPC AI Registry: " + AgentManager.getInstance().map.keySet()));
-            player.sendMessage(Text.literal("Conversation: " + ConversationManager.getInstance().map.keySet()));
-        }
         return 1;
     }
 
@@ -100,7 +94,7 @@ public class CommandSet {
                 .append(Text.literal("[npc-system] NPC System:").formatted(Formatting.UNDERLINE))
                 .append("").formatted(Formatting.RESET)
                 .append("\nEnabled: ").append(yes)
-                .append(Text.literal("\nYou can spawn a new NPC by /npc spawn. ").formatted(Formatting.UNDERLINE));
+                .append("\nYou can spawn a new NPC by ").append(Text.literal("/npc spawn").formatted(Formatting.UNDERLINE).formatted(Formatting.AQUA)).append(". ").formatted(Formatting.RESET);
         context.getSource().sendFeedback(helpText, false);
         return 1;
     }

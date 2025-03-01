@@ -4,14 +4,13 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.ActionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.NoCallableFunction;
-import team.jackdaw.npcsystem.function.RAGQueryFunction;
 import team.jackdaw.npcsystem.listener.PlayerSendMessageCallback;
 
 import java.io.IOException;
@@ -22,10 +21,12 @@ import java.nio.file.Paths;
 public class NPCSystem implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("npc-system");
     public static final Path workingDirectory = Paths.get(System.getProperty("user.dir"), "config", "npc-system");
-    public static final boolean debug = false;
+    public static final boolean debug = true;
+    public static MinecraftServer server;
 
     @Override
     public void onInitialize() {
+        // create the working directory
         if (!Files.exists(workingDirectory)) {
             try {
                 Files.createDirectories(workingDirectory);
@@ -38,6 +39,18 @@ public class NPCSystem implements ModInitializer {
         // sync
         ConfigManager.sync();
         NoCallableFunction.sync();
+        // initialize the system
+        try {
+            Class.forName("team.jackdaw.npcsystem.ai.AgentManager");
+            Class.forName("team.jackdaw.npcsystem.ai.ConversationManager");
+            Class.forName("team.jackdaw.npcsystem.ai.master.Master");
+            Class.forName("team.jackdaw.npcsystem.function.FunctionRegistration");
+            Class.forName("team.jackdaw.npcsystem.entity.NPCRegistration");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        // catch the server instance
+        ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) -> NPCSystem.server = server);
         // register commands
         CommandRegistrationCallback.EVENT.register(CommandSet::setupCommand);
         // Register the player chat listener
@@ -74,7 +87,5 @@ public class NPCSystem implements ModInitializer {
             LiveCycleManager.shutdown();
             LiveCycleManager.saveAll();
         });
-        // register functions
-        FunctionManager.getInstance().register("rag", new RAGQueryFunction());
     }
 }

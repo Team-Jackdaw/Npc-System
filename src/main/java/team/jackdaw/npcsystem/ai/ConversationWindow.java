@@ -6,6 +6,7 @@ import team.jackdaw.npcsystem.api.json.*;
 import team.jackdaw.npcsystem.function.FunctionManager;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class ConversationWindow {
@@ -83,7 +84,7 @@ public class ConversationWindow {
                     messagedBuilder.addToolMessage(toolCall.function.name, functionResult);
                 }
                 List<Message> messages2 = messagedBuilder.build();
-                response = Ollama.chat(messages2, getTools());
+                response = Ollama.chat(messages2, null);
             }
             messages = Ollama.messageBuilder(messages)
                     .addMessage(Role.ASSISTANT, response.message.content)
@@ -125,6 +126,7 @@ public class ConversationWindow {
      * Broadcast the last message by agent
      */
     public void broadcastMessage() {
+        if (Objects.equals(getLastMessage(), "")) return;
         getAgent().broadcastMessage(getLastMessage());
     }
 

@@ -5,6 +5,7 @@ import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.rag.RAG;
 
+import java.util.List;
 import java.util.UUID;
 
 public class Master extends Agent {
@@ -14,11 +15,18 @@ public class Master extends Agent {
         master = new Master();
         AgentManager.getInstance().register(master);
         RAG.initialize("Master");
-        master.addTool("rag");
+        master.setTools(
+                List.of(
+                        "rag_query",
+                        "rag_record",
+                        "call_command"
+                )
+        );
     }
 
     private Master() {
         this.uuid = UUID.randomUUID();
+        this.permissionLevel = 3;
     }
 
     /**

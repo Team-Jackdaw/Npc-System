@@ -47,6 +47,14 @@ import java.util.Map;
  * Finally, the function will be automatically called by the OpenAI Assistant (If you register the function for an NPC).
  */
 public abstract class CustomFunction {
+    /**
+     * The simplest success response.
+     */
+    protected static final Map<String, String> SUCCESS = Map.of("status", "success");
+    /**
+     * The simplest failure response.
+     */
+    protected static final Map<String, String> FAILURE = Map.of("status", "failure");
     public String description;
     public Map<String, Map<String, Object>> properties;
     public String[] required;

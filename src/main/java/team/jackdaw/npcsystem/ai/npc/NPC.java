@@ -4,17 +4,12 @@ import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.function.EndConversationFunction;
-import team.jackdaw.npcsystem.function.FunctionManager;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
 public class NPC extends Agent {
-    static {
-        FunctionManager.getInstance().register("end_conversation", new EndConversationFunction());
-    }
     private Status status;
 
     public NPC(UUID uuid) {

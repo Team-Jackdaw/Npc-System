@@ -4,21 +4,19 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.MasterCW;
 import team.jackdaw.npcsystem.rag.RAG;
 
-import java.util.List;
 import java.util.Map;
 
-public class RAGQueryFunction extends CustomFunction {
-    public RAGQueryFunction() {
-        description = "Query the RAG database then return 3 top similar chunks. Call this function when you want to search something you don't know.";
+public class RAGRecordFunction extends CustomFunction{
+    public RAGRecordFunction() {
+        description = "Record something to the RAG database (your memory). Call this function when you want to save some knowledge for other conversation. For example, when user correct your response, you can record the correct response to the RAG database.";
         properties = Map.of(
                 "context", Map.of(
-                        "description", "The context you want to know.",
+                        "description", "The context you want to record.",
                         "type", "string"
                 )
         );
         required = new String[]{"context"};
     }
-
     @Override
     public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
         String context = (String) args.get("context");
@@ -30,12 +28,8 @@ public class RAGQueryFunction extends CustomFunction {
             className = conversation.getAgent().getUUID().toString().toUpperCase();
         }
         try {
-            List<String> res = RAG.query(context, 3, className);
-            return Map.of(
-                    "chunk_1", res.get(0),
-                    "chunk_2", res.get(1),
-                    "chunk_3", res.get(2)
-            );
+            RAG.record(context, className);
+            return SUCCESS;
         } catch (Exception e) {
             return FAILURE;
         }

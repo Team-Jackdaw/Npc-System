@@ -10,6 +10,7 @@ import java.util.UUID;
 public abstract class Agent {
     protected UUID uuid;
     protected final List<String> tools = new ArrayList<>();
+    protected int permissionLevel = 1;
 
     /**
      * Get the UUID of the agent
@@ -85,5 +86,9 @@ public abstract class Agent {
             return ConversationManager.getInstance().discard(uuid);
         }
         return true;
+    }
+
+    public int getPermissionLevel() {
+        return permissionLevel;
     }
 }

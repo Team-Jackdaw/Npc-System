@@ -112,6 +112,11 @@ public interface NPC_AI {
                 window.broadcastMessage();
                 window.offWait();
             }
+            // stop if player is not chatting
+            AsyncTask.sleep(15000);
+            if (!window.isOnWait() || window.getMessages().get(window.getMessages().size() - 1).role.equals("assistant")) {
+                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+            }
             return AsyncTask.nothingToDo();
         });
     }

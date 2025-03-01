@@ -23,7 +23,7 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
     }
 
     /**
-     * Call a function by its name. It will be executed by the OpenAI Assistant and work on the conversation.
+     * Call a function by its name. It will be executed by Ollama LLM and work on the conversation.
      *
      * @param functionName The name of the function
      * @param conversation The conversation handler
@@ -35,6 +35,7 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
             throw new IllegalArgumentException("Function not found: " + functionName);
         }
         if (NPCSystem.debug) NPCSystem.LOGGER.info("Calling function: " + functionName + " with args: " + args);
+        if (conversation.getAgent().getPermissionLevel() < function.permissionLevel) return CustomFunction.FAILURE;
         return function.execute(conversation, args);
     }
 

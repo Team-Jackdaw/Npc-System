@@ -8,9 +8,10 @@ import team.jackdaw.npcsystem.entity.NPCRegistration;
 import java.util.Map;
 import java.util.Objects;
 
+// NPC only
 public class EndConversationFunction extends CustomFunction {
     public EndConversationFunction() {
-        description = "When you want to end the conversation, call this function.";
+        description = "When you want to end the conversation, call this function. Also call this function when someone say goodbye to you.";
         properties = Map.of();
     }
     @Override
@@ -18,8 +19,6 @@ public class EndConversationFunction extends CustomFunction {
         Objects.requireNonNull(NPC_AI.getNPCEntity((NPC) conversation.getAgent()))
                 .getBrain()
                 .remember(NPCRegistration.MEMORY_IS_CHATTING, false);
-        return Map.of(
-                "message", "The conversation has ended. You can say goodbye to the other."
-        );
+        return SUCCESS;
     }
 }
