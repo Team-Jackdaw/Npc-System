@@ -1,6 +1,7 @@
 package team.jackdaw.npcsystem.ai.master;
 
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.assistant.Mark;
 import team.jackdaw.npcsystem.ai.assistant.Summarise;
 import team.jackdaw.npcsystem.rag.RAG;
 
@@ -15,7 +16,9 @@ public class MasterCW extends ConversationWindow {
                 This is a conversation between the Master and a server manager player (OP). Summarise the conversation.
                 """;
         try {
-            RAG.record(Summarise.summariesConversation(instruction, messages), "Master");
+            String res = Summarise.summariesConversation(instruction, messages);
+            int importance = Mark.markInteger(res, "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a conversation.");
+            if (importance > 7) RAG.record(res, "Master");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

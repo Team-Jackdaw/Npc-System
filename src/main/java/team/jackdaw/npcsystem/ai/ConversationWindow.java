@@ -1,12 +1,10 @@
 package team.jackdaw.npcsystem.ai;
 
-import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.*;
 import team.jackdaw.npcsystem.function.FunctionManager;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 public class ConversationWindow {
@@ -90,7 +88,6 @@ public class ConversationWindow {
                     .addMessage(Role.ASSISTANT, response.message.content)
                     .build();
         } catch (Exception e) {
-            NPCSystem.LOGGER.error("Failed to chat: " + e.getMessage());
             messages = Ollama.messageBuilder(messages)
                     .addMessage(Role.ASSISTANT, "I'm sorry, I can't do that.")
                     .build();
@@ -113,21 +110,12 @@ public class ConversationWindow {
                     .addMessage(Role.ASSISTANT, response.message.content)
                     .build();
         } catch (Exception e) {
-            NPCSystem.LOGGER.error("Failed to chat: " + e.getMessage());
             messages = Ollama.messageBuilder(messages)
                     .addMessage(Role.ASSISTANT, "I'm sorry, I can't do that.")
                     .build();
             response = null;
         }
         return response;
-    }
-
-    /**
-     * Broadcast the last message by agent
-     */
-    public void broadcastMessage() {
-        if (Objects.equals(getLastMessage(), "")) return;
-        getAgent().broadcastMessage(getLastMessage());
     }
 
     public long getUpdateTime() {

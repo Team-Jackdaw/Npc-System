@@ -51,8 +51,6 @@ public abstract class Agent {
      */
     protected abstract ConversationWindow createConversationWindows();
 
-    public abstract void broadcastMessage(String message);
-
     /**
      * Add a tool to the agent
      * @param tools The tools' names

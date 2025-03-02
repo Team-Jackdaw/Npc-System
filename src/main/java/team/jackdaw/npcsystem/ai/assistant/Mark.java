@@ -8,8 +8,8 @@ import team.jackdaw.npcsystem.api.json.CompletionResponse;
 
 import java.util.Map;
 
-public class Mark {
-    public static int markInteger(String input, String systemPrompt) {
+public interface Mark {
+    static int markInteger(String input, String systemPrompt) {
         try {
             CompletionRequest req = new CompletionRequest();
             req.model = Config.chat_model;
@@ -37,9 +37,5 @@ public class Mark {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static int markObservation(String observation) {
-        return markInteger(observation, "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a daily live memory.");
     }
 }

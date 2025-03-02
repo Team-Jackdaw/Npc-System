@@ -1,7 +1,6 @@
 package team.jackdaw.npcsystem.function;
 
 import team.jackdaw.npcsystem.BaseManager;
-import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.api.json.Function;
 import team.jackdaw.npcsystem.api.json.Tool;
@@ -34,8 +33,7 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
         if (function == null) {
             throw new IllegalArgumentException("Function not found: " + functionName);
         }
-        if (NPCSystem.debug) NPCSystem.LOGGER.info("Calling function: " + functionName + " with args: " + args);
-        if (conversation.getAgent().getPermissionLevel() < function.permissionLevel) return CustomFunction.FAILURE;
+        if (conversation != null && conversation.getAgent().getPermissionLevel() < function.permissionLevel) return CustomFunction.FAILURE;
         return function.execute(conversation, args);
     }
 

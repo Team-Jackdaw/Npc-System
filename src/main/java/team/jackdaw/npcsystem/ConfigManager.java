@@ -48,16 +48,16 @@ public class ConfigManager {
     }
 
     private static final class _Config {
-        private boolean enabled;
-        private String dbURL;
-        private String apiURL;
-        private String chat_model;
-        private String embedding_model;
-        private double range;
-        private boolean isBubble;
-        private boolean isChatBar;
-        private String textBackgroundColor;
-        private long timeLastingPerChar;
+        private boolean enabled = true;
+        private String dbURL = "http://localhost:8080";
+        private String apiURL = "http://localhost:11434";
+        private String chat_model = "qwen2.5:7b";
+        private String embedding_model = "nomic-embed-text";
+        private double range = 10.0;
+        private boolean isBubble = true;
+        private boolean isChatBar = true;
+        private String textBackgroundColor = "DEFAULT";
+        private long timeLastingPerChar = 500L;
 
         private static String toJson() {
             _Config config = new _Config();

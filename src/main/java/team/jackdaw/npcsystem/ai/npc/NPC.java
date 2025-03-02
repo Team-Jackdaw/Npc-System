@@ -1,12 +1,9 @@
 package team.jackdaw.npcsystem.ai.npc;
 
-import team.jackdaw.npcsystem.Config;
-import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class NPC extends Agent {
@@ -64,10 +61,5 @@ public class NPC extends Agent {
     @Override
     public ConversationWindow createConversationWindows() {
         return new ConversationWindow(uuid);
-    }
-
-    @Override
-    public void broadcastMessage(String message) {
-        Objects.requireNonNull(NPC_AI.getNPCEntity(this)).sendMessage(message, Config.range);
     }
 }

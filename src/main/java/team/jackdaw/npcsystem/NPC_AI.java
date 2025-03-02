@@ -4,14 +4,19 @@ import net.minecraft.entity.ai.brain.Activity;
 import net.minecraft.entity.ai.brain.Schedule;
 import net.minecraft.entity.ai.brain.ScheduleBuilder;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public interface NPC_AI {
@@ -52,10 +57,10 @@ public interface NPC_AI {
     }
 
     static Schedule getSchedule(NPC npc) {
-        if (npc.getSchedule() == null) {
+        Map<Integer, Action> schedule = npc.getSchedule();
+        if (schedule == null) {
             return NPCRegistration.SCHEDULE_NPC_DEFAULT;
         }
-        Map<Integer, Action> schedule = npc.getSchedule();
         ScheduleBuilder builder = new ScheduleBuilder(new Schedule());
         schedule.forEach((time, action) -> builder.withActivity(time, activityMapping(action)));
         return builder.build();
@@ -78,7 +83,7 @@ public interface NPC_AI {
             if (!entity_window.isOnWait()) {
                 entity_window.onWait();
                 entity_window.chat();
-                entity_window.broadcastMessage();
+                broadcastMessage(entity_window);
                 entity_window.offWait();
             }
             do {
@@ -87,10 +92,10 @@ public interface NPC_AI {
                     entity_window.onWait();
                     target_window.onWait();
                     target_window.chat(entity_window.getLastMessage());
-                    target_window.broadcastMessage();
+                    broadcastMessage(target_window);
                     AsyncTask.sleep(3000);
                     entity_window.chat(target_window.getLastMessage());
-                    entity_window.broadcastMessage();
+                    broadcastMessage(entity_window);
                     entity_window.offWait();
                     target_window.offWait();
                 }
@@ -109,7 +114,7 @@ public interface NPC_AI {
             if (!window.isOnWait()) {
                 window.onWait();
                 window.chat();
-                window.broadcastMessage();
+                broadcastMessage(window);
                 window.offWait();
             }
             // stop if player is not chatting
@@ -119,5 +124,22 @@ public interface NPC_AI {
             }
             return AsyncTask.nothingToDo();
         });
+    }
+
+    static void broadcastMessage(ConversationWindow window) {
+        String message = window.getLastMessage();
+        if (message.isEmpty()) return;
+        Agent agent = window.getAgent();
+        if (agent instanceof NPC npc) {
+            Objects.requireNonNull(NPC_AI.getNPCEntity(npc)).sendMessage(message, Config.range);
+        } else if (agent instanceof Master) {
+            Text message1 = Text.literal("")
+                    .append(Text.literal("<Master> ").formatted(Formatting.RED))
+                    .append("").formatted(Formatting.RESET)
+                    .append(Text.of(window.getLastMessage()));
+            PlayerEntity player = NPCSystem.server.getPlayerManager().getPlayer(window.getTarget());
+            if (player != null) player.sendMessage(message1);
+            else NPCSystem.server.sendMessage(message1);
+        }
     }
 }

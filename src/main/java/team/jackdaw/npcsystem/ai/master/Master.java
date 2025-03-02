@@ -47,8 +47,4 @@ public class Master extends Agent {
     protected ConversationWindow createConversationWindows() {
         return new MasterCW();
     }
-
-    @Override
-    public void broadcastMessage(String message) {
-    }
 }

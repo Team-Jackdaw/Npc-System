@@ -2,6 +2,7 @@ package team.jackdaw.npcsystem;
 
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.function.NoCallableFunction;
+import team.jackdaw.npcsystem.group.GroupManager;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -18,6 +19,7 @@ class LiveCycleManager {
 
     static void update() {
         ConversationManager.getInstance().removeTimeout();
+        GroupManager.getInstance().removeTimeout();
     }
 
     public static void asyncSaveAll() {
@@ -31,6 +33,7 @@ class LiveCycleManager {
 
     static void saveAll() {
         ConversationManager.getInstance().clear();
+        GroupManager.getInstance().clear();
     }
 
     static void shutdown() {

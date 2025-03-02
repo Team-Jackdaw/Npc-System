@@ -8,8 +8,13 @@ import team.jackdaw.npcsystem.api.json.Message;
 
 import java.util.List;
 
-public class Summarise {
-    public static String summariesConversation(String instruction, List<Message> messages) {
+public interface Summarise {
+    static String summariesConversation(String instruction, List<Message> messages) {
+        StringBuilder prompt = new StringBuilder();
+        for (Message message : messages) {
+            prompt.append("Role: ").append(message.role).append("\n");
+            prompt.append("Message: ").append(message.content).append("\n");
+        }
         try {
             CompletionRequest req = new CompletionRequest();
             req.model = Config.chat_model;
@@ -20,7 +25,7 @@ public class Summarise {
                     Instruction: %s
                     Conversation:
                     %s
-                    """, instruction, messages.toString());
+                    """, instruction, prompt);
             CompletionResponse res = Ollama.completion(req);
             return res.response;
         } catch (Exception e) {
