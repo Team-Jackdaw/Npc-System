@@ -122,6 +122,10 @@ public class ConversationWindow {
         return updateTime;
     }
 
+    public void resetUpdateTime() {
+        updateTime = 0L;
+    }
+
 
     protected boolean discard() {
         return true;

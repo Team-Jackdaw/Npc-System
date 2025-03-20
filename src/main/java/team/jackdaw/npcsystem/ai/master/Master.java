@@ -19,7 +19,8 @@ public class Master extends Agent {
                 List.of(
                         "rag_query",
                         "rag_record",
-                        "call_command"
+                        "call_command",
+                        "end_conversation"
                 )
         );
     }

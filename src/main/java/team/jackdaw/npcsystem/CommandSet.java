@@ -13,6 +13,8 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import team.jackdaw.npcsystem.ai.AgentManager;
+import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
@@ -40,6 +42,9 @@ public class CommandSet {
     public static void setupCommand(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
         dispatcher.register(literal("npc")
                 .executes(CommandSet::status)
+                .then(literal("debug")
+                        .requires(CommandSet::hasOPPermission)
+                        .executes(CommandSet::debug))
                 .then(literal("help")
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::help))
@@ -80,6 +85,21 @@ public class CommandSet {
                         .then(argument("newGroup", StringArgumentType.word())
                                 .executes(CommandSet::addGroup)))
         );
+    }
+
+    private static int debug(CommandContext<ServerCommandSource> context) {
+        Text registries = Text.literal("")
+                .append(Text.literal("[npc-system] Registries:").formatted(Formatting.UNDERLINE))
+                .append("").formatted(Formatting.RESET)
+                .append("\n").append(Text.literal("NPC Entity Registry: ").formatted(Formatting.GOLD))
+                .append(Text.of(NPC_AI.NPC_ENTITY_MANAGER.map.keySet().toString()))
+                .append("\n").append(Text.literal("NPC Agent Registry: ").formatted(Formatting.GOLD))
+                .append(Text.of(AgentManager.getInstance().map.keySet().toString()))
+                .append("\n").append(Text.literal("Conversation Registry: ").formatted(Formatting.GOLD))
+                .append(Text.of(ConversationManager.getInstance().map.keySet().toString()))
+                .append("\nUse ").append(Text.literal("/npc help").formatted(Formatting.GRAY)).append(" for help");
+        context.getSource().sendMessage(registries);
+        return 1;
     }
 
     private static int help(CommandContext<ServerCommandSource> context) {

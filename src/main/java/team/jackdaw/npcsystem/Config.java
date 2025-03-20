@@ -12,7 +12,7 @@ import team.jackdaw.npcsystem.entity.TextBubbleEntity;
  * @version v1.0
  */
 public class Config {
-    public static final long updateInterval = 30000L;
+    public static final long updateInterval = 1000L;
     public static final long outOfTime = 300000L;
     public static boolean enabled = true;
     public static String dbURL = "http://localhost:8080";

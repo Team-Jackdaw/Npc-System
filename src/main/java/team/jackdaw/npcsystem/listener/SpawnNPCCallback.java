@@ -2,13 +2,13 @@ package team.jackdaw.npcsystem.listener;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.entity.Entity;
 import net.minecraft.util.ActionResult;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 
-public interface SpawnEntityCallback {
-    Event<SpawnEntityCallback> EVENT = EventFactory.createArrayBacked(SpawnEntityCallback.class,
+public interface SpawnNPCCallback {
+    Event<SpawnNPCCallback> EVENT = EventFactory.createArrayBacked(SpawnNPCCallback.class,
             (listeners) -> (entity) -> {
-                for (SpawnEntityCallback listener : listeners) {
+                for (SpawnNPCCallback listener : listeners) {
                     ActionResult result = listener.interact(entity);
 
                     if (result != ActionResult.PASS) {
@@ -19,5 +19,5 @@ public interface SpawnEntityCallback {
                 return ActionResult.PASS;
             });
 
-    ActionResult interact(Entity entity);
+    ActionResult interact(NPCEntity entity);
 }
