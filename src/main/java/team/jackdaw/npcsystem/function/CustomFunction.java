@@ -35,7 +35,7 @@ import java.util.Map;
  *             required = new String[] { "param1", "param2" };
  *         }
  *
- *     public Map< String, String > execute(ConversationWindow conversation, Map args) {
+ *     public Map< String, Object > execute(ConversationWindow conversation, Map args) {
  *         // Do something with the arguments
  *         }
  *     }
@@ -50,11 +50,11 @@ public abstract class CustomFunction {
     /**
      * The simplest success response.
      */
-    protected static final Map<String, String> SUCCESS = Map.of("status", "success");
+    protected static final Map<String, Object> SUCCESS = ToolResult.success("ok", "OK.");
     /**
      * The simplest failure response.
      */
-    protected static final Map<String, String> FAILURE = Map.of("status", "failure");
+    protected static final Map<String, Object> FAILURE = ToolResult.failure("failed", "Function failed.", false);
     public String description;
     public Map<String, Map<String, Object>> properties;
     public String[] required;
@@ -73,7 +73,7 @@ public abstract class CustomFunction {
      * @param args The arguments
      * @return The result you want to tell the OpenAI assistant
      */
-    public abstract Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args);
+    public abstract Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args);
 
     /**
      * Get the permission level of the function. The default is 1.
@@ -90,4 +90,3 @@ public abstract class CustomFunction {
     }
 
 }
-

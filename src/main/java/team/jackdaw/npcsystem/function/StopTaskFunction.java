@@ -11,12 +11,12 @@ public class StopTaskFunction extends NpcTaskFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         return currentNpc(conversation)
                 .map(npc -> {
                     npc.getTaskController().cancel(npc);
-                    return Map.of("status", "success", "message", "Current task stopped.");
+                    return ToolResult.success("task_stopped", "Current task stopped.");
                 })
-                .orElseGet(() -> failure("No NPC is associated with this conversation."));
+                .orElseGet(() -> failure("npc_not_found", "No NPC is associated with this conversation.", false));
     }
 }

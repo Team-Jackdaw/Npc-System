@@ -24,16 +24,16 @@ abstract class NpcTaskFunction extends CustomFunction {
         return Optional.ofNullable(NPC_AI.getNPCEntity(npc));
     }
 
-    protected Map<String, String> assign(ConversationWindow conversation, NpcTask task) {
+    protected Map<String, Object> assign(ConversationWindow conversation, NpcTask task) {
         Optional<NPCEntity> npc = currentNpc(conversation);
         if (npc.isEmpty()) {
-            return failure("No NPC is associated with this conversation.");
+            return failure("npc_not_found", "No NPC is associated with this conversation.", false);
         }
         boolean assigned = npc.get().getTaskController().assign(npc.get(), task);
         if (!assigned) {
-            return failure("The NPC could not start task " + task.name() + ".");
+            return failure("task_rejected", "The NPC could not start task " + task.name() + ".", true);
         }
-        return Map.of("status", "success", "message", "Task started.", "task", task.name());
+        return success("task_started", "Task started.", Map.of("task", task.name()));
     }
 
     protected Optional<ServerPlayer> findPlayer(String name) {
@@ -64,7 +64,11 @@ abstract class NpcTaskFunction extends CustomFunction {
         }
     }
 
-    protected static Map<String, String> failure(String message) {
-        return Map.of("status", "failure", "message", message);
+    protected static Map<String, Object> success(String code, String message, Map<String, ?> data) {
+        return ToolResult.success(code, message, data);
+    }
+
+    protected static Map<String, Object> failure(String code, String message, boolean retryable) {
+        return ToolResult.failure(code, message, retryable);
     }
 }

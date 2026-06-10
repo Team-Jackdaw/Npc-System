@@ -7,7 +7,6 @@ import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Map;
-import java.util.Objects;
 
 public class EndConversationFunction extends CustomFunction {
     public EndConversationFunction() {
@@ -15,7 +14,7 @@ public class EndConversationFunction extends CustomFunction {
         properties = Map.of();
     }
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         if (conversation.getAgent() instanceof NPC npc) {
             NPC_AI.getNPCEntity(npc).getBrain().setMemory(NPCRegistration.MEMORY_IS_CHATTING, false);
         }
@@ -23,6 +22,6 @@ public class EndConversationFunction extends CustomFunction {
             ConversationManager.getInstance().get(conversation.getTarget()).resetUpdateTime();
         }
         conversation.resetUpdateTime();
-        return SUCCESS;
+        return ToolResult.success("conversation_ended", "Conversation ended.");
     }
 }

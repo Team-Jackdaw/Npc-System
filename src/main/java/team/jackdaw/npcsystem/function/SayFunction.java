@@ -18,10 +18,10 @@ public class SayFunction extends NpcTaskFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         Object message = args.get("message");
         if (message == null || message.toString().isBlank()) {
-            return failure("Missing message.");
+            return failure("invalid_arguments", "Missing message.", false);
         }
         return assign(conversation, new SpeakTask(message.toString()));
     }

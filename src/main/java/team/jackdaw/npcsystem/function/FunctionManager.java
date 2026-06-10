@@ -28,12 +28,14 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
      * @param conversation The conversation handler
      * @param args         The arguments
      */
-    public Map<String, String> callFunction(ConversationWindow conversation, String functionName, Map<String, Object> args) {
+    public Map<String, Object> callFunction(ConversationWindow conversation, String functionName, Map<String, Object> args) {
         CustomFunction function = get(functionName);
         if (function == null) {
             throw new IllegalArgumentException("Function not found: " + functionName);
         }
-        if (conversation != null && conversation.getAgent().getPermissionLevel() < function.permissionLevel) return CustomFunction.FAILURE;
+        if (conversation != null && conversation.getAgent().getPermissionLevel() < function.permissionLevel) {
+            return ToolResult.failure("permission_denied", "The current agent cannot call this function.", false);
+        }
         return function.execute(conversation, args);
     }
 

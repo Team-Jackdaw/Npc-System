@@ -22,10 +22,10 @@ public class TestFunction extends CustomFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         String location = (String) args.get("location");
         String format = (String) args.get("format");
-        return Map.of("weather", getWeather(location, format));
+        return ToolResult.success("weather_found", "Weather found.", Map.of("weather", getWeather(location, format)));
     }
 
     private static String getWeather(String location, String format) {

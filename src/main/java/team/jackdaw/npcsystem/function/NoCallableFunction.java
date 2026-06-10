@@ -121,13 +121,15 @@ public class NoCallableFunction extends CustomFunction {
         }
     }
 
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
-        Map<String, String> failed = Map.of("status", "failed");
-        Map<String, String> ok = Map.of("status", "success");
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         Agent agent = conversation.getAgent();
-        if (!(agent instanceof NPC npc)) return failed;
+        if (!(agent instanceof NPC npc)) {
+            return ToolResult.failure("npc_not_found", "No NPC is associated with this conversation.", false);
+        }
         NPCEntity entity = NPC_AI.getNPCEntity(npc);
-        if (entity == null) return failed;
+        if (entity == null) {
+            return ToolResult.failure("npc_not_found", "No NPC entity is associated with this conversation.", false);
+        }
         AABB rangeBox = entity.getBoundingBox().inflate(Config.range);
         Player player = entity.level()
                 .getEntitiesOfClass(Player.class, rangeBox, Player::isAlive)
@@ -135,7 +137,9 @@ public class NoCallableFunction extends CustomFunction {
                 .min((a, b) -> Double.compare(entity.distanceToSqr(a), entity.distanceToSqr(b)))
                 .orElse(null);
         MinecraftServer server = entity.level().getServer();
-        if (server == null) return failed;
+        if (server == null) {
+            return ToolResult.failure("server_unavailable", "Minecraft server is unavailable.", true);
+        }
         // add the args to the closest players' scoreboard
         String playerName;
         if (player != null) {
@@ -190,6 +194,9 @@ public class NoCallableFunction extends CustomFunction {
                 }
             }
         }
-        return success ? ok : failed;
+        if (success) {
+            return ToolResult.success("datapack_function_executed", "Datapack function executed.", Map.of("function", name));
+        }
+        return ToolResult.failure("datapack_function_failed", "Datapack function failed.", true);
     }
 }

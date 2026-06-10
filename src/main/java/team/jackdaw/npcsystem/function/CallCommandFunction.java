@@ -20,7 +20,7 @@ public class CallCommandFunction extends CustomFunction{
                 required = new String[] { "command" };
     }
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         String command = (String) args.get("command");
         ServerPlayer player = NPCSystem.server.getPlayerList().getPlayer(conversation.getTarget());
         try {
@@ -29,10 +29,10 @@ public class CallCommandFunction extends CustomFunction{
             } else {
                 NPCSystem.server.getCommands().performPrefixedCommand(NPCSystem.server.createCommandSourceStack(), command);
             }
-            return SUCCESS;
+            return ToolResult.success("command_executed", "Command executed.", Map.of("command", command));
         } catch (Exception e) {
             NPCSystem.LOGGER.error("[npc-system] Failed to execute command function", e);
-            return FAILURE;
+            return ToolResult.failure("command_failed", "Command execution failed.", false);
         }
     }
 }

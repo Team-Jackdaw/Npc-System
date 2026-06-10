@@ -16,9 +16,9 @@ public class LookAtPlayerFunction extends NpcTaskFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         return findPlayer((String) args.get("player"))
                 .map(player -> assign(conversation, new LookAtEntityTask(player, secondsToTicks(args.get("seconds"), 3))))
-                .orElseGet(() -> failure("Player not found: " + args.get("player")));
+                .orElseGet(() -> failure("target_not_found", "Player not found: " + args.get("player"), true));
     }
 }

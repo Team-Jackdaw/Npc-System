@@ -17,12 +17,12 @@ public class WalkToNpcFunction extends NpcTaskFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         double stopDistance = number(args.get("stop_distance"), 2.0);
         int timeoutTicks = secondsToTicks(args.get("timeout_seconds"), 15);
         return findNpc((String) args.get("npc"))
                 .map(npc -> assign(conversation, new WalkToEntityTask(npc, 0.6, stopDistance, timeoutTicks)))
-                .orElseGet(() -> failure("NPC not found: " + args.get("npc")));
+                .orElseGet(() -> failure("target_not_found", "NPC not found: " + args.get("npc"), true));
     }
 
     private static double number(Object value, double fallback) {

@@ -4,7 +4,6 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.MasterCW;
 import team.jackdaw.npcsystem.rag.RAG;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +20,7 @@ public class RAGQueryFunction extends CustomFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         String context = (String) args.get("context");
         String className;
         if (conversation instanceof MasterCW) {
@@ -32,16 +31,9 @@ public class RAGQueryFunction extends CustomFunction {
         }
         try {
             List<String> res = RAG.query(context, 3, className);
-            Map<String, String> result = new HashMap<>();
-            for (int i = 0; i < res.size(); i++) {
-                result.put("chunk_" + (i + 1), res.get(i));
-            }
-            if (result.isEmpty()) {
-                result.put("status", "empty");
-            }
-            return result;
+            return ToolResult.success(res.isEmpty() ? "memory_empty" : "memory_found", "Memory query completed.", Map.of("chunks", res));
         } catch (Exception e) {
-            return FAILURE;
+            return ToolResult.failure("memory_query_failed", "Memory query failed.", true);
         }
     }
 }

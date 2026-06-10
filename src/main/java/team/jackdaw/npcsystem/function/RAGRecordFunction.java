@@ -18,7 +18,7 @@ public class RAGRecordFunction extends CustomFunction{
         required = new String[]{"context"};
     }
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         String context = (String) args.get("context");
         String className;
         if (conversation instanceof MasterCW) {
@@ -29,9 +29,9 @@ public class RAGRecordFunction extends CustomFunction{
         }
         try {
             RAG.record(context, className);
-            return SUCCESS;
+            return ToolResult.success("memory_recorded", "Memory recorded.");
         } catch (Exception e) {
-            return FAILURE;
+            return ToolResult.failure("memory_record_failed", "Memory record failed.", true);
         }
     }
 }

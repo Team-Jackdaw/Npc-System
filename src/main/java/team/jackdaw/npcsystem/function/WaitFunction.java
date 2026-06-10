@@ -15,7 +15,7 @@ public class WaitFunction extends NpcTaskFunction {
     }
 
     @Override
-    public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
+    public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
         return assign(conversation, new WaitTask(secondsToTicks(args.get("seconds"), 3)));
     }
 }
