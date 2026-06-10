@@ -22,7 +22,7 @@ public class FollowPlayerFunction extends NpcTaskFunction {
         double stopDistance = number(args.get("stop_distance"), 3.0);
         return findPlayer((String) args.get("player"))
                 .map(player -> assign(conversation, new FollowEntityTask(player, 0.6, stopDistance, durationTicks)))
-                .orElse(FAILURE);
+                .orElseGet(() -> failure("Player not found: " + args.get("player")));
     }
 
     private static double number(Object value, double fallback) {

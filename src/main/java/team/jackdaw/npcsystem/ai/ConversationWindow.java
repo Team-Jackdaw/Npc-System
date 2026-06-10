@@ -14,6 +14,7 @@ public class ConversationWindow {
     protected long updateTime = 0L;
     protected UUID target;
     private boolean onWait = false;
+    private String lastInjectedContext = "";
 
     public ConversationWindow(UUID uuid) {
         this.uuid = uuid;
@@ -127,8 +128,9 @@ public class ConversationWindow {
     private void addCurrentContext(MessageBuilder builder) {
         if (getAgent() instanceof NPC npc) {
             String context = npc.getContextPrompt();
-            if (context != null && !context.isBlank()) {
+            if (context != null && !context.isBlank() && !context.equals(lastInjectedContext)) {
                 builder.addMessage(Role.SYSTEM, "当前NPC上下文:\n" + context);
+                lastInjectedContext = context;
             }
         }
     }

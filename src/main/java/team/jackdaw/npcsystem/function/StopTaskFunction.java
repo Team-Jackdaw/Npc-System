@@ -15,8 +15,8 @@ public class StopTaskFunction extends NpcTaskFunction {
         return currentNpc(conversation)
                 .map(npc -> {
                     npc.getTaskController().cancel(npc);
-                    return SUCCESS;
+                    return Map.of("status", "success", "message", "Current task stopped.");
                 })
-                .orElse(FAILURE);
+                .orElseGet(() -> failure("No NPC is associated with this conversation."));
     }
 }

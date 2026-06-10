@@ -4,6 +4,8 @@ import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.entity.NPCEntity;
+import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
+import team.jackdaw.npcsystem.entity.sensor.ObservationType;
 
 import java.util.ArrayDeque;
 import java.util.List;
@@ -11,8 +13,10 @@ import java.util.Map;
 import java.util.UUID;
 
 public class NPC extends Agent {
-    private static final int MAX_OBSERVATIONS = 12;
-    private final ArrayDeque<TimedObservation> observations = new ArrayDeque<>();
+    private static final int MAX_RECENT_EVENTS = 32;
+    private static final int MAX_IMPORTANT_EVENTS = 32;
+    private final ArrayDeque<ObservationEvent> recentEvents = new ArrayDeque<>();
+    private final ArrayDeque<ObservationEvent> importantEvents = new ArrayDeque<>();
     private Status status;
 
     public NPC(UUID uuid) {
@@ -44,16 +48,24 @@ public class NPC extends Agent {
      * @param observation the observation
      */
     public void observe(long time, String observation) {
-        if (observation == null || observation.isBlank()) {
-            return;
-        }
-        String latest = observations.peekLast() == null ? null : observations.peekLast().observation();
-        if (observation.equals(latest)) {
-            return;
-        }
-        observations.addLast(new TimedObservation(time, observation));
-        while (observations.size() > MAX_OBSERVATIONS) {
-            observations.removeFirst();
+        observe(List.of(new ObservationEvent(ObservationType.STATUS_CHANGED, 3, observation, time)));
+    }
+
+    public void observe(List<ObservationEvent> events) {
+        for (ObservationEvent event : events) {
+            if (event == null || event.text() == null || event.text().isBlank()) {
+                continue;
+            }
+            recentEvents.addLast(event);
+            while (recentEvents.size() > MAX_RECENT_EVENTS) {
+                recentEvents.removeFirst();
+            }
+            if (event.importance() >= 7) {
+                importantEvents.addLast(event);
+                while (importantEvents.size() > MAX_IMPORTANT_EVENTS) {
+                    importantEvents.removeFirst();
+                }
+            }
         }
     }
 
@@ -97,19 +109,28 @@ public class NPC extends Agent {
         NPCEntity entity = NPC_AI.getNPCEntity(this);
         if (entity != null) {
             builder.append("当前任务: ").append(entity.getTaskController().status()).append("\n");
-            builder.append("当前观察:\n").append(entity.getLastObservation()).append("\n");
+            builder.append("当前状态摘要:\n").append(entity.getLastObservation()).append("\n");
         }
-        if (!observations.isEmpty()) {
-            builder.append("最近观察:\n");
-            observations.forEach(observation -> builder.append("- [")
-                    .append(observation.gameTime())
+        if (!importantEvents.isEmpty()) {
+            builder.append("重要事件:\n");
+            importantEvents.forEach(event -> builder.append("- [")
+                    .append(event.gameTime())
                     .append("] ")
-                    .append(observation.observation())
+                    .append(event.type())
+                    .append(": ")
+                    .append(event.text())
+                    .append("\n"));
+        }
+        if (!recentEvents.isEmpty()) {
+            builder.append("最近事件:\n");
+            recentEvents.stream().skip(Math.max(0, recentEvents.size() - 8)).forEach(event -> builder.append("- [")
+                    .append(event.gameTime())
+                    .append("] ")
+                    .append(event.type())
+                    .append(": ")
+                    .append(event.text())
                     .append("\n"));
         }
         return builder.toString().trim();
-    }
-
-    private record TimedObservation(long gameTime, String observation) {
     }
 }

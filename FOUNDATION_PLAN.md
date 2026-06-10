@@ -93,22 +93,25 @@ Task 是 NPC 在 Minecraft 世界中的低层动作，不直接代表 LLM 推理
 
 ### 2. 实现 `ObservationCollector`
 
-新增观察收集器，将 `NpcSensorState` 转换为：
+新增观察收集器，将前后两次 `NpcSensorState` 快照转换为事件，而不是每秒保存完整重复文本。
 
-- 自然语言观察
-- 结构化 facts
-- 时间戳
-- 重要性分数
+事件包含：
 
-然后调用 `NPC.observe(time, observation)`。
+- `type`
+- `importance`
+- `text`
+- `gameTime`
+- `facts`
+
+第一阶段事件类型包括玩家进入/离开范围、玩家看向 NPC、NPC 进入/离开范围、聊天、天气变化、生命值变化、任务开始/完成/失败/取消等。然后调用 `NPC.observe(events)`。
 
 ### 3. 补齐 `NPC.observe`
 
 `NPC.observe` 当前为空。后续应实现：
 
-- 保存短期 observation buffer
-- 调用 `Mark` 给观察打分
-- 高分观察写入本地 JSON memory
+- 保存短期 observation event buffer
+- 保存高重要性 event buffer
+- 不在每秒 observe 中调用 LLM
 - 为外部 Agent 提供最近观察上下文
 
 ### 4. 实现 `NpcTask` 和 `NpcTaskController`

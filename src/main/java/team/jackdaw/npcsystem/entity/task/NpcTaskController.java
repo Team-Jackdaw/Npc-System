@@ -8,7 +8,7 @@ public class NpcTaskController {
 
     public boolean assign(NPCEntity npc, NpcTask task) {
         if (task == null || !task.canStart(npc)) {
-            lastResult = "task rejected";
+            lastResult = "failed task rejected";
             return false;
         }
         cancel(npc);

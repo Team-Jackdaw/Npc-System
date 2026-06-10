@@ -21,7 +21,7 @@ public class SayFunction extends NpcTaskFunction {
     public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
         Object message = args.get("message");
         if (message == null || message.toString().isBlank()) {
-            return FAILURE;
+            return failure("Missing message.");
         }
         return assign(conversation, new SpeakTask(message.toString()));
     }

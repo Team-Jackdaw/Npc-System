@@ -22,7 +22,7 @@ public class WalkToPlayerFunction extends NpcTaskFunction {
         int timeoutTicks = secondsToTicks(args.get("timeout_seconds"), 15);
         return findPlayer((String) args.get("player"))
                 .map(player -> assign(conversation, new WalkToEntityTask(player, 0.6, stopDistance, timeoutTicks)))
-                .orElse(FAILURE);
+                .orElseGet(() -> failure("Player not found: " + args.get("player")));
     }
 
     private static double number(Object value, double fallback) {

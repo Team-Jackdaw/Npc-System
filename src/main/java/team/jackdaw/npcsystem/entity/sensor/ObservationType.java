@@ -1,0 +1,18 @@
+package team.jackdaw.npcsystem.entity.sensor;
+
+public enum ObservationType {
+    STATUS_CHANGED,
+    PLAYER_ENTERED_RANGE,
+    PLAYER_LEFT_RANGE,
+    PLAYER_LOOKING_AT_NPC,
+    NPC_ENTERED_RANGE,
+    NPC_LEFT_RANGE,
+    CHAT_HEARD,
+    WEATHER_CHANGED,
+    HEALTH_CHANGED,
+    THREAT_DETECTED,
+    TASK_STARTED,
+    TASK_FINISHED,
+    TASK_FAILED,
+    TASK_CANCELLED
+}

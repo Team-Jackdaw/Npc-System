@@ -1,7 +1,6 @@
 package team.jackdaw.npcsystem.entity.sensor;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -13,7 +12,6 @@ import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
@@ -37,6 +35,7 @@ public class NpcSensorState {
     private boolean onGround;
     private boolean inWater;
     private long lastUpdatedGameTime;
+    private String taskStatus = "idle";
 
     public void update(NPCEntity npc) {
         Level level = npc.level();
@@ -50,6 +49,7 @@ public class NpcSensorState {
         onGround = npc.onGround();
         inWater = npc.isInWater();
         lastUpdatedGameTime = level.getGameTime();
+        taskStatus = npc.getTaskController().status();
 
         AABB rangeBox = npc.getBoundingBox().inflate(Config.range);
         nearbyPlayers = level.getEntitiesOfClass(Player.class, rangeBox, Player::isAlive)
@@ -97,6 +97,7 @@ public class NpcSensorState {
                 .append(", 生命值 ").append(String.format(Locale.ROOT, "%.1f/%.1f", health, maxHealth))
                 .append(", ").append(onGround ? "在地面" : "不在地面")
                 .append(", ").append(inWater ? "在水中" : "不在水中")
+                .append(", 当前任务 ").append(taskStatus)
                 .append("。\n");
         appendEntities(builder, "附近玩家", nearbyPlayers);
         appendEntities(builder, "附近NPC", nearbyNpcs);
@@ -125,6 +126,26 @@ public class NpcSensorState {
 
     public long lastUpdatedGameTime() {
         return lastUpdatedGameTime;
+    }
+
+    public Snapshot snapshot() {
+        return new Snapshot(
+                List.copyOf(nearbyPlayers),
+                List.copyOf(nearbyNpcs),
+                List.copyOf(nearbyEntities),
+                List.copyOf(heardChats),
+                position,
+                dimension,
+                biome,
+                weather,
+                dayTime,
+                health,
+                maxHealth,
+                onGround,
+                inWater,
+                lastUpdatedGameTime,
+                taskStatus
+        );
     }
 
     private static void appendEntities(StringBuilder builder, String label, List<EntitySummary> entities) {
@@ -163,5 +184,52 @@ public class NpcSensorState {
     }
 
     public record HeardChat(String speakerUuid, String speakerName, String message, double distance, long gameTime) {
+    }
+
+    public record Snapshot(
+            List<EntitySummary> nearbyPlayers,
+            List<EntitySummary> nearbyNpcs,
+            List<EntitySummary> nearbyEntities,
+            List<HeardChat> heardChats,
+            BlockPos position,
+            String dimension,
+            String biome,
+            String weather,
+            long dayTime,
+            float health,
+            float maxHealth,
+            boolean onGround,
+            boolean inWater,
+            long lastUpdatedGameTime,
+            String taskStatus
+    ) {
+        public static Snapshot empty() {
+            return new Snapshot(List.of(), List.of(), List.of(), List.of(), BlockPos.ZERO, "unknown", "unknown", "unknown", 0L, 0.0f, 0.0f, false, false, 0L, "idle");
+        }
+
+        public String summary() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("状态: 位置 ").append(position.toShortString())
+                    .append(", 维度 ").append(dimension)
+                    .append(", 生物群系 ").append(biome)
+                    .append(", 天气 ").append(weather)
+                    .append(", 时间 ").append(dayTime)
+                    .append(", 生命值 ").append(String.format(Locale.ROOT, "%.1f/%.1f", health, maxHealth))
+                    .append(", ").append(onGround ? "在地面" : "不在地面")
+                    .append(", ").append(inWater ? "在水中" : "不在水中")
+                    .append(", 当前任务 ").append(taskStatus)
+                    .append("。\n");
+            appendEntities(builder, "附近玩家", nearbyPlayers);
+            appendEntities(builder, "附近NPC", nearbyNpcs);
+            appendEntities(builder, "附近实体", nearbyEntities);
+            if (!heardChats.isEmpty()) {
+                builder.append("最近听到的聊天: ");
+                heardChats.forEach(chat -> builder.append(chat.speakerName())
+                        .append("说“").append(chat.message()).append("”")
+                        .append(String.format(Locale.ROOT, "(%.1f格); ", chat.distance())));
+                builder.append("\n");
+            }
+            return builder.toString().trim();
+        }
     }
 }

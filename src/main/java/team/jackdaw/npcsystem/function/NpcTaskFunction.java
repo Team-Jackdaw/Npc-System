@@ -27,9 +27,13 @@ abstract class NpcTaskFunction extends CustomFunction {
     protected Map<String, String> assign(ConversationWindow conversation, NpcTask task) {
         Optional<NPCEntity> npc = currentNpc(conversation);
         if (npc.isEmpty()) {
-            return FAILURE;
+            return failure("No NPC is associated with this conversation.");
         }
-        return npc.get().getTaskController().assign(npc.get(), task) ? SUCCESS : FAILURE;
+        boolean assigned = npc.get().getTaskController().assign(npc.get(), task);
+        if (!assigned) {
+            return failure("The NPC could not start task " + task.name() + ".");
+        }
+        return Map.of("status", "success", "message", "Task started.", "task", task.name());
     }
 
     protected Optional<ServerPlayer> findPlayer(String name) {
@@ -58,5 +62,9 @@ abstract class NpcTaskFunction extends CustomFunction {
         } catch (NumberFormatException e) {
             return defaultSeconds * 20;
         }
+    }
+
+    protected static Map<String, String> failure(String message) {
+        return Map.of("status", "failure", "message", message);
     }
 }

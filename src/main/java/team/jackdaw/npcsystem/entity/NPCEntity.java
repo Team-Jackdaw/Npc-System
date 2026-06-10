@@ -11,7 +11,7 @@ import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
-import team.jackdaw.npcsystem.entity.sensor.Observation;
+import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
 import team.jackdaw.npcsystem.entity.sensor.ObservationCollector;
 import team.jackdaw.npcsystem.entity.task.NpcTaskController;
 
@@ -24,8 +24,9 @@ public class NPCEntity extends Villager {
     protected TextBubbleEntity textBubble;
     private final NpcSensorState sensorState = new NpcSensorState();
     private final NpcTaskController taskController = new NpcTaskController();
+    private NpcSensorState.Snapshot lastSensorSnapshot = NpcSensorState.Snapshot.empty();
     private long lastSensorUpdateTick = -20L;
-    private String lastObservation = "";
+    private String lastObservationSummary = "";
 
     public NPCEntity(EntityType<? extends Villager> entityType, Level world) {
         super(entityType, world);
@@ -43,12 +44,15 @@ public class NPCEntity extends Villager {
         }
         if (this.level().getGameTime() - lastSensorUpdateTick >= 20L) {
             lastSensorUpdateTick = this.level().getGameTime();
+            NpcSensorState.Snapshot previous = lastSensorSnapshot;
             sensorState.update(this);
-            Observation observation = ObservationCollector.collect(this);
-            lastObservation = observation.text();
+            NpcSensorState.Snapshot current = sensorState.snapshot();
+            List<ObservationEvent> events = ObservationCollector.collect(previous, current, this);
+            lastSensorSnapshot = current;
+            lastObservationSummary = ObservationCollector.buildSnapshotSummary(current);
             NPC npc = NPC_AI.getAI(this);
-            if (npc != null) {
-                npc.observe(observation.gameTime(), observation.text());
+            if (npc != null && !events.isEmpty()) {
+                npc.observe(events);
             }
         }
         taskController.tick(this);
@@ -95,7 +99,7 @@ public class NPCEntity extends Villager {
     }
 
     public String getLastObservation() {
-        return lastObservation;
+        return lastObservationSummary;
     }
 
     public void hearChat(Player speaker, String message) {
