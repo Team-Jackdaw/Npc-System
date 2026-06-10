@@ -49,9 +49,11 @@ public class ConfigManager {
 
     private static final class _Config {
         private boolean enabled = true;
+        @Deprecated
         private String dbURL = "http://localhost:8080";
         private String apiURL = "http://localhost:11434";
         private String chat_model = "qwen2.5:7b";
+        @Deprecated
         private String embedding_model = "nomic-embed-text";
         private double range = 10.0;
         private boolean isBubble = true;

@@ -15,9 +15,11 @@ public class Config {
     public static final long updateInterval = 1000L;
     public static final long outOfTime = 300000L;
     public static boolean enabled = true;
+    @Deprecated
     public static String dbURL = "http://localhost:8080";
     public static String apiURL = "http://localhost:11434";
     public static String chat_model = "qwen2.5:7b";
+    @Deprecated
     public static String embedding_model = "nomic-embed-text";
     public static double range = 10.0;
     public static boolean isBubble = true;

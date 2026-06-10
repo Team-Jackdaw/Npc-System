@@ -1,6 +1,5 @@
 package team.jackdaw.npcsystem.rag;
 
-import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.api.Ollama;
 
 import java.util.List;
@@ -13,60 +12,65 @@ public interface RAG {
     int CHUNK_SIZE = 150;
 
     /**
-     * Initialize the database with the class name.
-     * @param className class name of database
+     * Get the directory path used by the local text memory.
+     * @return local RAG storage path
+     */
+    static String storagePath() {
+        return LocalTextMemory.getStoragePath();
+    }
+
+    /**
+     * Initialize the local memory with the class name.
+     * @param className class name of local memory
      */
     static void initialize(String className) {
-        String[] url = Config.dbURL.split("://");
-        WeaviateDB db = new WeaviateDB(url[0], url[1]);
-        db.createSchema(className, "Text and its embedded vector storage for " + className);
+        try {
+            new LocalTextMemory(className).initialize();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
-     * Terminate the database with the class name.
-     * @param className class name of database
+     * Terminate the local memory with the class name.
+     * @param className class name of local memory
      */
     static void terminate(String className) {
-        String[] url = Config.dbURL.split("://");
-        WeaviateDB db = new WeaviateDB(url[0], url[1]);
-        db.deleteSchema(className, true);
+        try {
+            new LocalTextMemory(className).terminate();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
-     * Record the text into the database. The text will be chunked into smaller pieces based on the CHUNK_SIZE.
+     * Record the text into local memory. The text will be chunked into smaller pieces based on the CHUNK_SIZE.
      * @param text text to be recorded
-     * @param className class name of database (make sure the class is created in the database)
+     * @param className class name of local memory
      * @throws Exception if the text cannot be recorded
      */
     static void record(String text, String className) throws Exception {
-        String[] url = Config.dbURL.split("://");
-        WeaviateDB db = new WeaviateDB(url[0], url[1]);
         List<String> chunks = SimpleChunking.chunkText(text, CHUNK_SIZE);
-        List<Float[]> vectors = Ollama.embed(chunks).embeddings.stream().map(f -> f.toArray(Float[]::new)).toList();
-        db.insertData(chunks, vectors, className);
+        new LocalTextMemory(className).record(text, chunks);
     }
 
     /**
-     * Query for the related text chunk that has the highest similarity by comparing the embedded vector.
+     * Query for related text chunks by local keyword scoring.
      * @param text text to be queried
      * @param topK number of top results to be returned
-     * @param className class name of database (make sure the class is created in the database)
-     * @return a list of text chunks that have the highest similarity with the input text
+     * @param className class name of local memory
+     * @return a list of text chunks that have the highest local keyword score for the input text
      * @throws Exception if the text cannot be queried
      */
     static List<String> query(String text, int topK, String className) throws Exception {
-        String[] url = Config.dbURL.split("://");
-        WeaviateDB db = new WeaviateDB(url[0], url[1]);
-        List<String> chunks = SimpleChunking.chunkText(text, CHUNK_SIZE);
-        List<Float[]> vectors = Ollama.embed(chunks).embeddings.stream().map(f -> f.toArray(Float[]::new)).toList();
-        return WeaviateDB.queryGetText(db.query(vectors, topK, className), className);
+        return new LocalTextMemory(className).query(text, topK);
     }
 
     /**
-     * Generate a completion based on the input text. The completion will be generated based on the context of the text that has the highest similarity.
+     * Generate a completion based on the input text and the highest scoring local memory chunks.
      * @param input Prompt message
      * @param topK number of top results to be returned
-     * @param className class name of database (make sure the class is created in the database)
+     * @param className class name of local memory
      * @return the completion message
      * @throws Exception if the completion cannot be generated
      */

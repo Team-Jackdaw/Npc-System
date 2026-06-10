@@ -4,12 +4,13 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.MasterCW;
 import team.jackdaw.npcsystem.rag.RAG;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class RAGQueryFunction extends CustomFunction {
     public RAGQueryFunction() {
-        description = "Query the RAG database then return 3 top similar chunks. Call this function when you want to search something you don't know.";
+        description = "Query local memory then return up to 3 related chunks. Call this function when you want to search something you don't know.";
         properties = Map.of(
                 "context", Map.of(
                         "description", "The context you want to know.",
@@ -31,11 +32,14 @@ public class RAGQueryFunction extends CustomFunction {
         }
         try {
             List<String> res = RAG.query(context, 3, className);
-            return Map.of(
-                    "chunk_1", res.get(0),
-                    "chunk_2", res.get(1),
-                    "chunk_3", res.get(2)
-            );
+            Map<String, String> result = new HashMap<>();
+            for (int i = 0; i < res.size(); i++) {
+                result.put("chunk_" + (i + 1), res.get(i));
+            }
+            if (result.isEmpty()) {
+                result.put("status", "empty");
+            }
+            return result;
         } catch (Exception e) {
             return FAILURE;
         }

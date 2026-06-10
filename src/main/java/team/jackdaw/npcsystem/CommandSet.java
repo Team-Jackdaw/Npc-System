@@ -20,6 +20,7 @@ import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 import team.jackdaw.npcsystem.group.Group;
 import team.jackdaw.npcsystem.group.GroupManager;
+import team.jackdaw.npcsystem.rag.RAG;
 
 import static net.minecraft.server.command.CommandManager.argument;
 import static net.minecraft.server.command.CommandManager.literal;
@@ -237,10 +238,9 @@ public class CommandSet {
                 .append(Text.literal("[npc-system] NPC System:").formatted(Formatting.UNDERLINE))
                 .append("").formatted(Formatting.RESET)
                 .append("\nEnabled: ").append(Config.enabled ? yes : no)
-                .append("\nDatabase URL: ").append(Text.of(Config.dbURL))
+                .append("\nRAG Storage: ").append(Text.of(RAG.storagePath()))
                 .append("\nAPI URL: ").append(Text.of(Config.apiURL))
                 .append("\nChat Model: ").append(Text.of(Config.chat_model))
-                .append("\nEmbedding Model: ").append(Text.of(Config.embedding_model))
                 .append("\nChat Range: ").append(Text.of(String.valueOf(Config.range)))
                 .append("\nText Bubble: ").append(Config.isBubble ? yes : no)
                 .append("\nChat Bar: ").append(Config.isChatBar ? yes : no)

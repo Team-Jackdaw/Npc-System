@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class RAGRecordFunction extends CustomFunction{
     public RAGRecordFunction() {
-        description = "Record something to the RAG database (your memory). Call this function when you want to save some knowledge for other conversation. For example, when user correct your response, you can record the correct response to the RAG database.";
+        description = "Record something to local memory. Call this function when you want to save some knowledge for other conversation. For example, when user correct your response, you can record the correct response to local memory.";
         properties = Map.of(
                 "context", Map.of(
                         "description", "The context you want to record.",
