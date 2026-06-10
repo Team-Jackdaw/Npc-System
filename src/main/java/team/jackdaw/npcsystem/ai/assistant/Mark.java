@@ -31,7 +31,7 @@ public interface Mark {
                     """;
             req.format = new Gson().fromJson(formatJson, Map.class);
             CompletionResponse res = Ollama.completion(req);
-            Map grade = new Gson().fromJson(res.response, Map.class);
+            Map grade = new Gson().fromJson(res.outputText(), Map.class);
             Double gradeValue = (Double) grade.get("grade");
             return gradeValue.intValue();
         } catch (Exception e) {

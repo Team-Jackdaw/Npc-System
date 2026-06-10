@@ -27,7 +27,7 @@ public interface Summarise {
                     %s
                     """, instruction, prompt);
             CompletionResponse res = Ollama.completion(req);
-            return res.response;
+            return res.outputText();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

@@ -1,20 +1,23 @@
 package team.jackdaw.npcsystem.entity;
 
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Display.TextDisplay;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Method;
 
-public class TextBubbleEntity extends TextDisplayEntity {
+
+public class TextBubbleEntity extends TextDisplay {
+    private static final byte SEE_THROUGH_FLAG = 0x02;
+    private static final Method SET_TEXT = findTextDisplayMethod("setText", Component.class);
+    private static final Method SET_TEXT_OPACITY = findTextDisplayMethod("setTextOpacity", byte.class);
+    private static final Method SET_BACKGROUND_COLOR = findTextDisplayMethod("setBackgroundColor", int.class);
+    private static final Method SET_FLAGS = findTextDisplayMethod("setFlags", byte.class);
 
     private final NPCEntity speaker;
     private final double heightOffset = 0.55D;
@@ -24,37 +27,28 @@ public class TextBubbleEntity extends TextDisplayEntity {
     private TextBackgroundColor textBackgroundColor;
 
     TextBubbleEntity(@NotNull NPCEntity speaker) {
-        super(EntityType.TEXT_DISPLAY, speaker.world);
+        super(EntityType.TEXT_DISPLAY, speaker.level());
         this.speaker = speaker;
-        this.setPosition(speaker.getX(), speaker.getY() + speaker.getHeight() + heightOffset, speaker.getZ());
+        this.setPos(speaker.getX(), speaker.getY() + speaker.getBbHeight() + heightOffset, speaker.getZ());
         this.lastUpdateTime = System.currentTimeMillis();
         this.timeLastingPerChar = 500L;
         this.textBackgroundColor = TextBackgroundColor.DEFAULT;
         this.bubbleLastingTime = 0;
-        speaker.world.spawnEntity(this);
-        ServerChunkEvents.CHUNK_UNLOAD.register(this::onChunkUnload);
+        speaker.level().addFreshEntity(this);
     }
 
     @Override
     public void tick() {
         super.tick();
-        this.setPosition(speaker.getX(), speaker.getY() + speaker.getHeight() + heightOffset, speaker.getZ());
-        updateNbtSeeThrough();
-        if (this.speaker.isRemoved() || !this.speaker.getWorld().equals(this.getWorld()) || System.currentTimeMillis() - lastUpdateTime > bubbleLastingTime) {
+        this.setPos(speaker.getX(), speaker.getY() + speaker.getBbHeight() + heightOffset, speaker.getZ());
+        updateSeeThrough();
+        if (this.speaker.isRemoved() || !this.speaker.level().equals(this.level()) || System.currentTimeMillis() - lastUpdateTime > bubbleLastingTime) {
             this.remove(RemovalReason.DISCARDED);
         }
     }
 
-    private void updateNbtSeeThrough() {
-        NbtCompound nbtData = this.writeNbt(new NbtCompound());
-        nbtData.putBoolean("see_through", this.isSeeThroughBlock());
-        this.readNbt(nbtData);
-    }
-
-    private void onChunkUnload(ServerWorld world, WorldChunk chunk) {
-        if (chunk.getPos().equals(this.getChunkPos()) && world.equals(this.getWorld())) {
-            this.remove(RemovalReason.DISCARDED);
-        }
+    private void updateSeeThrough() {
+        invoke(SET_FLAGS, isSeeThroughBlock() ? SEE_THROUGH_FLAG : (byte) 0);
     }
 
     void setTimeLastingPerChar(long timeLastingPerChar) {
@@ -72,17 +66,14 @@ public class TextBubbleEntity extends TextDisplayEntity {
     }
 
     private void updateAllNbt(String message) {
-        NbtCompound nbtData = this.writeNbt(new NbtCompound());
-        nbtData.putByte("text_opacity", (byte) -1);
-        nbtData.putString("text", Text.Serializer.toJson(textBuilder(message, textBackgroundColor)));
-        nbtData.putString("billboard", "center");
-        nbtData.putBoolean("see_through", this.isSeeThroughBlock());
-        nbtData.putLong("background", textBackgroundColor.getBackgroundARGBAsLong());
-        this.readNbt(nbtData);
+        invoke(SET_TEXT_OPACITY, (byte) -1);
+        invoke(SET_TEXT, textBuilder(message, textBackgroundColor));
+        invoke(SET_BACKGROUND_COLOR, (int) textBackgroundColor.getBackgroundARGBAsLong());
+        updateSeeThrough();
     }
 
-    private Text textBuilder(String message, TextBackgroundColor textBackgroundColor) {
-        MutableText replyText = Text.of(message).copy();
+    private Component textBuilder(String message, TextBackgroundColor textBackgroundColor) {
+        MutableComponent replyText = Component.literal(message).copy();
         Style textStyle = Style.EMPTY.withColor(textBackgroundColor.getTextRGBAsInt());
         replyText.setStyle(textStyle);
         return replyText;
@@ -94,16 +85,34 @@ public class TextBubbleEntity extends TextDisplayEntity {
 
     private boolean isSeeThroughBlock() {
         int checkingRadius = 1;
-        World world = this.getWorld();
-        BlockPos pos = this.getBlockPos();
+        Level world = this.level();
+        BlockPos pos = this.blockPosition();
         for (int x = -checkingRadius; x <= checkingRadius; x++) {
             for (int y = 0; y <= checkingRadius; y++) {
                 for (int z = -checkingRadius; z <= checkingRadius; z++) {
-                    if(world.getBlockState(pos.add(x, y, z)).isOpaque()) return true;
+                    if(world.getBlockState(pos.offset(x, y, z)).canOcclude()) return true;
                 }
             }
         }
         return false;
+    }
+
+    private static Method findTextDisplayMethod(String name, Class<?>... parameterTypes) {
+        try {
+            Method method = TextDisplay.class.getDeclaredMethod(name, parameterTypes);
+            method.setAccessible(true);
+            return method;
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private void invoke(Method method, Object... args) {
+        try {
+            method.invoke(this, args);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to update text display", e);
+        }
     }
 
     public enum TextBackgroundColor{

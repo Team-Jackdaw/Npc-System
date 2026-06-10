@@ -115,5 +115,14 @@ gradle-app.setting
 run/
 runs/
 
+# Local IDE/editor state
+.vscode/
+
+# Runtime/generated project data
+config/
+logs/
+bin/
+build.log
+
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar

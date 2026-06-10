@@ -21,9 +21,10 @@ public interface Request {
      * @throws Exception If the request fails
      */
     static @NotNull String sendRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) throws Exception {
+        int timeoutMillis = timeoutMillis();
         RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(30 * 1000)
-                .setSocketTimeout(30 * 1000)
+                .setConnectTimeout(timeoutMillis)
+                .setSocketTimeout(timeoutMillis)
                 .setCookieSpec("ignoreCookies")
                 .build();
 
@@ -58,6 +59,17 @@ public interface Request {
         return request;
     }
 
+    private static int timeoutMillis() {
+        String configured = System.getProperty("npc.api.timeoutMillis");
+        if (configured == null || configured.isBlank()) {
+            configured = System.getenv("NPC_API_TIMEOUT_MILLIS");
+        }
+        if (configured == null || configured.isBlank()) {
+            return 30 * 1000;
+        }
+        return Integer.parseInt(configured);
+    }
+
     /**
      * The action of the request
      */
@@ -76,4 +88,3 @@ public interface Request {
         DELETE
     }
 }
-

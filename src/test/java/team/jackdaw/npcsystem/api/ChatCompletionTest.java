@@ -9,6 +9,7 @@ import team.jackdaw.npcsystem.api.json.Tool;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class ChatCompletionTest {
@@ -70,12 +71,9 @@ public class ChatCompletionTest {
             ChatResponse res = Ollama.chat(messages, tools);
             if (res.message.tool_calls != null) {
                 for (ChatResponse.Message.ToolCall toolCall : res.message.tool_calls) {
-                    String functionResult = getWeather((String) toolCall.function.arguments.get("location"), (String) toolCall.function.arguments.get("format"));
-                    List<Message> messages2 = Ollama.messageBuilder(messages)
-                            .addToolMessage(toolCall.function.name, functionResult)
-                            .build();
-                    ChatResponse res2 = Ollama.chat(messages2, null);
-                    System.out.println(res2.message.content);
+                    assertNotNull(toolCall.function.name);
+                    assertNotNull(toolCall.function.arguments);
+                    System.out.println(getWeather((String) toolCall.function.arguments.get("location"), (String) toolCall.function.arguments.get("format")));
                 }
             } else {
                 System.out.println(res.message.content);

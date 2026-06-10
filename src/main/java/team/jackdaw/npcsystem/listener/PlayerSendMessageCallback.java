@@ -2,8 +2,8 @@ package team.jackdaw.npcsystem.listener;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.ActionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.InteractionResult;
 
 /**
  * Callback for player sending message.
@@ -18,15 +18,15 @@ public interface PlayerSendMessageCallback {
     Event<PlayerSendMessageCallback> EVENT = EventFactory.createArrayBacked(PlayerSendMessageCallback.class,
             (listeners) -> (player, message) -> {
                 for (PlayerSendMessageCallback listener : listeners) {
-                    ActionResult result = listener.interact(player, message);
+                    InteractionResult result = listener.interact(player, message);
 
-                    if (result != ActionResult.PASS) {
+                    if (result != InteractionResult.PASS) {
                         return result;
                     }
                 }
 
-                return ActionResult.PASS;
+                return InteractionResult.PASS;
             });
 
-    ActionResult interact(PlayerEntity player, String message);
+    InteractionResult interact(Player player, String message);
 }

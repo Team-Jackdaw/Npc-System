@@ -5,9 +5,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ActionResult;
+import net.minecraft.world.InteractionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import team.jackdaw.npcsystem.ai.ConversationManager;
@@ -64,21 +63,19 @@ public class NPCSystem implements ModInitializer {
         // Register for NPCEntity registration
         SpawnNPCCallback.EVENT.register((npc -> {
             NPC_AI.registerNPC(npc);
-            NbtCompound nbt = npc.writeNbt(new NbtCompound());
-            nbt.putBoolean("Invulnerable", true);
-            npc.readNbt(nbt);
-            return ActionResult.PASS;
+            npc.setInvulnerable(true);
+            return InteractionResult.PASS;
         }));
         // Register the starting conversation by player
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             // The entity should be an NPC
-            if (!(entity instanceof NPCEntity npc)) return ActionResult.PASS;
+            if (!(entity instanceof NPCEntity npc)) return InteractionResult.PASS;
             // The player must be sneaking to start a conversation
-            if (!player.isSneaking()) return ActionResult.PASS;
+            if (!player.isShiftKeyDown()) return InteractionResult.PASS;
             // start a conversation
-            if (!ConversationManager.getInstance().isRegistered(npc.getUuid()))
+            if (!ConversationManager.getInstance().isRegistered(npc.getUUID()))
                 NPC_AI.startPlayerConversation(npc, player);
-            return ActionResult.FAIL;
+            return InteractionResult.FAIL;
         });
         // Register the player chat listener
         PlayerSendMessageCallback.EVENT.register((player, message) -> {
@@ -86,7 +83,7 @@ public class NPCSystem implements ModInitializer {
                     ConversationManager.getInstance().map
                             .values()
                             .stream()
-                            .filter(window -> window.getTarget() != null && window.getTarget().equals(player.getUuid()))
+                            .filter(window -> window.getTarget() != null && window.getTarget().equals(player.getUUID()))
                             .findFirst()
                             .orElse(null);
             if (conversationWindow != null && !conversationWindow.isOnWait()) {
@@ -98,7 +95,7 @@ public class NPCSystem implements ModInitializer {
                     return AsyncTask.nothingToDo();
                 });
             }
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         });
         // register events
         ServerTickEvents.END_SERVER_TICK.register(server -> {
@@ -109,8 +106,8 @@ public class NPCSystem implements ModInitializer {
             // check if the NPC entity is removed
             NPC_AI.NPC_ENTITY_MANAGER.map.forEach((uuid, npc) -> {
                 if (npc.isRemoved()) {
-                    if (ConversationManager.getInstance().isRegistered(npc.getUuid()))
-                        ConversationManager.getInstance().remove(npc.getUuid());
+                    if (ConversationManager.getInstance().isRegistered(npc.getUUID()))
+                        ConversationManager.getInstance().remove(npc.getUUID());
                 }
             });
         });

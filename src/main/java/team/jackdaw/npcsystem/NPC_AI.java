@@ -1,21 +1,16 @@
 package team.jackdaw.npcsystem;
 
-import net.minecraft.entity.ai.brain.Activity;
-import net.minecraft.entity.ai.brain.Schedule;
-import net.minecraft.entity.ai.brain.ScheduleBuilder;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
-import team.jackdaw.npcsystem.ai.npc.Action;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -23,7 +18,7 @@ public interface NPC_AI {
     BaseManager<UUID, NPCEntity> NPC_ENTITY_MANAGER = new BaseManager<>();
 
     static NPC getAI(NPCEntity entity) {
-        return (NPC) AgentManager.getInstance().get(entity.getUuid());
+        return (NPC) AgentManager.getInstance().get(entity.getUUID());
     }
 
     static NPCEntity getNPCEntity(NPC npc) {
@@ -31,44 +26,20 @@ public interface NPC_AI {
     }
 
     static void registerNPC(NPCEntity entity) {
-        if (!NPC_ENTITY_MANAGER.isRegistered(entity.getUuid())) {
-            NPC_ENTITY_MANAGER.register(entity.getUuid(), entity);
-        } else if (NPC_ENTITY_MANAGER.get(entity.getUuid()) != entity) {
-            NPC_ENTITY_MANAGER.remove(entity.getUuid());
-            NPC_ENTITY_MANAGER.register(entity.getUuid(), entity);
+        if (!NPC_ENTITY_MANAGER.isRegistered(entity.getUUID())) {
+            NPC_ENTITY_MANAGER.register(entity.getUUID(), entity);
+        } else if (NPC_ENTITY_MANAGER.get(entity.getUUID()) != entity) {
+            NPC_ENTITY_MANAGER.remove(entity.getUUID());
+            NPC_ENTITY_MANAGER.register(entity.getUUID(), entity);
         }
-        if (!AgentManager.getInstance().isRegistered(entity.getUuid())) {
-            AgentManager.getInstance().register(entity.getUuid(), new NPC(entity.getUuid()));
+        if (!AgentManager.getInstance().isRegistered(entity.getUUID())) {
+            AgentManager.getInstance().register(entity.getUUID(), new NPC(entity.getUUID()));
         }
     }
 
     static void removeNPC(UUID uuid) {
         AgentManager.getInstance().remove(uuid);
         NPC_ENTITY_MANAGER.remove(uuid);
-    }
-
-    static Schedule getSchedule(NPCEntity entity) {
-        NPC ai = getAI(entity);
-        if (ai == null) {
-            return NPCRegistration.SCHEDULE_NPC_DEFAULT;
-        } else {
-            return getSchedule(ai);
-        }
-    }
-
-    static Schedule getSchedule(NPC npc) {
-        Map<Integer, Action> schedule = npc.getSchedule();
-        if (schedule == null) {
-            return NPCRegistration.SCHEDULE_NPC_DEFAULT;
-        }
-        ScheduleBuilder builder = new ScheduleBuilder(new Schedule());
-        schedule.forEach((time, action) -> builder.withActivity(time, activityMapping(action)));
-        return builder.build();
-    }
-
-    static Activity activityMapping(Action action) {
-        // TODO: create a mapping from Action to Activity
-        return null;
     }
 
     static void startNPCConversation(NPCEntity entity, NPCEntity target) {
@@ -78,8 +49,8 @@ public interface NPC_AI {
             return;
         }
         AsyncTask.call(() -> {
-            entity_window.setTarget(target.getUuid());
-            target_window.setTarget(entity.getUuid());
+            entity_window.setTarget(target.getUUID());
+            target_window.setTarget(entity.getUUID());
             if (!entity_window.isOnWait()) {
                 entity_window.onWait();
                 entity_window.chat();
@@ -99,18 +70,18 @@ public interface NPC_AI {
                     entity_window.offWait();
                     target_window.offWait();
                 }
-            } while (entity.getBrain().getOptionalRegisteredMemory(NPCRegistration.MEMORY_IS_CHATTING).orElse(false));
+            } while (entity.getBrain().getMemory(NPCRegistration.MEMORY_IS_CHATTING).orElse(false));
             return AsyncTask.nothingToDo();
         });
     }
 
-    static void startPlayerConversation(NPCEntity entity, PlayerEntity player) {
+    static void startPlayerConversation(NPCEntity entity, Player player) {
         ConversationWindow window = getAI(entity).getNewConversationWindows();
         if (window.isOnWait()) {
             return;
         }
         AsyncTask.call(() -> {
-            window.setTarget(player.getUuid());
+            window.setTarget(player.getUUID());
             if (!window.isOnWait()) {
                 window.onWait();
                 window.chat();
@@ -120,7 +91,7 @@ public interface NPC_AI {
             // stop if player is not chatting
             AsyncTask.sleep(15000);
             if (!window.isOnWait() || window.getMessages().get(window.getMessages().size() - 1).role.equals("assistant")) {
-                entity.getBrain().remember(NPCRegistration.MEMORY_IS_CHATTING, false);
+                entity.getBrain().setMemory(NPCRegistration.MEMORY_IS_CHATTING, false);
             }
             return AsyncTask.nothingToDo();
         });
@@ -133,13 +104,13 @@ public interface NPC_AI {
         if (agent instanceof NPC npc) {
             Objects.requireNonNull(NPC_AI.getNPCEntity(npc)).sendMessage(message, Config.range);
         } else if (agent instanceof Master) {
-            Text message1 = Text.literal("")
-                    .append(Text.literal("<Master> ").formatted(Formatting.RED))
-                    .append("").formatted(Formatting.RESET)
-                    .append(Text.of(window.getLastMessage()));
-            PlayerEntity player = NPCSystem.server.getPlayerManager().getPlayer(window.getTarget());
-            if (player != null) player.sendMessage(message1);
-            else NPCSystem.server.sendMessage(message1);
+            Component message1 = Component.literal("")
+                    .append(Component.literal("<Master> ").withStyle(ChatFormatting.RED))
+                    .append(Component.literal("").withStyle(ChatFormatting.RESET))
+                    .append(Component.literal(window.getLastMessage()));
+            Player player = NPCSystem.server.getPlayerList().getPlayer(window.getTarget());
+            if (player != null) player.sendSystemMessage(message1);
+            else NPCSystem.server.sendSystemMessage(message1);
         }
     }
 }

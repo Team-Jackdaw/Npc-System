@@ -8,6 +8,8 @@ import team.jackdaw.npcsystem.api.json.CompletionResponse;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static team.jackdaw.npcsystem.ConfigTest.setOllamaConfig;
 
 public class CompletionTest {
@@ -19,7 +21,8 @@ static {
     public void testCompletionRequest() {
         try {
             CompletionResponse res = Ollama.completion("Hello");
-            System.out.println(res.response);
+            System.out.println(res.outputText());
+            assertTrue(res.done);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -48,8 +51,11 @@ static {
                     """;
             req.format = new Gson().fromJson(formatJson, Map.class);
             CompletionResponse res = Ollama.completion(req);
-            Map grade = new Gson().fromJson(res.response, Map.class);
+            String output = res.outputText();
+            assertNotNull(output);
+            Map grade = new Gson().fromJson(output, Map.class);
             Double gradeValue = (Double) grade.get("grade");
+            assertNotNull(gradeValue);
             System.out.println(gradeValue.intValue());
         } catch (Exception e) {
             throw new RuntimeException(e);

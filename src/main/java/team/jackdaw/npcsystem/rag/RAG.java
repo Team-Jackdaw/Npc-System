@@ -78,6 +78,6 @@ public interface RAG {
         List<String> texts = query(input, topK, className);
         String context = String.join("\n", texts);
         String prompt = "Base on the following context to reply the message:\n" + context + "\nMessage: " + input;
-        return Ollama.completion(prompt).response;
+        return Ollama.completion(prompt).outputText();
     }
 }

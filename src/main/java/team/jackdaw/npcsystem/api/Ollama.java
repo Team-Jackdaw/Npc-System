@@ -53,24 +53,4 @@ public interface Ollama {
     static MessageBuilder messageBuilder(List<Message> messages) {
         return ChatCompletion.messageBuilder(messages);
     }
-
-    /**
-     * Embed the input texts to vectors. Please update the API_URL and EMBEDDING_MODEL before you use the API.
-     * @param input The input to be embedded.
-     * @return EmbeddingResponse
-     * @throws Exception If the request fails.
-     */
-    static EmbeddingResponse embed(List<String> input) throws Exception {
-        return Embedding.embedRequest(Config.apiURL, Config.embedding_model, input);
-    }
-
-    /**
-     * Embed the input texts to vectors. Please update the API_URL and EMBEDDING_MODEL before you use the API.
-     * @param request The embedding request.
-     * @return EmbeddingResponse
-     * @throws Exception If the request fails.
-     */
-    static EmbeddingResponse embed(EmbeddingRequest request) throws Exception {
-        return Embedding.embedRequest(Config.apiURL, request);
-    }
 }

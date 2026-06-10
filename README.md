@@ -36,9 +36,10 @@ around NPC (in the **Chat bar**).
 
 ## 3. Requirements
 
-- Minecraft Server 1.19.4
-- Fabric Loader 0.12.0 or higher
+- Minecraft Server 26.1.2
+- Fabric Loader 0.19.3 or higher
 - Fabric API included
+- Java 25
 
 ## 4. Commands
 

@@ -1,15 +1,17 @@
 package team.jackdaw.npcsystem.function;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardCriterion;
-import net.minecraft.scoreboard.ScoreboardObjective;
-import net.minecraft.scoreboard.ScoreboardPlayerScore;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.criteria.ObjectiveCriteria;
+import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ScoreAccess;
+import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.Config;
@@ -39,7 +41,7 @@ public class NoCallableFunction extends CustomFunction {
     }
 
     /**
-     * Register a function from a JSON string. It will be called by the OpenAI Assistant and then call the function in Minecraft World data package.
+     * Register a function from a JSON string. It will be called by the OpenAI Assistant and then call the function in Minecraft Level data package.
      * <p>
      * The JSON string should be in the following format:
      * <pre>
@@ -72,7 +74,7 @@ public class NoCallableFunction extends CustomFunction {
      * <p>
      * The parameters are stored in the nearby players' scoreboard with format "npc_UUID_paramName". The UUID is the UUID of the NPC.
      * <p>
-     * The "call" field is optional, it is the function stored in Minecraft World data package with format "NameSpace:function". If it is not null, the function will be called as the Server in NPC's World with its position and with permission level 2.
+     * The "call" field is optional, it is the function stored in Minecraft Level data package with format "NameSpace:function". If it is not null, the function will be called as the Server in NPC's Level with its position and with permission level 2.
      * <p>
      * This function will not be executed if "call" is null. It will only add the integer parameters to the scoreboard.
      *
@@ -126,8 +128,13 @@ public class NoCallableFunction extends CustomFunction {
         if (!(agent instanceof NPC npc)) return failed;
         NPCEntity entity = NPC_AI.getNPCEntity(npc);
         if (entity == null) return failed;
-        PlayerEntity player = entity.world.getClosestPlayer(entity, Config.range);
-        MinecraftServer server = entity.getServer();
+        AABB rangeBox = entity.getBoundingBox().inflate(Config.range);
+        Player player = entity.level()
+                .getEntitiesOfClass(Player.class, rangeBox, Player::isAlive)
+                .stream()
+                .min((a, b) -> Double.compare(entity.distanceToSqr(a), entity.distanceToSqr(b)))
+                .orElse(null);
+        MinecraftServer server = entity.level().getServer();
         if (server == null) return failed;
         // add the args to the closest players' scoreboard
         String playerName;
@@ -136,9 +143,9 @@ public class NoCallableFunction extends CustomFunction {
             args.forEach((key, value) -> {
                 String scoreName = "npc_" + name + "_" + key;
                 Scoreboard scoreboard = server.getScoreboard();
-                ScoreboardObjective objective = scoreboard.getObjective(scoreName);
+                Objective objective = scoreboard.getObjective(scoreName);
                 if (objective == null) {
-                    scoreboard.addObjective(scoreName, ScoreboardCriterion.DUMMY, Text.of(scoreName), ScoreboardCriterion.RenderType.INTEGER);
+                    scoreboard.addObjective(scoreName, ObjectiveCriteria.DUMMY, Component.literal(scoreName), ObjectiveCriteria.RenderType.INTEGER, false, null);
                     objective = scoreboard.getObjective(scoreName);
                 }
                 int intValue;
@@ -153,32 +160,36 @@ public class NoCallableFunction extends CustomFunction {
                         return;
                     }
                 }
-                scoreboard.getPlayerScore(playerName, objective).setScore(intValue);
+                scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(playerName), objective).set(intValue);
             });
         } else {
             playerName = "";
         }
-        // call the function in the Minecraft World
-        int var = 1;
+        // call the function in the Minecraft Level
+        boolean success = true;
         if (call != null) {
-            Vec3d pos = entity.getPos();
-            ServerCommandSource source = server.getCommandSource();
-            ServerCommandSource newSource = source
+            Vec3 pos = entity.position();
+            CommandSourceStack source = server.createCommandSourceStack();
+            CommandSourceStack newSource = source
                     .withPosition(pos)
-                    .withWorld((ServerWorld) entity.world)
-                    .withSilent()
-                    .withLevel(2);
-            var = server.getCommandManager().executeWithPrefix(newSource, "function " + call);
-            if (var != 0 && !playerName.isEmpty()) {
+                    .withLevel((ServerLevel) entity.level())
+                    .withSuppressedOutput();
+            try {
+                server.getCommands().performPrefixedCommand(newSource, "function " + call);
+            } catch (Exception e) {
+                NPCSystem.LOGGER.error("[npc-system] Failed to execute no-callable function " + name, e);
+                success = false;
+            }
+            if (success && !playerName.isEmpty()) {
                 String scoreName = "npc_" + name + "_result";
                 Scoreboard scoreboard = server.getScoreboard();
-                ScoreboardObjective objective = scoreboard.getObjective(scoreName);
-                if (objective != null && scoreboard.playerHasObjective(playerName, objective)) {
-                    ScoreboardPlayerScore score = scoreboard.getPlayerScore(playerName, objective);
-                    if (score.getScore() == 0) var = 0;
+                Objective objective = scoreboard.getObjective(scoreName);
+                if (objective != null) {
+                    ScoreAccess score = scoreboard.getOrCreatePlayerScore(ScoreHolder.forNameOnly(playerName), objective);
+                    if (score.get() == 0) success = false;
                 }
             }
         }
-        return var != 0 ? ok : failed;
+        return success ? ok : failed;
     }
 }

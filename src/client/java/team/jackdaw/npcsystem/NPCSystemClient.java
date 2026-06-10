@@ -2,7 +2,7 @@ package team.jackdaw.npcsystem;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
-import net.minecraft.client.render.entity.VillagerEntityRenderer;
+import net.minecraft.client.renderer.entity.VillagerRenderer;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 public class NPCSystemClient implements ClientModInitializer {
@@ -14,6 +14,6 @@ public class NPCSystemClient implements ClientModInitializer {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-        EntityRendererRegistry.register(NPCRegistration.ENTITY_NPC, VillagerEntityRenderer::new);
+        EntityRendererRegistry.register(NPCRegistration.ENTITY_NPC, VillagerRenderer::new);
     }
 }

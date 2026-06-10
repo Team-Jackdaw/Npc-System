@@ -1,6 +1,6 @@
 package team.jackdaw.npcsystem.function;
 
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 
@@ -22,11 +22,17 @@ public class CallCommandFunction extends CustomFunction{
     @Override
     public Map<String, String> execute(ConversationWindow conversation, Map<String, Object> args) {
         String command = (String) args.get("command");
-        PlayerEntity player = NPCSystem.server.getPlayerManager().getPlayer(conversation.getTarget());
-        int var;
-        if (player != null) var = NPCSystem.server.getCommandManager().executeWithPrefix(player.getCommandSource(), command);
-        else var = NPCSystem.server.getCommandManager().executeWithPrefix(NPCSystem.server.getCommandSource(), command);
-        if (var == 0) return FAILURE;
-        return SUCCESS;
+        ServerPlayer player = NPCSystem.server.getPlayerList().getPlayer(conversation.getTarget());
+        try {
+            if (player != null) {
+                NPCSystem.server.getCommands().performPrefixedCommand(player.createCommandSourceStack(), command);
+            } else {
+                NPCSystem.server.getCommands().performPrefixedCommand(NPCSystem.server.createCommandSourceStack(), command);
+            }
+            return SUCCESS;
+        } catch (Exception e) {
+            NPCSystem.LOGGER.error("[npc-system] Failed to execute command function", e);
+            return FAILURE;
+        }
     }
 }
