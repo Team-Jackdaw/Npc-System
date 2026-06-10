@@ -79,6 +79,7 @@ public class NPCSystem implements ModInitializer {
         });
         // Register the player chat listener
         PlayerSendMessageCallback.EVENT.register((player, message) -> {
+            NPC_AI.NPC_ENTITY_MANAGER.map.values().forEach(npc -> npc.hearChat(player, message));
             ConversationWindow conversationWindow =
                     ConversationManager.getInstance().map
                             .values()

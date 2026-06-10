@@ -3,6 +3,7 @@ package team.jackdaw.npcsystem.ai;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.*;
 import team.jackdaw.npcsystem.function.FunctionManager;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 
 import java.util.List;
 import java.util.UUID;
@@ -67,7 +68,9 @@ public class ConversationWindow {
      */
     public ChatResponse chat(String message) {
         updateTime = System.currentTimeMillis();
-        messages = Ollama.messageBuilder(messages)
+        MessageBuilder builder = Ollama.messageBuilder(messages);
+        addCurrentContext(builder);
+        messages = builder
                 .addMessage(Role.USER, message)
                 .build();
         ChatResponse response;
@@ -105,6 +108,9 @@ public class ConversationWindow {
         updateTime = System.currentTimeMillis();
         ChatResponse response;
         try {
+            MessageBuilder builder = Ollama.messageBuilder(messages);
+            addCurrentContext(builder);
+            messages = builder.build();
             response = Ollama.chat(messages, null);
             messages = Ollama.messageBuilder(messages)
                     .addMessage(Role.ASSISTANT, response.message.content)
@@ -116,6 +122,15 @@ public class ConversationWindow {
             response = null;
         }
         return response;
+    }
+
+    private void addCurrentContext(MessageBuilder builder) {
+        if (getAgent() instanceof NPC npc) {
+            String context = npc.getContextPrompt();
+            if (context != null && !context.isBlank()) {
+                builder.addMessage(Role.SYSTEM, "当前NPC上下文:\n" + context);
+            }
+        }
     }
 
     public long getUpdateTime() {

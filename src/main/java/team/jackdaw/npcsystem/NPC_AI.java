@@ -12,6 +12,7 @@ import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface NPC_AI {
@@ -23,6 +24,13 @@ public interface NPC_AI {
 
     static NPCEntity getNPCEntity(NPC npc) {
         return NPC_ENTITY_MANAGER.get(npc.getUUID());
+    }
+
+    static Optional<NPCEntity> findNPC(String nameOrUuid) {
+        return NPC_ENTITY_MANAGER.map.values().stream()
+                .filter(npc -> npc.getUUID().toString().equalsIgnoreCase(nameOrUuid)
+                        || npc.getName().getString().equalsIgnoreCase(nameOrUuid))
+                .findFirst();
     }
 
     static void registerNPC(NPCEntity entity) {

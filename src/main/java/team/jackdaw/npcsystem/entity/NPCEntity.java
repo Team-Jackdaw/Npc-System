@@ -9,6 +9,11 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.Level;
 import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPC_AI;
+import team.jackdaw.npcsystem.ai.npc.NPC;
+import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
+import team.jackdaw.npcsystem.entity.sensor.Observation;
+import team.jackdaw.npcsystem.entity.sensor.ObservationCollector;
+import team.jackdaw.npcsystem.entity.task.NpcTaskController;
 
 import java.util.Comparator;
 import java.util.List;
@@ -17,6 +22,10 @@ import java.util.Optional;
 public class NPCEntity extends Villager {
     protected long updateTime;
     protected TextBubbleEntity textBubble;
+    private final NpcSensorState sensorState = new NpcSensorState();
+    private final NpcTaskController taskController = new NpcTaskController();
+    private long lastSensorUpdateTick = -20L;
+    private String lastObservation = "";
 
     public NPCEntity(EntityType<? extends Villager> entityType, Level world) {
         super(entityType, world);
@@ -24,6 +33,25 @@ public class NPCEntity extends Villager {
 
     public void updateScheduleFromAgent() {
         // Custom villager schedules need to be rebuilt for the 26.1 brain API.
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (this.level().isClientSide()) {
+            return;
+        }
+        if (this.level().getGameTime() - lastSensorUpdateTick >= 20L) {
+            lastSensorUpdateTick = this.level().getGameTime();
+            sensorState.update(this);
+            Observation observation = ObservationCollector.collect(this);
+            lastObservation = observation.text();
+            NPC npc = NPC_AI.getAI(this);
+            if (npc != null) {
+                npc.observe(observation.gameTime(), observation.text());
+            }
+        }
+        taskController.tick(this);
     }
 
     public void sendMessage(String message, double range) {
@@ -56,6 +84,25 @@ public class NPCEntity extends Villager {
 
     public Optional<NPCEntity> getNearestNPC() {
         return getNearestNPCs().stream().findFirst();
+    }
+
+    public NpcSensorState getSensorState() {
+        return sensorState;
+    }
+
+    public NpcTaskController getTaskController() {
+        return taskController;
+    }
+
+    public String getLastObservation() {
+        return lastObservation;
+    }
+
+    public void hearChat(Player speaker, String message) {
+        if (!this.level().equals(speaker.level()) || this.distanceToSqr(speaker) > Config.range * Config.range) {
+            return;
+        }
+        sensorState.recordChat(speaker, message, this);
     }
 
     @Override
