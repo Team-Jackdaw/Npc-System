@@ -23,8 +23,8 @@ public class NPC extends Agent {
         this.uuid = uuid;
         setTools(List.of(
                 "end_conversation",
-                "rag_query",
-                "rag_record",
+                "memory_query",
+                "memory_record",
                 "say",
                 "look_at_player",
                 "look_at_npc",

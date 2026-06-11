@@ -52,8 +52,8 @@ Tool 是可供 NPC 或外部 Agent 调用的函数/指令接口。它偏系统�
 
 当前项目中 Tool 层已经包含：
 
-- `rag_query`
-- `rag_record`
+- `memory_query`
+- `memory_record`
 - `end_conversation`
 - `call_command`
 - 动态 JSON function 加载

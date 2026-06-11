@@ -32,7 +32,7 @@ around NPC (in the **Chat bar**).
 ### Master Agent
 
 1. The Master Agent has no entity in the game. The OPs can talk to him by using the command `/npc master <message>`.
-2. The Master Agent can execute commands and control the NPCs' behavior (in dev). And it will also record the conversation by using RAG data storage.
+2. The Master Agent can execute commands and control the NPCs' behavior (in dev). And it will also record the conversation by using Memory data storage.
 
 ## 3. Requirements
 

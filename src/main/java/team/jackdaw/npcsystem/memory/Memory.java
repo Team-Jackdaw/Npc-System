@@ -1,10 +1,10 @@
-package team.jackdaw.npcsystem.rag;
+package team.jackdaw.npcsystem.memory;
 
 import team.jackdaw.npcsystem.api.Ollama;
 
 import java.util.List;
 
-public interface RAG {
+public interface Memory {
 
     /**
      * The size of the chunk for the text.
@@ -13,7 +13,7 @@ public interface RAG {
 
     /**
      * Get the directory path used by the local text memory.
-     * @return local RAG storage path
+     * @return local memory storage path
      */
     static String storagePath() {
         return LocalTextMemory.getStoragePath();

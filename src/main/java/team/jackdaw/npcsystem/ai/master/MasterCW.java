@@ -4,7 +4,7 @@ import team.jackdaw.npcsystem.AsyncTask;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.assistant.Mark;
 import team.jackdaw.npcsystem.ai.assistant.Summarise;
-import team.jackdaw.npcsystem.rag.RAG;
+import team.jackdaw.npcsystem.memory.Memory;
 
 public class MasterCW extends ConversationWindow {
     MasterCW() {
@@ -20,7 +20,7 @@ public class MasterCW extends ConversationWindow {
             try {
                 String res = Summarise.summariesConversation(instruction, messages);
                 int importance = Mark.markInteger(res, "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a conversation.");
-                if (importance > 7) RAG.record(res, "Master");
+                if (importance > 7) Memory.record(res, "Master");
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

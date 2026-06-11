@@ -3,7 +3,7 @@ package team.jackdaw.npcsystem.ai.master;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
-import team.jackdaw.npcsystem.rag.RAG;
+import team.jackdaw.npcsystem.memory.Memory;
 
 import java.util.List;
 import java.util.UUID;
@@ -14,11 +14,11 @@ public class Master extends Agent {
     static {
         master = new Master();
         AgentManager.getInstance().register(master);
-        RAG.initialize("Master");
+        Memory.initialize("Master");
         master.setTools(
                 List.of(
-                        "rag_query",
-                        "rag_record",
+                        "memory_query",
+                        "memory_record",
                         "call_command",
                         "end_conversation"
                 )

@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.rag;
+package team.jackdaw.npcsystem.memory;
 
 import java.util.ArrayList;
 import java.util.List;

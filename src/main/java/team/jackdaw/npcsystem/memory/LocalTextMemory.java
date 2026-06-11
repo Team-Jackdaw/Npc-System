@@ -1,4 +1,4 @@
-package team.jackdaw.npcsystem.rag;
+package team.jackdaw.npcsystem.memory;
 
 import com.google.gson.Gson;
 
@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 class LocalTextMemory {
     private static final Gson GSON = new Gson();
     private static final Pattern TOKEN_PATTERN = Pattern.compile("[\\p{IsHan}]|[\\p{L}\\p{N}]+");
-    private static final File DIRECTORY = Paths.get(System.getProperty("user.dir"), "config", "npc-system", "rag").toFile();
+    private static final File DIRECTORY = Paths.get(System.getProperty("user.dir"), "config", "npc-system", "memory").toFile();
     private static final Object FILE_LOCK = new Object();
 
     private final File file;

@@ -2,13 +2,13 @@ package team.jackdaw.npcsystem.function;
 
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.MasterCW;
-import team.jackdaw.npcsystem.rag.RAG;
+import team.jackdaw.npcsystem.memory.Memory;
 
 import java.util.List;
 import java.util.Map;
 
-public class RAGQueryFunction extends CustomFunction {
-    public RAGQueryFunction() {
+public class MemoryQueryFunction extends CustomFunction {
+    public MemoryQueryFunction() {
         description = "Query local memory then return up to 3 related chunks. Call this function when you want to search something you don't know.";
         properties = Map.of(
                 "context", Map.of(
@@ -30,7 +30,7 @@ public class RAGQueryFunction extends CustomFunction {
             className = conversation.getAgent().getUUID().toString().toUpperCase();
         }
         try {
-            List<String> res = RAG.query(context, 3, className);
+            List<String> res = Memory.query(context, 3, className);
             return ToolResult.success(res.isEmpty() ? "memory_empty" : "memory_found", "Memory query completed.", Map.of("chunks", res));
         } catch (Exception e) {
             return ToolResult.failure("memory_query_failed", "Memory query failed.", true);

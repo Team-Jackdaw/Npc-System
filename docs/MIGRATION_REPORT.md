@@ -37,7 +37,7 @@ This migration updates the project from the old Fabric/Yarn-based Minecraft 1.19
 
 - `./gradlew compileJava --no-daemon`: passed.
 - `./gradlew build -x test --no-daemon`: passed.
-- RAG local tests passed.
+- Memory local tests passed.
 - `NPC_API_TIMEOUT_MILLIS=180000 ./gradlew test --no-daemon`: passed with local Ollama `qwen3.5:latest`.
 
 ## Ollama Test Notes

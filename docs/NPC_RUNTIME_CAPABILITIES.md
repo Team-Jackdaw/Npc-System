@@ -72,8 +72,8 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 | `wait` | task | 等待，对应 `WaitTask` |
 | `stop_task` | task | 停止当前任务并清空队列 |
 | `resume_default_behavior` | tool | 结束 agent 等待状态并恢复默认行为 |
-| `rag_query` | tool | 查询本地文本记忆 |
-| `rag_record` | tool | 写入本地文本记忆 |
+| `memory_query` | tool | 查询本地文本记忆 |
+| `memory_record` | tool | 写入本地文本记忆 |
 | `end_conversation` | tool | 结束当前对话 |
 
 另外还有 `call_command`，但它的权限等级为 3，默认 NPC 权限不能调用。`NoCallableFunction` 可从 `config/npc-system/functions/*.json` 动态加载数据包函数桥接 tool。
@@ -316,26 +316,26 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 - `wait(seconds)`
 - `stop_task()`
 - `resume_default_behavior()`
-- `rag_query(context)`
-- `rag_record(context)`
+- `memory_query(context)`
+- `memory_record(context)`
 - `end_conversation()`
 
 这些接口隐藏 Minecraft 内部类，只暴露 JSON 参数。task 类接口会在 Java 端解析目标实体、创建 `NpcTask`，并交给 `NpcTaskController`。
 
 ## 记忆储存与读取
 
-当前记忆模块仍保留 `rag` 包名和 `rag_query`/`rag_record` tool 名称，但实现已经不是 embedding/vector RAG。实际存储是本地 JSON 文本记录：
+当前记忆模块使用 `memory` 包名和 `memory_query`/`memory_record` tool 名称。实现不是 embedding/vector 数据库，而是本地 JSON 文本记录：
 
-- 存储目录：`config/npc-system/rag`
+- 存储目录：`config/npc-system/memory`
 - 每个 NPC 一个 JSON 文件：文件名来自 NPC UUID；Master 使用 `Master.json`。
-- 写入时调用 `RAG.record(text, className)`。
-- 文本按 `RAG.CHUNK_SIZE = 150` 做简单空白分词 chunk。
+- 写入时调用 `Memory.record(text, className)`。
+- 文本按 `Memory.CHUNK_SIZE = 150` 做简单空白分词 chunk。
 - JSON 记录包含 `id`、原始 `text`、`chunks`、`createdAt`。
-- 查询时调用 `RAG.query(text, topK, className)`。
+- 查询时调用 `Memory.query(text, topK, className)`。
 - 查询使用本地关键词计数打分：中文按单字 token，英文/数字按词 token。
 - 如果查询文本没有 token，则返回最近记录的 chunk。
 
-Ollama embedding 已不参与记忆写入和查询。`RAG.completion(...)` 仍会把查询结果拼入 prompt 后调用 Ollama completion，但普通记忆查询本身不依赖外部模型。
+Ollama embedding 已不参与记忆写入和查询。`Memory.completion(...)` 仍会把查询结果拼入 prompt 后调用 Ollama completion，但普通记忆查询本身不依赖外部模型。
 
 ## 当前运行边界
 

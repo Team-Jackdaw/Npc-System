@@ -1,10 +1,10 @@
-package team.jackdaw.npcsystem.rag;
+package team.jackdaw.npcsystem.memory;
 
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static team.jackdaw.npcsystem.rag.SimpleChunking.chunkText;
+import static team.jackdaw.npcsystem.memory.SimpleChunking.chunkText;
 
 public class SimpleChunkingTest {
     @Test

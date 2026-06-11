@@ -2,12 +2,12 @@ package team.jackdaw.npcsystem.function;
 
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.MasterCW;
-import team.jackdaw.npcsystem.rag.RAG;
+import team.jackdaw.npcsystem.memory.Memory;
 
 import java.util.Map;
 
-public class RAGRecordFunction extends CustomFunction{
-    public RAGRecordFunction() {
+public class MemoryRecordFunction extends CustomFunction{
+    public MemoryRecordFunction() {
         description = "Record something to local memory. Call this function when you want to save some knowledge for other conversation. For example, when user correct your response, you can record the correct response to local memory.";
         properties = Map.of(
                 "context", Map.of(
@@ -28,7 +28,7 @@ public class RAGRecordFunction extends CustomFunction{
             className = conversation.getAgent().getUUID().toString().toUpperCase();
         }
         try {
-            RAG.record(context, className);
+            Memory.record(context, className);
             return ToolResult.success("memory_recorded", "Memory recorded.");
         } catch (Exception e) {
             return ToolResult.failure("memory_record_failed", "Memory record failed.", true);

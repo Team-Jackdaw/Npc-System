@@ -23,7 +23,7 @@ import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 import team.jackdaw.npcsystem.group.Group;
 import team.jackdaw.npcsystem.group.GroupManager;
-import team.jackdaw.npcsystem.rag.RAG;
+import team.jackdaw.npcsystem.memory.Memory;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -246,7 +246,7 @@ public class CommandSet {
                 .append(Component.literal("[npc-system] NPC System:").withStyle(ChatFormatting.UNDERLINE))
                 .append("").withStyle(ChatFormatting.RESET)
                 .append("\nEnabled: ").append(Config.enabled ? yes : no)
-                .append("\nRAG Storage: ").append(Component.literal(RAG.storagePath()))
+                .append("\nMemory Storage: ").append(Component.literal(Memory.storagePath()))
                 .append("\nAPI URL: ").append(Component.literal(Config.apiURL))
                 .append("\nChat Model: ").append(Component.literal(Config.chat_model))
                 .append("\nChat Range: ").append(Component.literal(String.valueOf(Config.range)))
