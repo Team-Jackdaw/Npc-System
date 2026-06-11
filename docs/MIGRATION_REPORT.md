@@ -1,5 +1,10 @@
 # MC 26.1.2 Migration Report
 
+Last updated: 2026-06-11 10:04:06 CST
+
+Status: Historical migration report. For current architecture and implementation
+status, see `OVERVIEW.md`.
+
 ## Summary
 
 This migration updates the project from the old Fabric/Yarn-based Minecraft 1.19.4 setup to Minecraft 26.1.2 with Fabric Loader 0.19.3, Fabric API 0.151.0+26.1.2, Loom 1.17.7, Gradle 9.5.1, and Java 25. The main server and client source sets now compile against Mojang/official names instead of Yarn names.

@@ -64,6 +64,14 @@ around NPC (in the **Chat bar**).
 2. Run `./gradlew build` in the root directory of the repository.
 3. The jar file will be generated in the `build/libs` directory.
 
-## 7. Overall structure:
+## 7. Documentation
+
+- [Current architecture overview](docs/OVERVIEW.md)
+- [External agent interface](docs/AGENT_INTERFACE.md)
+- [Foundation plan](docs/FOUNDATION_PLAN.md)
+- [MC 26.1.2 migration report](docs/MIGRATION_REPORT.md)
+- [Python external agent scaffold](agent/README.md)
+
+## 8. Overall structure:
 
 ![Structure](NPC-System.png)

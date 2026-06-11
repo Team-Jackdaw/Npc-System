@@ -1,8 +1,15 @@
 # NPC 基础能力架构计划
 
+Last updated: 2026-06-11 10:04:06 CST
+
+Status: 本文最初是基础能力规划。当前 `NpcSensorState`、`ObservationCollector`、
+`NPC.observe`、`NpcTask`、`NpcTaskController`、基础移动/看向/说话/等待 task、
+task tool 封装，以及外部 agent 通信闭环已经实现。最新总体状态见
+`OVERVIEW.md`。
+
 ## 目标
 
-当前系统已经具备基础对话、工具调用、本地文本记忆和 Minecraft 事件接入能力。下一阶段重点不再扩展对话本身，而是补齐 NPC 在 Minecraft 世界中的基础感知与行动能力，让外部 AI Agent 能够基于足够多的信息做决策，并通过稳定的工具接口驱动 NPC 行为。
+当前系统已经具备基础对话、工具调用、本地文本记忆、Minecraft 事件接入、基础 Sensor/Observe/Task 能力，以及外部 Agent HTTP 通信边界。下一阶段重点是扩展 NPC 在 Minecraft 世界中的感知和行动范围，让外部 AI Agent 能够基于更丰富的信息做决策，并通过稳定的工具接口驱动 NPC 行为。
 
 ## 核心分层
 
@@ -18,7 +25,7 @@ Sensor 是最底层的被动感知层，按 tick 定时更新，不直接调用 
 - 生命值、状态效果
 - 最近听到的聊天内容
 
-当前代码中已有 `NearestNPCSensor`，但它只是注册了 `SensorType`，还没有可靠接入 NPC brain，因此实际运行能力不足。短期建议不要优先依赖 Minecraft Brain Sensor，而是在 `NPCEntity.tick()` 中维护项目自己的 `NpcSensorState`。
+当前代码采用项目自己的 `NpcSensorState`，由 `NPCEntity.tick()` 定时维护。短期仍不优先依赖 Minecraft Brain Sensor。
 
 ### Observe
 
@@ -43,15 +50,16 @@ Tool 是可供 NPC 或外部 Agent 调用的函数/指令接口。它偏系统�
 - 执行命令
 - 请求 NPC 执行某个基础动作
 
-当前项目中 Tool 层实现相对完整，已有：
+当前项目中 Tool 层已经包含：
 
 - `rag_query`
 - `rag_record`
 - `end_conversation`
 - `call_command`
 - 动态 JSON function 加载
+- NPC task tools，如 `say`、`look_at_player`、`walk_to_player`、`follow_player`、`wait`、`stop_task`
 
-后续应把 Minecraft 行为能力也封装成 Tool，例如 `walk_to`、`look_at`、`say`、`drop_item`，供外部 Agent 调用。
+后续应继续把更多 Minecraft 行为能力封装成 Tool，例如 `drop_item`、`pick_up_item`、`use_block`，供外部 Agent 调用。
 
 ### Task
 
@@ -65,14 +73,14 @@ Task 是 NPC 在 Minecraft 世界中的低层动作，不直接代表 LLM 推理
 - 等待
 - 使用物品或交互方块
 
-当前自定义 task 在 MC 26.1.2 迁移后已经变成占位类：
+旧自定义 villager brain task 在 MC 26.1.2 迁移后仍是占位类：
 
 - `FollowChatTargetTask`
 - `MeetNPCTask`
 - `MeetPlayerTask`
 - `NPCTaskListProvider`
 
-这些类目前不可用。短期不建议直接恢复旧 Villager Brain task，而应实现项目自己的 `NpcTask` 和 `NpcTaskController`，由 `NPCEntity.tick()` 驱动。
+这些类目前不可用。当前已经采用项目自己的 `NpcTask` 和 `NpcTaskController`，由 `NPCEntity.tick()` 驱动。
 
 ## 推荐实现路线
 

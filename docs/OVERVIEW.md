@@ -1,0 +1,132 @@
+# NPC System Overview
+
+Last updated: 2026-06-11 10:04:06 CST
+
+This document is the rolling architecture and implementation overview for the
+project. Future feature work should update this file in place.
+
+## Current Architecture
+
+```text
+Minecraft NPC Entity
+  -> Sensor State
+  -> Observation Events
+  -> NPC Context Buffers
+  -> External Agent Request
+  -> Tool / Task Action
+  -> NpcTaskController
+```
+
+The project is a Java 25 Fabric mod for Minecraft 26.1.2. Minecraft-side code
+lives under `src/main/java/team/jackdaw/npcsystem`. The optional Python external
+agent scaffold lives under `agent/`.
+
+Key layers:
+
+- **Entity layer**: `NPCEntity` owns sensor state, task controller, chat display,
+  and the bridge to the NPC agent object.
+- **Sensor layer**: `NpcSensorState` records passive world state every tick
+  window, including nearby players/NPCs/entities, weather, biome, health,
+  position, task state, and recent chat.
+- **Observe layer**: `ObservationCollector` compares sensor snapshots and emits
+  structured `ObservationEvent` records.
+- **AI/context layer**: `NPC` stores recent and important observation events and
+  exposes context to conversations and external agent requests.
+- **External agent layer**: Java DTOs define fast/deliberate JSON protocols;
+  Python FastAPI + Pydantic AI scaffold can receive those requests.
+- **Tool layer**: `FunctionManager` exposes callable tools and tool descriptors.
+  Tool results use a stable `status/code/message/data/retryable` shape.
+- **Task layer**: `NpcTaskController` runs one low-level Minecraft task at a time.
+
+## Implemented
+
+- MC 26.1.2 / Fabric migration with Java 25 and Gradle 9.5.1.
+- Local JSON/text memory storage replacing vector embedding storage.
+- Basic NPC sensor state and observation-event buffering.
+- Event types for players, NPCs, chat, weather, health, and task state changes.
+- Project-owned `NpcTask` and `NpcTaskController`.
+- Basic task implementations:
+  - look at entity
+  - walk to entity
+  - follow entity
+  - speak
+  - wait
+- Tool wrappers for NPC actions:
+  - `say`
+  - `look_at_player`
+  - `look_at_npc`
+  - `walk_to_player`
+  - `walk_to_npc`
+  - `follow_player`
+  - `wait`
+  - `stop_task`
+- External agent protocol:
+  - compact `fast` mode
+  - richer `deliberate` mode
+  - single action per response
+- Python external agent scaffold:
+  - FastAPI server
+  - Pydantic schemas
+  - deterministic stub decision path
+  - optional Pydantic AI + Ollama path
+- Java external agent integration:
+  - `ExternalAgentClient`
+  - `AgentRequestBuilder`
+  - `AgentActionExecutor`
+  - configurable NPC conversation routing to external agent with Ollama fallback.
+
+## Waiting To Implement
+
+- Real in-game validation for MC 26.1.2 runtime behavior:
+  - mixins
+  - text bubbles
+  - task movement and look control
+  - external agent HTTP loop
+- More sensors:
+  - inventory
+  - equipment
+  - blocks of interest
+  - light level
+  - hostile threat details
+  - item entities
+  - status effects
+- More observe events:
+  - inventory changed
+  - item seen/picked up
+  - block/workstation discovered
+  - danger escalation
+  - path failure details
+- More task/tool capabilities:
+  - drop item
+  - give item
+  - pick up item
+  - move to block/coordinate
+  - use block
+  - use held item
+  - lead player to target
+  - inspect inventory
+- Agent loop improvements:
+  - deliberate mode trigger policy
+  - task result feedback into observation buffers
+  - memory update handling from external agent response
+  - tool execution result reporting back to the Python agent
+- Python agent improvements:
+  - stronger prompts
+  - integration tests against local Ollama `qwen3.5`
+  - optional auth test coverage
+  - model output repair/fallback strategy
+
+## Current Defaults
+
+- External agent is disabled by default: `Config.agentEnabled = false`.
+- Default agent endpoint: `http://127.0.0.1:8765`.
+- Default Java agent mode: `fast`.
+- Default Python agent mode: `stub`.
+- Java can fall back to Ollama when external agent calls fail.
+
+## Documentation Map
+
+- `docs/AGENT_INTERFACE.md`: external agent JSON protocol.
+- `docs/FOUNDATION_PLAN.md`: foundation design notes for sensor/observe/tool/task.
+- `docs/MIGRATION_REPORT.md`: MC 26.1.2 migration report.
+- `agent/README.md`: Python external agent scaffold usage.

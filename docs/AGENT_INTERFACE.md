@@ -1,5 +1,12 @@
 # External Agent Interface
 
+Last updated: 2026-06-11 10:04:06 CST
+
+Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
+agent scaffold exists under `agent/`, and Java can call the external agent when
+`Config.agentEnabled` is enabled. This document remains the wire-contract
+reference.
+
 This document defines the JSON boundary between the Minecraft mod and an
 external NPC agent. The transport is expected to be HTTP, but endpoint paths,
 authentication, timeout, and retry policy are intentionally left outside this

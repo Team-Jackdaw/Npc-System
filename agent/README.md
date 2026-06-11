@@ -1,6 +1,6 @@
 # NPC External Agent
 
-Python scaffold for the external NPC agent described in `../AGENT_INTERFACE.md`.
+Python scaffold for the external NPC agent described in `../docs/AGENT_INTERFACE.md`.
 The default mode is deterministic and offline; real model calls are opt-in.
 
 ## Install
