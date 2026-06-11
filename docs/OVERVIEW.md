@@ -147,4 +147,5 @@ Key layers:
 - `docs/AGENT_INTERFACE.md`: external agent JSON protocol.
 - `docs/FOUNDATION_PLAN.md`: foundation design notes for sensor/observe/tool/task.
 - `docs/MIGRATION_REPORT.md`: MC 26.1.2 migration report.
+- `docs/NPC_RUNTIME_CAPABILITIES.md`: current in-game NPC runtime capabilities.
 - `agent/README.md`: Python external agent scaffold usage.
