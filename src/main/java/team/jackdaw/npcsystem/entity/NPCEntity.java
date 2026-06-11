@@ -10,6 +10,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.level.Level;
 import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPC_AI;
+import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
 import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
@@ -121,6 +122,7 @@ public class NPCEntity extends Villager {
             return;
         }
         sensorState.recordChat(speaker, message, this);
+        NPCSystem.debugLog("[npc-system] NPC {} heard {} at {} blocks: {}", getUUID(), speaker.getName().getString(), String.format(java.util.Locale.ROOT, "%.1f", Math.sqrt(distanceToSqr(speaker))), message);
     }
 
     @Override

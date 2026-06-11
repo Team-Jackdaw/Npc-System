@@ -95,6 +95,7 @@ public interface NPC_AI {
             window.setTarget(player.getUUID());
             if (!window.isOnWait()) {
                 window.onWait();
+                NPCSystem.debugLog("[npc-system] NPC {} starts player conversation with {}", entity.getUUID(), player.getName().getString());
                 window.chat();
                 broadcastMessage(window);
                 window.offWait();
@@ -113,8 +114,10 @@ public interface NPC_AI {
         if (message.isEmpty()) return;
         Agent agent = window.getAgent();
         if (agent instanceof NPC npc) {
+            NPCSystem.debugLog("[npc-system] NPC {} says: {}", npc.getUUID(), message);
             Objects.requireNonNull(NPC_AI.getNPCEntity(npc)).sendMessage(message, Config.range);
         } else if (agent instanceof Master) {
+            NPCSystem.debugLog("[npc-system] Master says: {}", message);
             Component message1 = Component.literal("")
                     .append(Component.literal("<Master> ").withStyle(ChatFormatting.RED))
                     .append(Component.literal("").withStyle(ChatFormatting.RESET))
@@ -134,6 +137,7 @@ public interface NPC_AI {
             entity.getTaskController().assign(entity, new WaitTask(40), TaskSource.SYSTEM);
         }
         ConversationWindow window = npc.getConversationWindows();
+        NPCSystem.debugLog("[npc-system] NPC {} completed agent batch {}: {}", entity.getUUID(), result.batchId(), result.summary());
         AsyncTask.call(() -> window.requestAgentFollowUp(result));
     }
 }

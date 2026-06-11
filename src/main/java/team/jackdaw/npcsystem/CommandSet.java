@@ -11,6 +11,7 @@ import net.minecraft.server.permissions.PermissionLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerLevel;
@@ -20,10 +21,14 @@ import team.jackdaw.npcsystem.ai.AgentManager;
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 import team.jackdaw.npcsystem.group.Group;
 import team.jackdaw.npcsystem.group.GroupManager;
 import team.jackdaw.npcsystem.memory.Memory;
+
+import java.util.Comparator;
+import java.util.Optional;
 
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -49,6 +54,8 @@ public class CommandSet {
                 .executes(CommandSet::status)
                 .then(literal("debug")
                         .requires(CommandSet::hasOPPermission)
+                        .then(literal("on").executes(context -> setDebug(context, true)))
+                        .then(literal("off").executes(context -> setDebug(context, false)))
                         .executes(CommandSet::debug))
                 .then(literal("help")
                         .requires(CommandSet::hasOPPermission)
@@ -97,18 +104,53 @@ public class CommandSet {
     }
 
     private static int debug(CommandContext<CommandSourceStack> context) {
-        Component registries = Component.literal("")
-                .append(Component.literal("[npc-system] Registries:").withStyle(ChatFormatting.UNDERLINE))
+        Optional<NPCEntity> nearestNpc = nearestNpc(context.getSource());
+        if (nearestNpc.isEmpty()) {
+            context.getSource().sendSystemMessage(Component.literal("[npc-system] No NPC found in this level."));
+            return 0;
+        }
+        NPCEntity npc = nearestNpc.get();
+        Vec3 sourcePos = context.getSource().getPosition();
+        Component debugText = Component.literal("")
+                .append(Component.literal("[npc-system] Nearest NPC Debug").withStyle(ChatFormatting.UNDERLINE))
                 .append("").withStyle(ChatFormatting.RESET)
-                .append("\n").append(Component.literal("NPC Entity Registry: ").withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(NPC_AI.NPC_ENTITY_MANAGER.map.keySet().toString()))
-                .append("\n").append(Component.literal("NPC Agent Registry: ").withStyle(ChatFormatting.GOLD))
-                .append(Component.literal(AgentManager.getInstance().map.keySet().toString()))
-                .append("\n").append(Component.literal("Conversation Registry: ").withStyle(ChatFormatting.GOLD))
+                .append("\nName: ").append(Component.literal(npc.getName().getString()).withStyle(ChatFormatting.GOLD))
+                .append("\nUUID: ").append(Component.literal(npc.getUUID().toString()))
+                .append("\nDistance: ").append(Component.literal(String.format(java.util.Locale.ROOT, "%.1f", Math.sqrt(npc.distanceToSqr(sourcePos)))))
+                .append("\nPosition: ").append(Component.literal(npc.blockPosition().toShortString()))
+                .append("\nTask: ").append(Component.literal(npc.getTaskController().status()).withStyle(ChatFormatting.AQUA))
+                .append("\nDebug Logging: ").append(Config.debug ? yes : no)
+                .append("\nAgent Registered: ").append(AgentManager.getInstance().isRegistered(npc.getUUID()) ? yes : no)
+                .append("\nConversation Registered: ")
+                .append(ConversationManager.getInstance().isRegistered(npc.getUUID()) ? yes : no)
+                .append("\nNearby Players: ").append(Component.literal(npc.getSensorState().snapshot().nearbyPlayers().toString()).withStyle(ChatFormatting.GRAY))
+                .append("\nNearby NPCs: ").append(Component.literal(npc.getSensorState().snapshot().nearbyNpcs().toString()).withStyle(ChatFormatting.GRAY))
+                .append("\nHeard Chat: ").append(Component.literal(npc.getSensorState().snapshot().heardChats().toString()).withStyle(ChatFormatting.GRAY))
+                .append("\nObservation: ").append(Component.literal(npc.getLastObservation()).withStyle(ChatFormatting.GRAY))
+                .append("\nRegistries: NPC=")
+                .append(Component.literal(String.valueOf(NPC_AI.NPC_ENTITY_MANAGER.map.size())))
+                .append(", Agent=")
+                .append(Component.literal(String.valueOf(AgentManager.getInstance().map.size())))
+                .append(", Conversation=")
                 .append(Component.literal(ConversationManager.getInstance().map.keySet().toString()))
-                .append("\nUse ").append(Component.literal("/npc help").withStyle(ChatFormatting.GRAY)).append(" for help");
-        context.getSource().sendSystemMessage(registries);
+                .append("\nUse ").append(Component.literal("/npc debug on|off").withStyle(ChatFormatting.GRAY)).append(" to toggle detailed logs.");
+        context.getSource().sendSystemMessage(debugText);
         return 1;
+    }
+
+    private static int setDebug(CommandContext<CommandSourceStack> context, boolean enabled) {
+        Config.debug = enabled;
+        ConfigManager.save();
+        sendFeedback(context, Component.literal("[npc-system] Debug logging " + (enabled ? "enabled" : "disabled") + "."), true);
+        return 1;
+    }
+
+    private static Optional<NPCEntity> nearestNpc(CommandSourceStack source) {
+        ServerLevel level = source.getLevel();
+        Vec3 position = source.getPosition();
+        return NPC_AI.NPC_ENTITY_MANAGER.map.values().stream()
+                .filter(npc -> !npc.isRemoved() && npc.level().equals(level))
+                .min(Comparator.comparingDouble(npc -> npc.distanceToSqr(position)));
     }
 
     private static int help(CommandContext<CommandSourceStack> context) {
@@ -246,6 +288,7 @@ public class CommandSet {
                 .append(Component.literal("[npc-system] NPC System:").withStyle(ChatFormatting.UNDERLINE))
                 .append("").withStyle(ChatFormatting.RESET)
                 .append("\nEnabled: ").append(Config.enabled ? yes : no)
+                .append("\nDebug Logging: ").append(Config.debug ? yes : no)
                 .append("\nMemory Storage: ").append(Component.literal(Memory.storagePath()))
                 .append("\nAPI URL: ").append(Component.literal(Config.apiURL))
                 .append("\nChat Model: ").append(Component.literal(Config.chat_model))

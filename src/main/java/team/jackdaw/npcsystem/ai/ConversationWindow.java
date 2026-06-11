@@ -2,6 +2,7 @@ package team.jackdaw.npcsystem.ai;
 
 import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.AsyncTask;
+import team.jackdaw.npcsystem.NPC_AI;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.agent.AgentActionExecutor;
 import team.jackdaw.npcsystem.ai.agent.AgentRequestBuilder;
@@ -14,6 +15,7 @@ import team.jackdaw.npcsystem.entity.task.NpcTask;
 import team.jackdaw.npcsystem.entity.task.NpcTaskAssignment;
 import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
 import team.jackdaw.npcsystem.entity.task.TaskSource;
+import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 
@@ -86,6 +88,7 @@ public class ConversationWindow {
      */
     public ChatResponse chat(String message) {
         updateTime = System.currentTimeMillis();
+        NPCSystem.debugLog("[npc-system] Conversation {} received player message: {}", uuid, message);
         if (Config.agentEnabled && getAgent() instanceof NPC npc) {
             ChatResponse externalResponse = chatWithExternalAgent(message, npc);
             if (externalResponse != null || !Config.agentFallbackToOllama) {
@@ -138,6 +141,7 @@ public class ConversationWindow {
                 FastAgentResponse response = EXTERNAL_AGENT_CLIENT.fast(AGENT_REQUEST_BUILDER.fast(this, message, npc));
                 result = AGENT_ACTION_EXECUTOR.execute(this, response);
             }
+            NPCSystem.debugLog("[npc-system] External agent chat result success={} toolResult={}", result.success(), result.toolResult());
             if (!result.success() && Config.agentFallbackToOllama) {
                 return null;
             }
@@ -149,6 +153,7 @@ public class ConversationWindow {
             return response;
         } catch (Exception e) {
             NPCSystem.LOGGER.error("[npc-system] External agent request failed", e);
+            resumeDefaultAfterAgentFailure("external agent request failed");
             return null;
         }
     }
@@ -167,7 +172,7 @@ public class ConversationWindow {
             return new AgentFollowUpResult(taskResult.summary(), response);
         } catch (Exception e) {
             NPCSystem.LOGGER.error("[npc-system] External agent follow-up failed", e);
-            return AsyncTask.nothingToDo();
+            return new AgentFollowUpFailureResult("external agent follow-up failed");
         }
     }
 
@@ -208,8 +213,10 @@ public class ConversationWindow {
             AgentActionExecutor.AgentExecutionResult result = fastResponse != null
                     ? AGENT_ACTION_EXECUTOR.execute(ConversationWindow.this, fastResponse)
                     : AGENT_ACTION_EXECUTOR.execute(ConversationWindow.this, deliberateResponse);
+            NPCSystem.debugLog("[npc-system] Agent follow-up result success={} toolResult={}", result.success(), result.toolResult());
             if (!result.success()) {
                 NPCSystem.LOGGER.warn("[npc-system] Agent follow-up failed: {}", result.toolResult());
+                resumeDefaultAfterAgentFailure("agent follow-up action failed");
                 return;
             }
             String responseText = result.responseText();
@@ -224,6 +231,38 @@ public class ConversationWindow {
         @Override
         public boolean isCallable() {
             return true;
+        }
+    }
+
+    private final class AgentFollowUpFailureResult implements AsyncTask.TaskResult {
+        private final String reason;
+
+        private AgentFollowUpFailureResult(String reason) {
+            this.reason = reason;
+        }
+
+        @Override
+        public void execute() {
+            resumeDefaultAfterAgentFailure(reason);
+        }
+
+        @Override
+        public boolean isCallable() {
+            return true;
+        }
+    }
+
+    private void resumeDefaultAfterAgentFailure(String reason) {
+        if (!(getAgent() instanceof NPC npc)) {
+            return;
+        }
+        NPCEntity entity = NPC_AI.getNPCEntity(npc);
+        if (entity == null) {
+            return;
+        }
+        if (entity.getTaskController().currentSource() == TaskSource.SYSTEM) {
+            entity.getTaskController().cancel(entity);
+            NPCSystem.LOGGER.warn("[npc-system] Resumed default behavior for NPC {} after {}", npc.getUUID(), reason);
         }
     }
 

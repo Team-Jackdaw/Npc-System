@@ -4,6 +4,7 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.agent.protocol.AgentAction;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
+import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.ToolResult;
 
@@ -72,11 +73,14 @@ public class AgentActionExecutor {
         }
         try {
             Map<String, Object> result = FunctionManager.getInstance().callFunction(conversation, name, args == null ? Map.of() : args);
+            NPCSystem.debugLog("[npc-system] Agent action {} args={} result={}", name, args == null ? Map.of() : args, result);
             if ("success".equals(result.get("status"))) {
                 return AgentExecutionResult.success(responseText, result);
             }
+            NPCSystem.LOGGER.warn("[npc-system] Agent action {} returned failure: {}", name, result);
             return AgentExecutionResult.failure(responseText, result);
         } catch (IllegalArgumentException e) {
+            NPCSystem.LOGGER.warn("[npc-system] Agent action failed: {}", e.getMessage());
             return AgentExecutionResult.failure(responseText, ToolResult.failure("function_not_found", e.getMessage(), false));
         }
     }

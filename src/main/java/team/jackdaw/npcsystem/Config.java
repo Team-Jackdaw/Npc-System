@@ -15,6 +15,7 @@ public class Config {
     public static final long updateInterval = 1000L;
     public static final long outOfTime = 300000L;
     public static boolean enabled = true;
+    public static boolean debug = false;
     @Deprecated
     public static String dbURL = "http://localhost:8080";
     public static String apiURL = "http://localhost:11434";

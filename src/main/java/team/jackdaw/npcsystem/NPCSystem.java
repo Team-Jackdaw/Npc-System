@@ -26,6 +26,12 @@ public class NPCSystem implements ModInitializer {
     public static final Path workingDirectory = Paths.get(System.getProperty("user.dir"), "config", "npc-system");
     public static MinecraftServer server;
 
+    public static void debugLog(String message, Object... args) {
+        if (Config.debug) {
+            LOGGER.info(message, args);
+        }
+    }
+
     @Override
     public void onInitialize() {
         // create the working directory
@@ -73,12 +79,14 @@ public class NPCSystem implements ModInitializer {
             // The player must be sneaking to start a conversation
             if (!player.isShiftKeyDown()) return InteractionResult.PASS;
             // start a conversation
+            NPCSystem.debugLog("[npc-system] Player {} started conversation with NPC {}", player.getName().getString(), npc.getUUID());
             if (!ConversationManager.getInstance().isRegistered(npc.getUUID()))
                 NPC_AI.startPlayerConversation(npc, player);
             return InteractionResult.FAIL;
         });
         // Register the player chat listener
         PlayerSendMessageCallback.EVENT.register((player, message) -> {
+            NPCSystem.debugLog("[npc-system] Player chat from {}: {}", player.getName().getString(), message);
             NPC_AI.NPC_ENTITY_MANAGER.map.values().forEach(npc -> npc.hearChat(player, message));
             ConversationWindow conversationWindow =
                     ConversationManager.getInstance().map
@@ -90,6 +98,7 @@ public class NPCSystem implements ModInitializer {
             if (conversationWindow != null && !conversationWindow.isOnWait()) {
                 AsyncTask.call(() -> {
                     conversationWindow.onWait();
+                    NPCSystem.debugLog("[npc-system] Forwarding player chat to NPC conversation target={}", player.getUUID());
                     conversationWindow.chat(message);
                     NPC_AI.broadcastMessage(conversationWindow);
                     conversationWindow.offWait();

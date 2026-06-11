@@ -3,6 +3,7 @@ package team.jackdaw.npcsystem.ai.agent;
 import com.google.gson.Gson;
 import org.jetbrains.annotations.NotNull;
 import team.jackdaw.npcsystem.Config;
+import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentRequest;
@@ -25,12 +26,18 @@ public class ExternalAgentClient {
     }
 
     public FastAgentResponse fast(@NotNull FastAgentRequest request) throws Exception {
-        String json = sender.send(GSON.toJson(request), endpoint("/agent/fast"), headers(), Request.Action.POST);
+        String requestJson = GSON.toJson(request);
+        NPCSystem.debugLog("[npc-system] Agent fast request: {}", requestJson);
+        String json = sender.send(requestJson, endpoint("/agent/fast"), headers(), Request.Action.POST);
+        NPCSystem.debugLog("[npc-system] Agent fast response: {}", json);
         return GSON.fromJson(json, FastAgentResponse.class);
     }
 
     public DeliberateAgentResponse deliberate(@NotNull DeliberateAgentRequest request) throws Exception {
-        String json = sender.send(GSON.toJson(request), endpoint("/agent/deliberate"), headers(), Request.Action.POST);
+        String requestJson = GSON.toJson(request);
+        NPCSystem.debugLog("[npc-system] Agent deliberate request: {}", requestJson);
+        String json = sender.send(requestJson, endpoint("/agent/deliberate"), headers(), Request.Action.POST);
+        NPCSystem.debugLog("[npc-system] Agent deliberate response: {}", json);
         return GSON.fromJson(json, DeliberateAgentResponse.class);
     }
 

@@ -49,6 +49,7 @@ public class ConfigManager {
 
     private static final class _Config {
         private boolean enabled = true;
+        private boolean debug = false;
         @Deprecated
         private String dbURL = "http://localhost:8080";
         private String apiURL = "http://localhost:11434";
@@ -67,6 +68,7 @@ public class ConfigManager {
         private static String toJson() {
             _Config config = new _Config();
             config.enabled = Config.enabled;
+            config.debug = Config.debug;
             config.dbURL = Config.dbURL;
             config.apiURL = Config.apiURL;
             config.chat_model = Config.chat_model;
@@ -86,6 +88,7 @@ public class ConfigManager {
 
         private void set() {
             Config.enabled = enabled;
+            Config.debug = debug;
             Config.dbURL = dbURL;
             Config.apiURL = apiURL;
             Config.chat_model = chat_model;
