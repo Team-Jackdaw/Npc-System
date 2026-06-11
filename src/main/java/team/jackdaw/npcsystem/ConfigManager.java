@@ -53,6 +53,11 @@ public class ConfigManager {
         private String dbURL = "http://localhost:8080";
         private String apiURL = "http://localhost:11434";
         private String chat_model = "qwen2.5:7b";
+        private boolean agentEnabled = false;
+        private String agentBaseUrl = "http://127.0.0.1:8765";
+        private String agentMode = "fast";
+        private String agentAuthToken = "";
+        private boolean agentFallbackToOllama = true;
         private double range = 10.0;
         private boolean isBubble = true;
         private boolean isChatBar = true;
@@ -65,6 +70,11 @@ public class ConfigManager {
             config.dbURL = Config.dbURL;
             config.apiURL = Config.apiURL;
             config.chat_model = Config.chat_model;
+            config.agentEnabled = Config.agentEnabled;
+            config.agentBaseUrl = Config.agentBaseUrl;
+            config.agentMode = Config.agentMode;
+            config.agentAuthToken = Config.agentAuthToken;
+            config.agentFallbackToOllama = Config.agentFallbackToOllama;
             config.range = Config.range;
             config.isBubble = Config.isBubble;
             config.isChatBar = Config.isChatBar;
@@ -79,6 +89,11 @@ public class ConfigManager {
             Config.dbURL = dbURL;
             Config.apiURL = apiURL;
             Config.chat_model = chat_model;
+            Config.agentEnabled = agentEnabled;
+            Config.agentBaseUrl = agentBaseUrl;
+            Config.agentMode = agentMode;
+            Config.agentAuthToken = agentAuthToken;
+            Config.agentFallbackToOllama = agentFallbackToOllama;
             Config.range = range;
             Config.isBubble = isBubble;
             Config.isChatBar = isChatBar;

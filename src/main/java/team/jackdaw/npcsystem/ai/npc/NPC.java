@@ -69,6 +69,14 @@ public class NPC extends Agent {
         }
     }
 
+    public List<ObservationEvent> recentEvents() {
+        return List.copyOf(recentEvents);
+    }
+
+    public List<ObservationEvent> importantEvents() {
+        return List.copyOf(importantEvents);
+    }
+
     /**
      * Get the schedule of this day.
      *

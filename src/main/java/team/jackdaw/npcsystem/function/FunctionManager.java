@@ -2,10 +2,12 @@ package team.jackdaw.npcsystem.function;
 
 import team.jackdaw.npcsystem.BaseManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.agent.protocol.AgentToolDescriptor;
 import team.jackdaw.npcsystem.api.json.Function;
 import team.jackdaw.npcsystem.api.json.Tool;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -57,5 +59,28 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
         tool.function.parameters.properties = function.properties;
         tool.function.parameters.required = Objects.requireNonNullElseGet(function.required, () -> function.properties.keySet().stream().map(Object::toString).toArray(String[]::new));
         return tool;
+    }
+
+    public AgentToolDescriptor getAgentToolDescriptor(String functionName) {
+        CustomFunction function = get(functionName);
+        AgentToolDescriptor descriptor = new AgentToolDescriptor();
+        descriptor.name = functionName;
+        descriptor.kind = isTaskFunction(function) ? "task" : "tool";
+        descriptor.description = function.description;
+        descriptor.parameters = function.properties == null ? Map.of() : function.properties;
+        String[] required = Objects.requireNonNullElseGet(function.required, () -> descriptor.parameters.keySet().stream().map(Object::toString).toArray(String[]::new));
+        descriptor.required = required;
+        return descriptor;
+    }
+
+    public List<AgentToolDescriptor> getAgentToolDescriptors(List<String> functionNames) {
+        return functionNames.stream()
+                .filter(this::isRegistered)
+                .map(this::getAgentToolDescriptor)
+                .toList();
+    }
+
+    private static boolean isTaskFunction(CustomFunction function) {
+        return function instanceof NpcTaskFunction;
     }
 }
