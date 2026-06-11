@@ -1,6 +1,6 @@
 # NPC 运行能力说明
 
-Last updated: 2026-06-11 16:39:09 CST
+Last updated: 2026-06-11 19:36:22 CST
 
 本文按当前代码实现说明 NPC 在游戏中可以预期完成的任务、运行循环、玩家交互、外部 agent 协议、可调用接口和记忆存储方式。
 
@@ -302,6 +302,19 @@ Deliberate 响应字段：
 ```
 
 当前 Java 端会使用 `speech` 或 action 中 `say.message` 作为对话文本。`memory_updates` 字段已在协议中存在，但尚未自动写入本地记忆。
+
+### Master Agent
+
+Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、单例 agent：
+
+- `kind=master`
+- `permission=3`
+- 不具备 sensor、默认行为和 task batch。
+- 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
+- 可以使用 `memory_query`、`memory_record`、`end_conversation`。
+- 可以在权限验证通过时使用 `call_command` 执行管理员级 Minecraft 命令。
+
+普通 NPC 的 `permission=1`，即使 agent 返回 `call_command`，Java 侧也会拒绝。
 
 ## Agent 可调用的 NPC 接口
 

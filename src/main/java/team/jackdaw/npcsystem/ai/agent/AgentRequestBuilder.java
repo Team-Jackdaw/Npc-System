@@ -3,10 +3,13 @@ package team.jackdaw.npcsystem.ai.agent;
 import net.minecraft.server.level.ServerPlayer;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.NPC_AI;
+import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.agent.protocol.AgentLimits;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentRequest;
+import team.jackdaw.npcsystem.ai.master.Master;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
 import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
@@ -20,33 +23,33 @@ import java.util.Map;
 import java.util.UUID;
 
 public class AgentRequestBuilder {
-    public FastAgentRequest fast(ConversationWindow conversation, String message, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    public FastAgentRequest fast(ConversationWindow conversation, String message, Agent agent) {
         FastAgentRequest request = new FastAgentRequest();
         request.rid = UUID.randomUUID().toString();
         request.mode = "fast";
-        request.npc = fastNpc(npc);
-        request.evt = recentFastEvents(npc);
+        request.npc = fastAgent(agent);
+        request.evt = recentFastEvents(agent);
         if (message != null && !message.isBlank()) {
             request.evt.add(List.of("CHAT_HEARD", 7, message, 0L));
         }
-        request.near = fastNear(npc);
+        request.near = fastNear(agent);
         request.tools = availableToolNames(conversation);
         request.limits = limits(2, 60);
         return request;
     }
 
-    public FastAgentRequest fast(ConversationWindow conversation, NpcTaskBatchResult taskResult, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    public FastAgentRequest fast(ConversationWindow conversation, NpcTaskBatchResult taskResult, NPC npc) {
         FastAgentRequest request = fast(conversation, "", npc);
         request.evt.add(List.of("TASK_BATCH_FINISHED", 8, taskResult.summary(), taskResult.gameTime()));
         return request;
     }
 
-    public DeliberateAgentRequest deliberate(ConversationWindow conversation, String message, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    public DeliberateAgentRequest deliberate(ConversationWindow conversation, String message, Agent agent) {
         DeliberateAgentRequest request = new DeliberateAgentRequest();
         request.request_id = UUID.randomUUID().toString();
         request.mode = "deliberate";
-        request.npc = deliberateNpc(npc);
-        request.observations = observations(npc);
+        request.npc = deliberateAgent(agent);
+        request.observations = observations(agent);
         request.conversation = conversation(conversation, message);
         request.memory = memory();
         request.available_tools = FunctionManager.getInstance().getAgentToolDescriptors(availableToolNames(conversation));
@@ -54,7 +57,7 @@ public class AgentRequestBuilder {
         return request;
     }
 
-    public DeliberateAgentRequest deliberate(ConversationWindow conversation, NpcTaskBatchResult taskResult, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    public DeliberateAgentRequest deliberate(ConversationWindow conversation, NpcTaskBatchResult taskResult, NPC npc) {
         DeliberateAgentRequest request = deliberate(conversation, taskResult.summary(), npc);
         request.observations.recent_events = new ArrayList<>(request.observations.recent_events);
         request.observations.recent_events.add(Map.of(
@@ -67,11 +70,13 @@ public class AgentRequestBuilder {
         return request;
     }
 
-    private static FastAgentRequest.Npc fastNpc(team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    private static FastAgentRequest.Npc fastAgent(Agent agent) {
         FastAgentRequest.Npc dto = new FastAgentRequest.Npc();
-        dto.id = npc.getUUID().toString();
-        dto.name = npcName(npc);
-        NPCEntity entity = NPC_AI.getNPCEntity(npc);
+        dto.id = agent.getUUID().toString();
+        dto.name = agentName(agent);
+        dto.kind = agentKind(agent);
+        dto.permission = agent.getPermissionLevel();
+        NPCEntity entity = agent instanceof NPC npc ? NPC_AI.getNPCEntity(npc) : null;
         if (entity != null) {
             dto.task = entity.getTaskController().status();
             dto.hp = entity.getHealth();
@@ -86,9 +91,9 @@ public class AgentRequestBuilder {
         return dto;
     }
 
-    private static FastAgentRequest.Near fastNear(team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    private static FastAgentRequest.Near fastNear(Agent agent) {
         FastAgentRequest.Near near = new FastAgentRequest.Near();
-        NPCEntity entity = NPC_AI.getNPCEntity(npc);
+        NPCEntity entity = agent instanceof NPC npc ? NPC_AI.getNPCEntity(npc) : null;
         if (entity == null) {
             near.p = List.of();
             near.n = List.of();
@@ -102,14 +107,16 @@ public class AgentRequestBuilder {
         return near;
     }
 
-    private static DeliberateAgentRequest.Npc deliberateNpc(team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    private static DeliberateAgentRequest.Npc deliberateAgent(Agent agent) {
         DeliberateAgentRequest.Npc dto = new DeliberateAgentRequest.Npc();
-        dto.uuid = npc.getUUID().toString();
-        dto.name = npcName(npc);
-        dto.instruction = npc.getInstruction();
-        NPCEntity entity = NPC_AI.getNPCEntity(npc);
+        dto.uuid = agent.getUUID().toString();
+        dto.name = agentName(agent);
+        dto.kind = agentKind(agent);
+        dto.permission = agent.getPermissionLevel();
+        dto.instruction = agent.getInstruction();
+        NPCEntity entity = agent instanceof NPC npc ? NPC_AI.getNPCEntity(npc) : null;
         if (entity == null) {
-            dto.status = Map.of("task", "idle");
+            dto.status = Map.of("entity", "none", "task", "idle");
         } else {
             NpcSensorState.Snapshot snapshot = entity.getSensorState().snapshot();
             dto.status = Map.of(
@@ -125,12 +132,17 @@ public class AgentRequestBuilder {
         return dto;
     }
 
-    private static DeliberateAgentRequest.Observations observations(team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    private static DeliberateAgentRequest.Observations observations(Agent agent) {
         DeliberateAgentRequest.Observations observations = new DeliberateAgentRequest.Observations();
-        NPCEntity entity = NPC_AI.getNPCEntity(npc);
-        observations.summary = entity == null ? npc.getContextPrompt() : entity.getSensorState().snapshot().summary();
-        observations.recent_events = npc.recentEvents().stream().map(AgentRequestBuilder::event).toList();
-        observations.important_events = npc.importantEvents().stream().map(AgentRequestBuilder::event).toList();
+        NPCEntity entity = agent instanceof NPC npc ? NPC_AI.getNPCEntity(npc) : null;
+        observations.summary = entity == null ? agent.getInstruction() : entity.getSensorState().snapshot().summary();
+        if (agent instanceof NPC npc) {
+            observations.recent_events = npc.recentEvents().stream().map(AgentRequestBuilder::event).toList();
+            observations.important_events = npc.importantEvents().stream().map(AgentRequestBuilder::event).toList();
+        } else {
+            observations.recent_events = List.of();
+            observations.important_events = List.of();
+        }
         return observations;
     }
 
@@ -175,8 +187,11 @@ public class AgentRequestBuilder {
                 .toList();
     }
 
-    private static List<List<Object>> recentFastEvents(team.jackdaw.npcsystem.ai.npc.NPC npc) {
+    private static List<List<Object>> recentFastEvents(Agent agent) {
         List<List<Object>> events = new ArrayList<>();
+        if (!(agent instanceof NPC npc)) {
+            return events;
+        }
         npc.recentEvents().stream().skip(Math.max(0, npc.recentEvents().size() - 8)).forEach(event -> events.add(List.of(
                 event.type().name(),
                 event.importance(),
@@ -202,8 +217,18 @@ public class AgentRequestBuilder {
                 .toList();
     }
 
-    private static String npcName(team.jackdaw.npcsystem.ai.npc.NPC npc) {
-        NPCEntity entity = NPC_AI.getNPCEntity(npc);
-        return entity == null ? npc.getUUID().toString() : entity.getName().getString();
+    private static String agentName(Agent agent) {
+        if (agent instanceof Master) {
+            return "Master";
+        }
+        if (agent instanceof NPC npc) {
+            NPCEntity entity = NPC_AI.getNPCEntity(npc);
+            return entity == null ? npc.getUUID().toString() : entity.getName().getString();
+        }
+        return agent.getUUID().toString();
+    }
+
+    private static String agentKind(Agent agent) {
+        return agent instanceof Master ? "master" : "npc";
     }
 }

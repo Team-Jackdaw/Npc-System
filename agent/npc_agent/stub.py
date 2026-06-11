@@ -30,6 +30,24 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
     speaker = request.conversation.speaker.strip()
     lower_message = message.lower()
 
+    if is_master(request) and "call_command" in tool_names and command_requested(lower_message):
+        command = extract_command(message)
+        if command:
+            return DeliberateAgentResponse(
+                request_id=request.request_id,
+                actions=[
+                    AgentAction(
+                        type="call",
+                        kind="tool",
+                        name="call_command",
+                        arguments={"command": command},
+                        label="admin_command",
+                    )
+                ],
+                speech=f"执行命令：/{command}",
+                reasoning_summary="The administrator explicitly requested a Minecraft command.",
+            )
+
     if speaker and "follow_player" in tool_names and any(word in lower_message for word in ["follow", "跟着", "跟随"]):
         actions = [
             AgentAction(
@@ -76,6 +94,25 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
         action=AgentAction(type="none"),
         reasoning_summary="No useful action is available.",
     )
+
+
+def is_master(request: DeliberateAgentRequest) -> bool:
+    return request.npc.kind == "master" and request.npc.permission >= 3
+
+
+def command_requested(message: str) -> bool:
+    return message.startswith("/") or "执行命令" in message or "run command" in message or "call command" in message
+
+
+def extract_command(message: str) -> str:
+    stripped = message.strip()
+    if stripped.startswith("/"):
+        return stripped[1:].strip()
+    for marker in ["执行命令", "run command", "call command"]:
+        index = stripped.lower().find(marker)
+        if index >= 0:
+            return stripped[index + len(marker):].strip().removeprefix("/").strip()
+    return ""
 
 
 def latest_chat_text(events: list[list[object]]) -> str:

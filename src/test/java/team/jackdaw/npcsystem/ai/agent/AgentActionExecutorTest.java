@@ -4,7 +4,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.AgentAction;
+import team.jackdaw.npcsystem.ai.AgentManager;
+import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.master.Master;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.function.FunctionManager;
+import team.jackdaw.npcsystem.function.MasterPermissionFunction;
 import team.jackdaw.npcsystem.function.TestFunction;
 
 import java.util.List;
@@ -18,6 +23,7 @@ class AgentActionExecutorTest {
     @BeforeAll
     static void registerFunction() {
         FunctionManager.getInstance().register("agent_test_weather", new TestFunction());
+        FunctionManager.getInstance().register("agent_test_master_only", new MasterPermissionFunction());
     }
 
     @Test
@@ -92,6 +98,34 @@ class AgentActionExecutorTest {
 
         assertTrue(result.success());
         assertEquals("partial_actions_executed", result.toolResult().get("code"));
+    }
+
+    @Test
+    void npcCannotExecuteMasterOnlyAction() {
+        NPC npc = new NPC(java.util.UUID.randomUUID());
+        AgentManager.getInstance().register(npc);
+        ConversationWindow conversation = new ConversationWindow(npc.getUUID());
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(action("agent_test_master_only", Map.of()));
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
+
+        assertFalse(result.success());
+        assertEquals("actions_failed", result.toolResult().get("code"));
+    }
+
+    @Test
+    void masterCanExecuteMasterOnlyAction() {
+        ConversationWindow conversation = Master.getMaster().getConversationWindows();
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(action("agent_test_master_only", Map.of()));
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
+
+        assertTrue(result.success());
+        assertEquals("actions_executed", result.toolResult().get("code"));
     }
 
     private static AgentAction action(String name, Map<String, Object> arguments) {

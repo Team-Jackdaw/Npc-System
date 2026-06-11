@@ -1,6 +1,6 @@
 # External Agent Interface
 
-Last updated: 2026-06-11 16:39:09 CST
+Last updated: 2026-06-11 19:36:22 CST
 
 Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
 agent scaffold exists under `agent/`, and Java can call the external agent when
@@ -22,6 +22,9 @@ version.
 - Actions call the same registered functions exposed by `FunctionManager`.
 - Use `kind: "task"` for functions that start Minecraft-only NPC tasks, and
   `kind: "tool"` for other functions.
+- Request `npc.kind` is `npc` or `master`.
+- Request `npc.permission` mirrors Java-side tool permission. Only
+  `kind: "master"` with `permission >= 3` may call `call_command`.
 
 ## Fast Mode
 
@@ -38,6 +41,8 @@ Request:
   "npc": {
     "id": "npc-uuid",
     "name": "npc-name",
+    "kind": "npc",
+    "permission": 1,
     "task": "idle",
     "hp": 20.0,
     "pos": [10, 64, -5],
@@ -107,6 +112,8 @@ Request:
   "npc": {
     "uuid": "npc-uuid",
     "name": "npc-name",
+    "kind": "npc",
+    "permission": 1,
     "instruction": "Minecraft NPC instruction",
     "status": {
       "task": "running follow_entity",
@@ -234,6 +241,27 @@ Available completion-control tool:
   "arguments": {}
 }
 ```
+
+## Master Agent
+
+Master uses the same `/agent/fast` and `/agent/deliberate` endpoints as NPCs,
+but has no Minecraft entity and cannot run task actions. Its request identity is:
+
+```json
+{
+  "kind": "master",
+  "permission": 3,
+  "status": {
+    "entity": "none",
+    "task": "idle"
+  }
+}
+```
+
+Master may receive `call_command` in `available_tools`. The external agent must
+only emit `call_command` when `npc.kind == "master"` and `npc.permission >= 3`.
+Java also enforces this permission through `FunctionManager`, so normal NPCs
+cannot execute administrator commands even if a response tries to call the tool.
 
 ## Tool Result
 

@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 16:39:09 CST
+Last updated: 2026-06-11 19:36:22 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -92,6 +92,10 @@ Key layers:
   - `AgentRequestBuilder`
   - `AgentActionExecutor`
   - configurable NPC conversation routing to external agent with Ollama fallback.
+- Master external agent integration:
+  - same fast/deliberate endpoints as NPCs
+  - `kind=master`, `permission=3`
+  - high-permission `call_command` guarded by Java and agent-side identity.
 
 ## Waiting To Implement
 

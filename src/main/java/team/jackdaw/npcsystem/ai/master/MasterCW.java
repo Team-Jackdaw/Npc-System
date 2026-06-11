@@ -1,6 +1,7 @@
 package team.jackdaw.npcsystem.ai.master;
 
 import team.jackdaw.npcsystem.AsyncTask;
+import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.assistant.Mark;
 import team.jackdaw.npcsystem.ai.assistant.Summarise;
@@ -22,7 +23,7 @@ public class MasterCW extends ConversationWindow {
                 int importance = Mark.markInteger(res, "You are a mark assistant, you should mark the prompt from 0 to 10 based on how importance it is as a conversation.");
                 if (importance > 7) Memory.record(res, "Master");
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                NPCSystem.LOGGER.warn("[npc-system] Failed to summarize Master conversation", e);
             }
             return AsyncTask.nothingToDo();
         });

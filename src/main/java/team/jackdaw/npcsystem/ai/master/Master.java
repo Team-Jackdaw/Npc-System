@@ -41,7 +41,7 @@ public class Master extends Agent {
 
     @Override
     public String getInstruction() {
-        return "Your are the master of this Minecraf world!";
+        return "You are the Master agent of this Minecraft server. You are controlled by server administrators. You have permission to query and record memory, end conversations, and call administrator-level Minecraft commands through call_command when the administrator clearly requests it. Prefer concise Chinese replies and never call commands unless the intent is explicit.";
     }
 
     @Override

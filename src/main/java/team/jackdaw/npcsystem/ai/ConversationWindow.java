@@ -89,8 +89,8 @@ public class ConversationWindow {
     public ChatResponse chat(String message) {
         updateTime = System.currentTimeMillis();
         NPCSystem.debugLog("[npc-system] Conversation {} received player message: {}", uuid, message);
-        if (Config.agentEnabled && getAgent() instanceof NPC npc) {
-            ChatResponse externalResponse = chatWithExternalAgent(message, npc);
+        if (Config.agentEnabled) {
+            ChatResponse externalResponse = chatWithExternalAgent(message, getAgent());
             if (externalResponse != null || !Config.agentFallbackToOllama) {
                 return externalResponse;
             }
@@ -131,14 +131,14 @@ public class ConversationWindow {
         return response;
     }
 
-    private ChatResponse chatWithExternalAgent(String message, NPC npc) {
+    private ChatResponse chatWithExternalAgent(String message, Agent agent) {
         try {
             AgentActionExecutor.AgentExecutionResult result;
             if ("deliberate".equalsIgnoreCase(Config.agentMode)) {
-                DeliberateAgentResponse response = EXTERNAL_AGENT_CLIENT.deliberate(AGENT_REQUEST_BUILDER.deliberate(this, message, npc));
+                DeliberateAgentResponse response = EXTERNAL_AGENT_CLIENT.deliberate(AGENT_REQUEST_BUILDER.deliberate(this, message, agent));
                 result = AGENT_ACTION_EXECUTOR.execute(this, response);
             } else {
-                FastAgentResponse response = EXTERNAL_AGENT_CLIENT.fast(AGENT_REQUEST_BUILDER.fast(this, message, npc));
+                FastAgentResponse response = EXTERNAL_AGENT_CLIENT.fast(AGENT_REQUEST_BUILDER.fast(this, message, agent));
                 result = AGENT_ACTION_EXECUTOR.execute(this, response);
             }
             NPCSystem.debugLog("[npc-system] External agent chat result success={} toolResult={}", result.success(), result.toolResult());

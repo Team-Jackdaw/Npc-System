@@ -17,6 +17,8 @@ class FastNpc(BaseModel):
 
     id: str = ""
     name: str = ""
+    kind: Literal["npc", "master"] = "npc"
+    permission: int = 1
     task: str = "idle"
     hp: float = 0.0
     pos: list[float] = Field(default_factory=list)
@@ -84,6 +86,8 @@ class DeliberateNpc(BaseModel):
 
     uuid: str = ""
     name: str = ""
+    kind: Literal["npc", "master"] = "npc"
+    permission: int = 1
     instruction: str = ""
     status: dict[str, Any] = Field(default_factory=dict)
 

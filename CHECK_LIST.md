@@ -102,6 +102,28 @@ Last updated: 2026-06-11
    - NPC 开始跟随玩家；
    - 服务端日志记录 agent request、response、action result。
 
+## Master Agent 测试
+
+1. 保持 Python agent 服务运行。
+2. 设置：
+   - `agentEnabled=true`
+   - `agentMode=deliberate`
+3. 执行 `/npc debug on`。
+4. 执行 `/npc master 你好，介绍一下你能做什么`。
+5. 预期：
+   - 服务端日志记录 Master external agent request；
+   - 请求中 `kind=master`、`permission=3`；
+   - Master 回复管理员。
+6. 执行 `/npc master /time set day`。
+7. 预期：
+   - agent 返回 `call_command`；
+   - 服务端执行 `/time set day`；
+   - 日志中出现 `call_command` action result。
+8. 验证普通 NPC 不具备该权限：
+   - 与普通 NPC 对话请求执行命令；
+   - 预期普通 NPC 不应调用 `call_command`；
+   - 如果 agent 错误返回，Java 侧应返回 `permission_denied`。
+
 ## Task Batch 回调测试
 
 1. 继续上一项 follow 测试。

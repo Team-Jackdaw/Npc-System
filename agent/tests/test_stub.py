@@ -79,3 +79,35 @@ def test_deliberate_stub_returns_none_without_matching_tool():
     response = decide_deliberate_stub(request)
 
     assert response.action.type == "none"
+
+
+def test_master_stub_can_call_command_when_authorized():
+    request = DeliberateAgentRequest.model_validate(
+        {
+            "request_id": "master-1",
+            "npc": {"uuid": "master", "name": "Master", "kind": "master", "permission": 3},
+            "conversation": {"speaker": "Admin", "message": "/time set day"},
+            "available_tools": [{"name": "call_command", "kind": "tool"}],
+        }
+    )
+
+    response = decide_deliberate_stub(request)
+
+    assert response.actions[0].name == "call_command"
+    assert response.actions[0].arguments["command"] == "time set day"
+
+
+def test_npc_stub_cannot_call_command_even_if_tool_is_present():
+    request = DeliberateAgentRequest.model_validate(
+        {
+            "request_id": "npc-1",
+            "npc": {"uuid": "npc", "name": "npc", "kind": "npc", "permission": 1},
+            "conversation": {"speaker": "Steve", "message": "/time set day"},
+            "available_tools": [{"name": "call_command", "kind": "tool"}],
+        }
+    )
+
+    response = decide_deliberate_stub(request)
+
+    assert not response.actions
+    assert response.action.type == "none"

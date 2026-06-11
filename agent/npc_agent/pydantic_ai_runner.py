@@ -31,8 +31,9 @@ async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig
         result = await agent.run(
             json.dumps(request.model_dump(), ensure_ascii=False),
             instructions=(
-                "You control one Minecraft NPC. Return only the structured output. "
-                "Use at most two actions. Prefer say followed by one task when replying and acting."
+                "You control one Minecraft agent. Return only the structured output. "
+                "Use at most two actions. Prefer say followed by one task when replying and acting. "
+                "Only requests with npc.kind='master' and permission>=3 may call call_command."
             ),
         )
         return normalize_fast_response(result.output, request)
@@ -49,8 +50,9 @@ async def decide_deliberate_pydantic_ai(
         result = await agent.run(
             json.dumps(request.model_dump(), ensure_ascii=False),
             instructions=(
-                "You control one Minecraft NPC. Return the structured output only. "
+                "You control one Minecraft agent. Return the structured output only. "
                 "Use at most two actions. Prefer say followed by one task when replying and acting. "
+                "Only requests with npc.kind='master' and permission>=3 may call call_command. "
                 "Do not reveal chain-of-thought; provide a concise reasoning_summary."
             ),
         )

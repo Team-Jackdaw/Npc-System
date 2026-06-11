@@ -15,6 +15,8 @@ def test_fast_schema_round_trip():
             "npc": {
                 "id": "npc-1",
                 "name": "npc",
+                "kind": "npc",
+                "permission": 1,
                 "task": "idle",
                 "hp": 20.0,
                 "pos": [1, 64, 2],
@@ -29,6 +31,8 @@ def test_fast_schema_round_trip():
     )
 
     assert request.rid == "r1"
+    assert request.npc.kind == "npc"
+    assert request.npc.permission == 1
     assert request.evt[0][0] == "CHAT_HEARD"
     assert request.model_dump()["future_field"] == "allowed"
 
@@ -48,6 +52,8 @@ def test_deliberate_schema_round_trip():
             "npc": {
                 "uuid": "npc-2",
                 "name": "npc",
+                "kind": "master",
+                "permission": 3,
                 "instruction": "act",
                 "status": {"task": "idle"},
             },
@@ -61,6 +67,8 @@ def test_deliberate_schema_round_trip():
     )
 
     assert request.request_id == "r2"
+    assert request.npc.kind == "master"
+    assert request.npc.permission == 3
     assert request.available_tools[0].name == "follow_player"
     assert request.model_dump()["future_field"] == "allowed"
 

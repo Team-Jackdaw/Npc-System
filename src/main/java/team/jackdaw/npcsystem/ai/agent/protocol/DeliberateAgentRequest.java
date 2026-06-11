@@ -17,6 +17,8 @@ public class DeliberateAgentRequest {
     public static class Npc {
         public String uuid;
         public String name;
+        public String kind;
+        public int permission;
         public String instruction;
         public Map<String, Object> status;
     }

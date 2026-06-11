@@ -16,6 +16,8 @@ public class FastAgentRequest {
     public static class Npc {
         public String id;
         public String name;
+        public String kind;
+        public int permission;
         public String task;
         public double hp;
         public List<Double> pos;
