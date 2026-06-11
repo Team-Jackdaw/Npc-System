@@ -32,8 +32,11 @@ def test_fast_schema_round_trip():
     assert request.evt[0][0] == "CHAT_HEARD"
     assert request.model_dump()["future_field"] == "allowed"
 
-    response = FastAgentResponse(rid=request.rid, a="call", kind="task", name="say", args={"message": "hi"})
-    assert response.model_dump()["name"] == "say"
+    response = FastAgentResponse(
+        rid=request.rid,
+        actions=[{"type": "call", "kind": "task", "name": "say", "arguments": {"message": "hi"}}],
+    )
+    assert response.actions[0].name == "say"
 
 
 def test_deliberate_schema_round_trip():
@@ -63,8 +66,11 @@ def test_deliberate_schema_round_trip():
 
     response = DeliberateAgentResponse(
         request_id=request.request_id,
-        action={"type": "call", "kind": "task", "name": "follow_player", "arguments": {"player": "Steve"}},
+        actions=[
+            {"type": "call", "kind": "task", "name": "say", "arguments": {"message": "好。"}},
+            {"type": "call", "kind": "task", "name": "follow_player", "arguments": {"player": "Steve"}},
+        ],
         speech="好。",
         reasoning_summary="follow request",
     )
-    assert response.action.name == "follow_player"
+    assert response.actions[1].name == "follow_player"

@@ -14,5 +14,6 @@ public class FunctionRegistration {
         FunctionManager.getInstance().register("follow_player", new FollowPlayerFunction());
         FunctionManager.getInstance().register("wait", new WaitFunction());
         FunctionManager.getInstance().register("stop_task", new StopTaskFunction());
+        FunctionManager.getInstance().register("resume_default_behavior", new ResumeDefaultBehaviorFunction());
     }
 }

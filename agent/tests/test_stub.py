@@ -47,9 +47,23 @@ def test_deliberate_stub_follows_player_when_requested():
 
     response = decide_deliberate_stub(request)
 
-    assert response.action.type == "call"
-    assert response.action.name == "follow_player"
-    assert response.action.arguments["player"] == "Steve"
+    assert response.actions[0].name == "follow_player"
+    assert response.actions[0].arguments["player"] == "Steve"
+
+
+def test_deliberate_stub_can_return_say_then_follow():
+    request = DeliberateAgentRequest.model_validate(
+        {
+            "request_id": "r2",
+            "npc": {"uuid": "npc", "name": "npc"},
+            "conversation": {"speaker": "Steve", "message": "please follow me"},
+            "available_tools": [{"name": "say", "kind": "task"}, {"name": "follow_player", "kind": "task"}],
+        }
+    )
+
+    response = decide_deliberate_stub(request)
+
+    assert [action.name for action in response.actions] == ["say", "follow_player"]
 
 
 def test_deliberate_stub_returns_none_without_matching_tool():

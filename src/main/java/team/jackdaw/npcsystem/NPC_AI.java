@@ -10,6 +10,9 @@ import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
+import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
+import team.jackdaw.npcsystem.entity.task.TaskSource;
+import team.jackdaw.npcsystem.entity.task.WaitTask;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -120,5 +123,17 @@ public interface NPC_AI {
             if (player != null) player.sendSystemMessage(message1);
             else NPCSystem.server.sendSystemMessage(message1);
         }
+    }
+
+    static void handleAgentTaskBatchCompleted(NPCEntity entity, NpcTaskBatchResult result) {
+        NPC npc = getAI(entity);
+        if (npc == null) {
+            return;
+        }
+        if (!entity.getTaskController().isBusy()) {
+            entity.getTaskController().assign(entity, new WaitTask(40), TaskSource.SYSTEM);
+        }
+        ConversationWindow window = npc.getConversationWindows();
+        AsyncTask.call(() -> window.requestAgentFollowUp(result));
     }
 }

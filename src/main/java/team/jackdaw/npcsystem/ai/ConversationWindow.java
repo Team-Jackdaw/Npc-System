@@ -1,6 +1,7 @@
 package team.jackdaw.npcsystem.ai;
 
 import team.jackdaw.npcsystem.Config;
+import team.jackdaw.npcsystem.AsyncTask;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.agent.AgentActionExecutor;
 import team.jackdaw.npcsystem.ai.agent.AgentRequestBuilder;
@@ -9,6 +10,10 @@ import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.*;
+import team.jackdaw.npcsystem.entity.task.NpcTask;
+import team.jackdaw.npcsystem.entity.task.NpcTaskAssignment;
+import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
+import team.jackdaw.npcsystem.entity.task.TaskSource;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 
@@ -25,6 +30,8 @@ public class ConversationWindow {
     protected UUID target;
     private boolean onWait = false;
     private String lastInjectedContext = "";
+    private String activeAgentBatchId;
+    private boolean activeAgentBatchCallback;
 
     public ConversationWindow(UUID uuid) {
         this.uuid = uuid;
@@ -143,6 +150,80 @@ public class ConversationWindow {
         } catch (Exception e) {
             NPCSystem.LOGGER.error("[npc-system] External agent request failed", e);
             return null;
+        }
+    }
+
+    public AsyncTask.TaskResult requestAgentFollowUp(NpcTaskBatchResult taskResult) {
+        updateTime = System.currentTimeMillis();
+        if (!Config.agentEnabled || !(getAgent() instanceof NPC npc)) {
+            return AsyncTask.nothingToDo();
+        }
+        try {
+            if ("deliberate".equalsIgnoreCase(Config.agentMode)) {
+                DeliberateAgentResponse response = EXTERNAL_AGENT_CLIENT.deliberate(AGENT_REQUEST_BUILDER.deliberate(this, taskResult, npc));
+                return new AgentFollowUpResult(taskResult.summary(), response);
+            }
+            FastAgentResponse response = EXTERNAL_AGENT_CLIENT.fast(AGENT_REQUEST_BUILDER.fast(this, taskResult, npc));
+            return new AgentFollowUpResult(taskResult.summary(), response);
+        } catch (Exception e) {
+            NPCSystem.LOGGER.error("[npc-system] External agent follow-up failed", e);
+            return AsyncTask.nothingToDo();
+        }
+    }
+
+    public void beginAgentBatch(String batchId, boolean callbackOnBatchComplete) {
+        activeAgentBatchId = batchId;
+        activeAgentBatchCallback = callbackOnBatchComplete;
+    }
+
+    public void endAgentBatch() {
+        activeAgentBatchId = null;
+        activeAgentBatchCallback = false;
+    }
+
+    public NpcTaskAssignment createAgentTaskAssignment(NpcTask task) {
+        return NpcTaskAssignment.of(task, TaskSource.AGENT)
+                .withBatch(activeAgentBatchId, activeAgentBatchCallback);
+    }
+
+    private final class AgentFollowUpResult implements AsyncTask.TaskResult {
+        private final String message;
+        private final FastAgentResponse fastResponse;
+        private final DeliberateAgentResponse deliberateResponse;
+
+        private AgentFollowUpResult(String message, FastAgentResponse fastResponse) {
+            this.message = message;
+            this.fastResponse = fastResponse;
+            this.deliberateResponse = null;
+        }
+
+        private AgentFollowUpResult(String message, DeliberateAgentResponse deliberateResponse) {
+            this.message = message;
+            this.fastResponse = null;
+            this.deliberateResponse = deliberateResponse;
+        }
+
+        @Override
+        public void execute() {
+            AgentActionExecutor.AgentExecutionResult result = fastResponse != null
+                    ? AGENT_ACTION_EXECUTOR.execute(ConversationWindow.this, fastResponse)
+                    : AGENT_ACTION_EXECUTOR.execute(ConversationWindow.this, deliberateResponse);
+            if (!result.success()) {
+                NPCSystem.LOGGER.warn("[npc-system] Agent follow-up failed: {}", result.toolResult());
+                return;
+            }
+            String responseText = result.responseText();
+            if (responseText != null && !responseText.isBlank()) {
+                messages = Ollama.messageBuilder(messages)
+                        .addMessage(Role.USER, message)
+                        .addMessage(Role.ASSISTANT, responseText)
+                        .build();
+            }
+        }
+
+        @Override
+        public boolean isCallable() {
+            return true;
         }
     }
 

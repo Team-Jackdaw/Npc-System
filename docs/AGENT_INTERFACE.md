@@ -1,6 +1,6 @@
 # External Agent Interface
 
-Last updated: 2026-06-11 10:04:06 CST
+Last updated: 2026-06-11 16:39:09 CST
 
 Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
 agent scaffold exists under `agent/`, and Java can call the external agent when
@@ -17,7 +17,8 @@ version.
 - `version` / `v` is currently `1`.
 - `request_id` / `rid` must be echoed by the response.
 - `mode` is either `fast` or `deliberate`.
-- Each response may request at most one action.
+- Each response may request at most two actions through `actions`.
+- Legacy single-action fields are still accepted for compatibility.
 - Actions call the same registered functions exposed by `FunctionManager`.
 - Use `kind: "task"` for functions that start Minecraft-only NPC tasks, and
   `kind: "tool"` for other functions.
@@ -52,7 +53,7 @@ Request:
   },
   "tools": ["say", "look_at_player", "walk_to_player", "follow_player", "wait", "stop_task"],
   "limits": {
-    "max_actions": 1,
+    "max_actions": 2,
     "max_reply_chars": 60
   }
 }
@@ -71,11 +72,25 @@ Response:
   "args": {
     "message": "你好。"
   },
+  "actions": [
+    {
+      "type": "call",
+      "kind": "task",
+      "name": "say",
+      "arguments": {
+        "message": "你好。"
+      },
+      "callback": true,
+      "label": "reply"
+    }
+  ],
   "note": "reply"
 }
 ```
 
-`a` is `none` or `call`. `note` is optional and should stay short.
+`a` is `none` or `call`. `actions` is preferred. If `actions` is present, Java
+executes it before looking at legacy `a/kind/name/args`. `note` is optional and
+should stay short.
 
 ## Deliberate Mode
 
@@ -127,7 +142,7 @@ Request:
     }
   ],
   "limits": {
-    "max_actions": 1,
+    "max_actions": 2,
     "max_reply_chars": 200
   }
 }
@@ -149,14 +164,76 @@ Response:
       "seconds": 30
     }
   },
+  "actions": [
+    {
+      "type": "call",
+      "kind": "task",
+      "name": "say",
+      "arguments": {
+        "message": "好，我跟着你。"
+      },
+      "label": "reply"
+    },
+    {
+      "type": "call",
+      "kind": "task",
+      "name": "follow_player",
+      "arguments": {
+        "player": "Steve",
+        "seconds": 30
+      },
+      "label": "follow_request"
+    }
+  ],
   "speech": "好，我跟着你。",
   "memory_updates": [],
   "reasoning_summary": "Player asked this NPC to follow."
 }
 ```
 
-`action.type` is `none` or `call`. `reasoning_summary` is a concise decision
-summary, not a hidden chain-of-thought transcript.
+`action.type` is `none` or `call`. `actions` is preferred and currently limited
+to two entries, mainly for `say + do` responses. `reasoning_summary` is a
+concise decision summary, not a hidden chain-of-thought transcript.
+
+## Task Completion Callback
+
+When an AGENT task batch finishes, Java sends a follow-up request to the same
+fast or deliberate endpoint. Fast mode appends a compact event:
+
+```json
+["TASK_BATCH_FINISHED", 8, "Agent task batch ... finished: say:finished, follow_entity:finished", 12345]
+```
+
+Deliberate mode appends a structured `recent_events` entry with:
+
+```json
+{
+  "type": "TASK_BATCH_FINISHED",
+  "importance": 8,
+  "text": "Agent task batch ... finished: ...",
+  "game_time": 12345,
+  "facts": {
+    "batch_id": "batch-uuid",
+    "status": "finished",
+    "tasks": ["say:finished", "follow_entity:finished"]
+  }
+}
+```
+
+The NPC enters a short system wait while this callback is in flight. If the
+agent returns new actions, they are queued as a new AGENT batch. If the agent is
+done, it should call `resume_default_behavior`.
+
+Available completion-control tool:
+
+```json
+{
+  "type": "call",
+  "kind": "tool",
+  "name": "resume_default_behavior",
+  "arguments": {}
+}
+```
 
 ## Tool Result
 

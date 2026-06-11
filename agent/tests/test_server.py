@@ -45,5 +45,4 @@ def test_deliberate_endpoint():
     assert response.status_code == 200
     body = response.json()
     assert body["request_id"] == "r2"
-    assert body["action"]["type"] == "call"
-    assert body["action"]["name"] == "follow_player"
+    assert body["actions"][0]["name"] == "follow_player"

@@ -15,6 +15,7 @@ import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
 import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
 import team.jackdaw.npcsystem.entity.sensor.ObservationCollector;
 import team.jackdaw.npcsystem.entity.task.DefaultBehaviorController;
+import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
 import team.jackdaw.npcsystem.entity.task.NpcTaskController;
 
 import java.util.Comparator;
@@ -60,6 +61,10 @@ public class NPCEntity extends Villager {
         }
         defaultBehaviorController.tick(this);
         taskController.tick(this);
+        NpcTaskBatchResult completedBatch;
+        while ((completedBatch = taskController.pollCompletedBatch()) != null) {
+            NPC_AI.handleAgentTaskBatchCompleted(this, completedBatch);
+        }
     }
 
     @Override

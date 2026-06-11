@@ -3,11 +3,17 @@ package team.jackdaw.npcsystem.entity.task;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class NpcTaskController {
     private NpcTaskAssignment currentTask;
     private final Deque<NpcTaskAssignment> queue = new ArrayDeque<>();
+    private final Deque<NpcTaskBatchResult> completedBatches = new ArrayDeque<>();
+    private final Map<String, BatchTracker> batches = new HashMap<>();
     private String lastResult = "idle";
 
     public boolean assign(NPCEntity npc, NpcTask task) {
@@ -23,6 +29,7 @@ public class NpcTaskController {
             lastResult = "failed task rejected";
             return false;
         }
+        trackBatch(assignment);
         if (currentTask == null) {
             start(npc, assignment);
             return true;
@@ -49,8 +56,10 @@ public class NpcTaskController {
         currentTask.task().tick(npc);
         if (currentTask.task().isFinished(npc)) {
             lastResult = "finished " + currentTask.source().name().toLowerCase() + " " + currentTask.name();
-            currentTask.task().stop(npc);
+            NpcTaskAssignment finished = currentTask;
+            finished.task().stop(npc);
             currentTask = null;
+            finishBatchTask(npc, finished);
             startNext(npc);
         }
     }
@@ -62,6 +71,8 @@ public class NpcTaskController {
             currentTask = null;
         }
         queue.clear();
+        batches.clear();
+        completedBatches.clear();
         if (npc != null) {
             npc.getNavigation().stop();
         }
@@ -89,6 +100,10 @@ public class NpcTaskController {
 
     public TaskSource currentSource() {
         return currentTask == null ? null : currentTask.source();
+    }
+
+    public NpcTaskBatchResult pollCompletedBatch() {
+        return completedBatches.pollFirst();
     }
 
     public String status() {
@@ -127,6 +142,68 @@ public class NpcTaskController {
                 return;
             }
             lastResult = "failed queued " + next.name();
+        }
+    }
+
+    private void trackBatch(NpcTaskAssignment assignment) {
+        if (assignment.batchId() == null || assignment.batchId().isBlank()) {
+            return;
+        }
+        batches.computeIfAbsent(assignment.batchId(), BatchTracker::new)
+                .add(assignment.name(), assignment.callbackOnBatchComplete());
+    }
+
+    private void finishBatchTask(NPCEntity npc, NpcTaskAssignment assignment) {
+        if (assignment.batchId() == null || assignment.batchId().isBlank()) {
+            return;
+        }
+        BatchTracker tracker = batches.get(assignment.batchId());
+        if (tracker == null) {
+            return;
+        }
+        tracker.finish(assignment.name());
+        if (hasBatchTask(assignment.batchId())) {
+            return;
+        }
+        batches.remove(assignment.batchId());
+        if (!tracker.callbackOnComplete) {
+            return;
+        }
+        long gameTime = npc == null ? 0L : npc.level().getGameTime();
+        completedBatches.addLast(tracker.toResult(gameTime));
+    }
+
+    private boolean hasBatchTask(String batchId) {
+        if (currentTask != null && batchId.equals(currentTask.batchId())) {
+            return true;
+        }
+        return queue.stream().anyMatch(task -> batchId.equals(task.batchId()));
+    }
+
+    private static final class BatchTracker {
+        private final String batchId;
+        private final List<String> tasks = new ArrayList<>();
+        private boolean callbackOnComplete;
+
+        private BatchTracker(String batchId) {
+            this.batchId = batchId;
+        }
+
+        private void add(String taskName, boolean callbackOnBatchComplete) {
+            tasks.add(taskName);
+            callbackOnComplete = callbackOnComplete || callbackOnBatchComplete;
+        }
+
+        private void finish(String taskName) {
+            int index = tasks.indexOf(taskName);
+            if (index >= 0) {
+                tasks.set(index, taskName + ":finished");
+            }
+        }
+
+        private NpcTaskBatchResult toResult(long gameTime) {
+            String summary = "Agent task batch " + batchId + " finished: " + String.join(", ", tasks);
+            return new NpcTaskBatchResult(batchId, "finished", List.copyOf(tasks), summary, gameTime);
         }
     }
 }

@@ -5,7 +5,9 @@ public record NpcTaskAssignment(
         TaskSource source,
         int priority,
         boolean interruptible,
-        boolean resumeAfterInterrupt
+        boolean resumeAfterInterrupt,
+        String batchId,
+        boolean callbackOnBatchComplete
 ) {
     public static NpcTaskAssignment of(NpcTask task, TaskSource source) {
         return new NpcTaskAssignment(
@@ -13,7 +15,21 @@ public record NpcTaskAssignment(
                 source,
                 source.priority(),
                 true,
-                source == TaskSource.AGENT || source == TaskSource.SYSTEM
+                source == TaskSource.AGENT || source == TaskSource.SYSTEM,
+                null,
+                source == TaskSource.AGENT
+        );
+    }
+
+    public NpcTaskAssignment withBatch(String batchId, boolean callbackOnBatchComplete) {
+        return new NpcTaskAssignment(
+                task,
+                source,
+                priority,
+                interruptible,
+                resumeAfterInterrupt,
+                batchId,
+                callbackOnBatchComplete
         );
     }
 

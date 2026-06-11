@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 14:33:12 CST
+Last updated: 2026-06-11 16:39:09 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -76,10 +76,12 @@ Key layers:
   - `follow_player`
   - `wait`
   - `stop_task`
+  - `resume_default_behavior`
 - External agent protocol:
   - compact `fast` mode
   - richer `deliberate` mode
-  - single action per response
+  - up to two actions per response
+  - AGENT task batch completion callback
 - Python external agent scaffold:
   - FastAPI server
   - Pydantic schemas
@@ -125,7 +127,6 @@ Key layers:
   - inspect inventory
 - Agent loop improvements:
   - deliberate mode trigger policy
-  - task result feedback into observation buffers
   - memory update handling from external agent response
   - tool execution result reporting back to the Python agent
 - Python agent improvements:

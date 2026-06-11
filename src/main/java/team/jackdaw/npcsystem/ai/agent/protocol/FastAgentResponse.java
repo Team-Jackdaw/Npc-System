@@ -1,5 +1,6 @@
 package team.jackdaw.npcsystem.ai.agent.protocol;
 
+import java.util.List;
 import java.util.Map;
 
 public class FastAgentResponse {
@@ -10,5 +11,6 @@ public class FastAgentResponse {
     public String kind;
     public String name;
     public Map<String, Object> args;
+    public List<AgentAction> actions;
     public String note;
 }

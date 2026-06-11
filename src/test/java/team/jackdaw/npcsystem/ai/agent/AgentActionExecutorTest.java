@@ -3,9 +3,11 @@ package team.jackdaw.npcsystem.ai.agent;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
+import team.jackdaw.npcsystem.ai.agent.protocol.AgentAction;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.TestFunction;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -43,7 +45,7 @@ class AgentActionExecutorTest {
 
         assertTrue(result.success());
         assertEquals("success", result.toolResult().get("status"));
-        assertEquals("weather_found", result.toolResult().get("code"));
+        assertEquals("actions_executed", result.toolResult().get("code"));
     }
 
     @Test
@@ -58,6 +60,46 @@ class AgentActionExecutorTest {
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
 
         assertFalse(result.success());
-        assertEquals("function_not_found", result.toolResult().get("code"));
+        assertEquals("actions_failed", result.toolResult().get("code"));
+    }
+
+    @Test
+    void actionsListExecutesMultipleActions() {
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(
+                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius")),
+                action("agent_test_weather", Map.of("location", "Berlin", "format", "fahrenheit"))
+        );
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
+        assertEquals("actions_executed", result.toolResult().get("code"));
+    }
+
+    @Test
+    void actionsListIsLimitedToTwoActions() {
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(
+                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius")),
+                action("agent_test_weather", Map.of("location", "Berlin", "format", "fahrenheit")),
+                action("agent_test_weather", Map.of("location", "Rome", "format", "celsius"))
+        );
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
+        assertEquals("partial_actions_executed", result.toolResult().get("code"));
+    }
+
+    private static AgentAction action(String name, Map<String, Object> arguments) {
+        AgentAction action = new AgentAction();
+        action.type = "call";
+        action.kind = "tool";
+        action.name = name;
+        action.arguments = arguments;
+        return action;
     }
 }

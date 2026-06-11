@@ -32,7 +32,8 @@ public class NPC extends Agent {
                 "walk_to_npc",
                 "follow_player",
                 "wait",
-                "stop_task"
+                "stop_task",
+                "resume_default_behavior"
         ));
     }
 

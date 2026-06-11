@@ -31,14 +31,29 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
     lower_message = message.lower()
 
     if speaker and "follow_player" in tool_names and any(word in lower_message for word in ["follow", "跟着", "跟随"]):
-        return DeliberateAgentResponse(
-            request_id=request.request_id,
-            action=AgentAction(
+        actions = [
+            AgentAction(
                 type="call",
                 kind="task",
                 name="follow_player",
                 arguments={"player": speaker, "seconds": 30},
-            ),
+                label="follow_request",
+            )
+        ]
+        if "say" in tool_names:
+            actions.insert(
+                0,
+                AgentAction(
+                    type="call",
+                    kind="task",
+                    name="say",
+                    arguments={"message": "好，我跟着你。"},
+                    label="reply",
+                ),
+            )
+        return DeliberateAgentResponse(
+            request_id=request.request_id,
+            actions=actions,
             speech="好，我跟着你。",
             reasoning_summary="The player asked this NPC to follow.",
         )

@@ -32,7 +32,7 @@ async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig
             json.dumps(request.model_dump(), ensure_ascii=False),
             instructions=(
                 "You control one Minecraft NPC. Return only the structured output. "
-                "Use at most one action. Prefer a short say action for chat, otherwise none."
+                "Use at most two actions. Prefer say followed by one task when replying and acting."
             ),
         )
         return normalize_fast_response(result.output, request)
@@ -50,7 +50,8 @@ async def decide_deliberate_pydantic_ai(
             json.dumps(request.model_dump(), ensure_ascii=False),
             instructions=(
                 "You control one Minecraft NPC. Return the structured output only. "
-                "Use at most one action. Do not reveal chain-of-thought; provide a concise reasoning_summary."
+                "Use at most two actions. Prefer say followed by one task when replying and acting. "
+                "Do not reveal chain-of-thought; provide a concise reasoning_summary."
             ),
         )
         return normalize_deliberate_response(result.output, request)
@@ -66,6 +67,7 @@ def normalize_fast_response(response: FastAgentResponse, request: FastAgentReque
     response.rid = request.rid
     response.v = 1
     response.mode = "fast"
+    response.actions = response.actions[:2]
     if response.a == "none":
         response.kind = None
         response.name = None
@@ -80,6 +82,7 @@ def normalize_deliberate_response(
     response.request_id = request.request_id
     response.version = 1
     response.mode = "deliberate"
+    response.actions = response.actions[:2]
     if response.action.type == "none":
         response.action.kind = None
         response.action.name = None

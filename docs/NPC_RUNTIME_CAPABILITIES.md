@@ -1,6 +1,6 @@
 # NPC 运行能力说明
 
-Last updated: 2026-06-11 15:18:07 CST
+Last updated: 2026-06-11 16:39:09 CST
 
 本文按当前代码实现说明 NPC 在游戏中可以预期完成的任务、运行循环、玩家交互、外部 agent 协议、可调用接口和记忆存储方式。
 
@@ -16,6 +16,7 @@ Last updated: 2026-06-11 15:18:07 CST
 - 跟随玩家：在限定时间内跟随目标玩家并保持距离。
 - 等待：停止导航并持续若干秒。
 - 停止任务：取消当前任务并清空任务队列。
+- 多 action 队列：agent 可一次返回最多 2 个 action，典型用法是先 `say` 再执行 `look_at_player`、`follow_player` 等动作。
 
 当前还不能可靠完成睡觉、使用工作方块、使用方块、拿取/丢弃物品、战斗、采集、背包管理、路径规划链式任务等复杂行为。`MeetPlayerTask`、`MeetNPCTask`、`FollowChatTargetTask` 目前只是占位类，不应视为可用 task。
 
@@ -70,6 +71,7 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 | `follow_player` | task | 跟随玩家，对应 `FollowEntityTask` |
 | `wait` | task | 等待，对应 `WaitTask` |
 | `stop_task` | task | 停止当前任务并清空队列 |
+| `resume_default_behavior` | tool | 结束 agent 等待状态并恢复默认行为 |
 | `rag_query` | tool | 查询本地文本记忆 |
 | `rag_record` | tool | 写入本地文本记忆 |
 | `end_conversation` | tool | 结束当前对话 |
@@ -106,6 +108,7 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 - 玩家任务打断 agent/system 任务时，如果被打断任务允许恢复，会放回队列头部。
 - default 任务被打断后直接丢弃。
 - `stop_task` 会停止当前任务、清空队列并停止导航。
+- 同一批 agent actions 使用同一个 batch；批次内任务全部完成后才触发一次 agent 回调。
 
 当前 tool 下发的 NPC 行为默认来源是 `AGENT`。玩家交互优先级入口已经在任务控制器层支持，但现有玩家直接交互主要还是触发对话，不会自动创建 `PLAYER` 来源 task。
 
@@ -155,7 +158,9 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 - 如果 `agentMode=fast`，POST 到 `/agent/fast`。
 - 如果 `agentMode=deliberate`，POST 到 `/agent/deliberate`。
 - agent 响应中的 action 会由 `AgentActionExecutor` 调用 `FunctionManager` 执行。
-- 当前每次 agent 响应最多执行 1 个 action；任务队列已支持连续任务，但 wire protocol 还未支持一次返回多个 action。
+- 当前每次 agent 响应最多执行 2 个 action，主要支持 `say + do`。
+- AGENT 批次任务全部完成后，NPC 会短暂进入 SYSTEM wait，并把 `TASK_BATCH_FINISHED` 结果回调给 agent。
+- follow-up 回调返回新 action 时继续入队；agent 完成控制时应调用 `resume_default_behavior`。
 
 ### Fast 请求字段
 
@@ -184,7 +189,7 @@ Fast 模式使用短字段以节省 token：
   },
   "tools": ["say", "look_at_player", "walk_to_player"],
   "limits": {
-    "max_actions": 1,
+    "max_actions": 2,
     "max_reply_chars": 60
   }
 }
@@ -203,11 +208,12 @@ Fast 响应字段：
   "args": {
     "message": "你好。"
   },
+  "actions": [],
   "note": "reply"
 }
 ```
 
-`a` 为 `call` 时执行 tool；其他值或空响应会视为无动作。
+`actions` 为推荐字段；为空时兼容旧的 `a/kind/name/args` 单 action。`a` 为 `call` 时执行 tool；其他值或空响应会视为无动作。
 
 ### Deliberate 请求字段
 
@@ -248,7 +254,7 @@ Deliberate 模式使用完整字段，适合更长推理：
   },
   "available_tools": [],
   "limits": {
-    "max_actions": 1,
+    "max_actions": 2,
     "max_reply_chars": 200
   }
 }
@@ -270,6 +276,25 @@ Deliberate 响应字段：
       "seconds": 30
     }
   },
+  "actions": [
+    {
+      "type": "call",
+      "kind": "task",
+      "name": "say",
+      "arguments": {
+        "message": "好，我跟着你。"
+      }
+    },
+    {
+      "type": "call",
+      "kind": "task",
+      "name": "follow_player",
+      "arguments": {
+        "player": "Steve",
+        "seconds": 30
+      }
+    }
+  ],
   "speech": "好，我跟着你。",
   "memory_updates": [],
   "reasoning_summary": "玩家请求 NPC 跟随。"
@@ -290,6 +315,7 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 - `follow_player(player, seconds?, stop_distance?)`
 - `wait(seconds)`
 - `stop_task()`
+- `resume_default_behavior()`
 - `rag_query(context)`
 - `rag_record(context)`
 - `end_conversation()`
@@ -313,12 +339,10 @@ Ollama embedding 已不参与记忆写入和查询。`RAG.completion(...)` 仍�
 
 ## 当前运行边界
 
-当前版本可以支撑“玩家打开对话 -> NPC 感知上下文 -> external agent/Ollama 选择一个 tool -> NPC 执行一个基础 Minecraft 动作 -> tick loop 推进任务”的闭环。
+当前版本可以支撑“玩家打开对话 -> NPC 感知上下文 -> external agent/Ollama 选择最多两个 action -> NPC 回复并执行基础 Minecraft 动作 -> tick loop 推进任务 -> AGENT batch 完成后回调 agent -> agent 继续下发下一批任务或恢复默认行为”的闭环。
 
 最需要继续补齐的是：
 
-- agent 一次返回多 action 或计划队列的协议。
-- task 结果反馈给 agent 的二次回调。
 - 玩家交互直接映射到 `PLAYER` 优先级任务。
 - 背包、物品、方块、威胁、睡觉、工作站等 Minecraft 核心玩法能力。
 - `memory_updates` 自动写入本地记忆。

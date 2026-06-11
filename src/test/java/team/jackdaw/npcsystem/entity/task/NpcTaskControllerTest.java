@@ -102,6 +102,37 @@ class NpcTaskControllerTest {
         assertTrue(controller.canRunDefaultTask());
     }
 
+    @Test
+    void batchCallbackEmitsAfterLastTaskFinishes() {
+        NpcTaskController controller = new NpcTaskController();
+        FakeTask first = new FakeTask("first", 1);
+        FakeTask second = new FakeTask("second", 1);
+
+        controller.assign(null, NpcTaskAssignment.of(first, TaskSource.AGENT).withBatch("batch-1", true));
+        controller.assign(null, NpcTaskAssignment.of(second, TaskSource.AGENT).withBatch("batch-1", true));
+
+        controller.tick(null);
+        assertNull(controller.pollCompletedBatch());
+
+        controller.tick(null);
+        NpcTaskBatchResult result = controller.pollCompletedBatch();
+        assertEquals("batch-1", result.batchId());
+        assertEquals("finished", result.status());
+        assertEquals(2, result.tasks().size());
+        assertTrue(result.summary().contains("batch-1"));
+    }
+
+    @Test
+    void batchWithoutCallbackDoesNotEmitResult() {
+        NpcTaskController controller = new NpcTaskController();
+        FakeTask task = new FakeTask("silent", 1);
+
+        controller.assign(null, NpcTaskAssignment.of(task, TaskSource.AGENT).withBatch("batch-2", false));
+        controller.tick(null);
+
+        assertNull(controller.pollCompletedBatch());
+    }
+
     private static final class FakeTask implements NpcTask {
         private final String name;
         private final int finishAfterTicks;

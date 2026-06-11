@@ -54,6 +54,7 @@ class FastAgentResponse(BaseModel):
     kind: Literal["tool", "task"] | None = None
     name: str | None = None
     args: dict[str, Any] = Field(default_factory=dict)
+    actions: list["AgentAction"] = Field(default_factory=list)
     note: str | None = None
 
 
@@ -64,6 +65,8 @@ class AgentAction(BaseModel):
     kind: Literal["tool", "task"] | None = None
     name: str | None = None
     arguments: dict[str, Any] = Field(default_factory=dict)
+    callback: bool | None = None
+    label: str | None = None
 
 
 class AgentToolDescriptor(BaseModel):
@@ -129,6 +132,7 @@ class DeliberateAgentResponse(BaseModel):
     request_id: str
     mode: Literal["deliberate"] = "deliberate"
     action: AgentAction = Field(default_factory=AgentAction)
+    actions: list[AgentAction] = Field(default_factory=list)
     speech: str | None = None
     memory_updates: list[str] = Field(default_factory=list)
     reasoning_summary: str = ""

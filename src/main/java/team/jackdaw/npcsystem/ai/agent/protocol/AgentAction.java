@@ -7,4 +7,6 @@ public class AgentAction {
     public String kind;
     public String name;
     public Map<String, Object> arguments;
+    public Boolean callback;
+    public String label;
 }

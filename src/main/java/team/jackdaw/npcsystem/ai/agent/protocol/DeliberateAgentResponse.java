@@ -7,6 +7,7 @@ public class DeliberateAgentResponse {
     public String request_id;
     public String mode = "deliberate";
     public AgentAction action;
+    public List<AgentAction> actions;
     public String speech;
     public List<String> memory_updates;
     public String reasoning_summary;

@@ -10,6 +10,7 @@ import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentRequest;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
 import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
+import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
 import team.jackdaw.npcsystem.function.FunctionManager;
 
 import java.util.ArrayList;
@@ -30,7 +31,13 @@ public class AgentRequestBuilder {
         }
         request.near = fastNear(npc);
         request.tools = availableToolNames(conversation);
-        request.limits = limits(60);
+        request.limits = limits(2, 60);
+        return request;
+    }
+
+    public FastAgentRequest fast(ConversationWindow conversation, NpcTaskBatchResult taskResult, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+        FastAgentRequest request = fast(conversation, "", npc);
+        request.evt.add(List.of("TASK_BATCH_FINISHED", 8, taskResult.summary(), taskResult.gameTime()));
         return request;
     }
 
@@ -43,7 +50,20 @@ public class AgentRequestBuilder {
         request.conversation = conversation(conversation, message);
         request.memory = memory();
         request.available_tools = FunctionManager.getInstance().getAgentToolDescriptors(availableToolNames(conversation));
-        request.limits = limits(200);
+        request.limits = limits(2, 200);
+        return request;
+    }
+
+    public DeliberateAgentRequest deliberate(ConversationWindow conversation, NpcTaskBatchResult taskResult, team.jackdaw.npcsystem.ai.npc.NPC npc) {
+        DeliberateAgentRequest request = deliberate(conversation, taskResult.summary(), npc);
+        request.observations.recent_events = new ArrayList<>(request.observations.recent_events);
+        request.observations.recent_events.add(Map.of(
+                "type", "TASK_BATCH_FINISHED",
+                "importance", 8,
+                "text", taskResult.summary(),
+                "game_time", taskResult.gameTime(),
+                "facts", Map.of("batch_id", taskResult.batchId(), "status", taskResult.status(), "tasks", taskResult.tasks())
+        ));
         return request;
     }
 
@@ -142,9 +162,9 @@ public class AgentRequestBuilder {
         return memory;
     }
 
-    private static AgentLimits limits(int maxReplyChars) {
+    private static AgentLimits limits(int maxActions, int maxReplyChars) {
         AgentLimits limits = new AgentLimits();
-        limits.max_actions = 1;
+        limits.max_actions = maxActions;
         limits.max_reply_chars = maxReplyChars;
         return limits;
     }
