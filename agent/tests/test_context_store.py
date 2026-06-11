@@ -1,5 +1,5 @@
 from npc_agent.config import AgentConfig
-from npc_agent.context_store import AgentContextStore
+from npc_agent.context_store import AgentContextStore, TEMPLATE_ROOT
 from npc_agent.schemas import ConversationEndRequest, DeliberateAgentRequest, FastAgentRequest
 
 
@@ -17,6 +17,67 @@ def test_context_store_creates_default_files(tmp_path):
     assert (context.root / "MEMORY.md").exists()
     assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
     assert (context.root / "history.jsonl").exists()
+
+
+def test_context_store_copies_npc_templates(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert (context.root / "AGENTS.md").read_text(encoding="utf-8") == (
+        TEMPLATE_ROOT / "npc" / "AGENTS.md"
+    ).read_text(encoding="utf-8")
+    assert (context.root / "SOLU.md").read_text(encoding="utf-8") == (
+        TEMPLATE_ROOT / "common" / "SOLU.md"
+    ).read_text(encoding="utf-8")
+    assert (context.root / "SUMMARY.md").read_text(encoding="utf-8") == (
+        TEMPLATE_ROOT / "common" / "SUMMARY.md"
+    ).read_text(encoding="utf-8")
+    assert (context.root / "MEMORY.md").read_text(encoding="utf-8") == (
+        TEMPLATE_ROOT / "common" / "MEMORY.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_context_store_copies_master_template(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "master-1", "kind": "master", "permission": 3}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert (context.root / "AGENTS.md").read_text(encoding="utf-8") == (
+        TEMPLATE_ROOT / "master" / "AGENTS.md"
+    ).read_text(encoding="utf-8")
+
+
+def test_context_store_does_not_overwrite_existing_files(tmp_path):
+    existing = tmp_path / "npc" / "npc-1"
+    existing.mkdir(parents=True)
+    (existing / "AGENTS.md").write_text("# Custom Agent\n", encoding="utf-8")
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert (context.root / "AGENTS.md").read_text(encoding="utf-8") == "# Custom Agent\n"
+
+
+def test_context_store_uses_fallback_when_template_is_missing(tmp_path, monkeypatch):
+    monkeypatch.setattr("npc_agent.context_store.TEMPLATE_ROOT", tmp_path / "missing")
+    config = AgentConfig(state_dir=str(tmp_path / "state"))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert "Minecraft NPC" in (context.root / "AGENTS.md").read_text(encoding="utf-8")
 
 
 def test_fast_and_master_use_separate_context_directories(tmp_path):

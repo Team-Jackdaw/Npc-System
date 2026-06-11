@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 21:56:01 CST
+Last updated: 2026-06-11 22:11:08 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -88,9 +88,11 @@ Key layers:
   - FastAPI server
   - Pydantic schemas
   - per-NPC/Master context store under `config/npc-system/agent-state`
+  - template-based first context creation from `agent/templates`
   - Pydantic AI `message_history` persistence through `messages.json`
   - current conversation compression into `SUMMARY.md`
   - conversation-end long-term memory writing into `MEMORY.md`
+  - `agent/skills/dummy_skill.md` as a placeholder for shared skills
   - deterministic stub decision path
   - optional Pydantic AI + Ollama path
 - Java external agent integration:

@@ -1,6 +1,6 @@
 # NPC System 实机测试清单
 
-Last updated: 2026-06-11 21:56:01 CST
+Last updated: 2026-06-11 22:11:08 CST
 
 本文面向服务器管理员，用于安装、运行和逐项验证 NPC System。
 
@@ -106,6 +106,11 @@ Last updated: 2026-06-11 21:56:01 CST
    - `config/npc-system/agent-state/npc/<uuid>/messages.json`
    - `AGENTS.md`、`SOLU.md`、`SUMMARY.md`、`MEMORY.md`
    - `history.jsonl`
+9. 首次生成时确认上述 Markdown 文件来自模板：
+   - `agent/templates/npc/AGENTS.md`
+   - `agent/templates/common/SOLU.md`
+   - `agent/templates/common/SUMMARY.md`
+   - `agent/templates/common/MEMORY.md`
 
 ## Master Agent 测试
 

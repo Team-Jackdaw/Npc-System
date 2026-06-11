@@ -44,6 +44,15 @@ state is saved as Pydantic AI `messages.json`; long conversations are compacted
 into `SUMMARY.md`, and ended conversations are summarized into `MEMORY.md`.
 `history.jsonl` is only for debug/audit logs.
 
+On first creation, each context directory copies Markdown files from
+`agent/templates`. NPCs use `agent/templates/npc/AGENTS.md`, Master uses
+`agent/templates/master/AGENTS.md`, and both use common templates for
+`SOLU.md`, `SUMMARY.md`, and `MEMORY.md`. Existing runtime files are never
+overwritten.
+
+Shared skills live under `agent/skills`. `dummy_skill.md` is a placeholder for
+the future skill-loading system and is not injected into prompts yet.
+
 To use Pydantic AI with Ollama:
 
 ```bash

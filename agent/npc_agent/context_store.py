@@ -37,6 +37,16 @@ DEFAULT_SOLU = """# Current Solution
 No active long-term plan yet.
 """
 
+DEFAULT_SUMMARY = """# Summary
+
+"""
+
+DEFAULT_MEMORY = """# Memory
+
+"""
+
+TEMPLATE_ROOT = Path(__file__).resolve().parents[1] / "templates"
+
 
 @dataclass
 class AgentContext:
@@ -71,10 +81,14 @@ class AgentContext:
 
     def initialize(self) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
-        self._write_default(self.agents_path, DEFAULT_MASTER_AGENTS if self.kind == "master" else DEFAULT_AGENTS)
-        self._write_default(self.solu_path, DEFAULT_SOLU)
-        self._write_default(self.summary_path, "# Summary\n\n")
-        self._write_default(self.memory_path, "# Memory\n\n")
+        self._write_default(
+            self.agents_path,
+            DEFAULT_MASTER_AGENTS if self.kind == "master" else DEFAULT_AGENTS,
+            TEMPLATE_ROOT / self.kind / "AGENTS.md",
+        )
+        self._write_default(self.solu_path, DEFAULT_SOLU, TEMPLATE_ROOT / "common" / "SOLU.md")
+        self._write_default(self.summary_path, DEFAULT_SUMMARY, TEMPLATE_ROOT / "common" / "SUMMARY.md")
+        self._write_default(self.memory_path, DEFAULT_MEMORY, TEMPLATE_ROOT / "common" / "MEMORY.md")
         self._write_default(self.messages_path, "[]")
         self._write_default(self.history_path, "")
 
@@ -153,9 +167,12 @@ class AgentContext:
         )
 
     @staticmethod
-    def _write_default(path: Path, content: str) -> None:
+    def _write_default(path: Path, content: str, template_path: Path | None = None) -> None:
         if not path.exists():
-            path.write_text(content, encoding="utf-8")
+            if template_path is not None and template_path.exists():
+                path.write_text(template_path.read_text(encoding="utf-8"), encoding="utf-8")
+            else:
+                path.write_text(content, encoding="utf-8")
 
 
 class AgentContextStore:

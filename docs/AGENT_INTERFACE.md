@@ -1,6 +1,6 @@
 # External Agent Interface
 
-Last updated: 2026-06-11 21:56:01 CST
+Last updated: 2026-06-11 22:11:08 CST
 
 Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
 agent scaffold exists under `agent/`, and Java can call the external agent when
@@ -225,6 +225,14 @@ Each directory contains:
 - `MEMORY.md`: long-term memory written when a conversation ends.
 - `messages.json`: current Pydantic AI message history.
 - `history.jsonl`: debug/audit log only.
+
+When a directory is first created, these Markdown files are copied from
+repository templates. Ordinary NPCs use `agent/templates/npc/AGENTS.md`, Master
+uses `agent/templates/master/AGENTS.md`, and shared files come from
+`agent/templates/common`. Existing runtime files are never overwritten.
+
+Shared skills are reserved under `agent/skills`. The current `dummy_skill.md`
+is only a placeholder and is not loaded into prompts yet.
 
 Pydantic AI integration uses `message_history` when calling `Agent.run(...)`
 and persists the resulting context with `result.all_messages_json()`. When
