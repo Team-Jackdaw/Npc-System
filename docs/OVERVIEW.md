@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 10:04:06 CST
+Last updated: 2026-06-11 14:33:12 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -14,7 +14,9 @@ Minecraft NPC Entity
   -> NPC Context Buffers
   -> External Agent Request
   -> Tool / Task Action
+  -> Priority Task Queue
   -> NpcTaskController
+  -> Default Behavior
 ```
 
 The project is a Java 25 Fabric mod for Minecraft 26.1.2. Minecraft-side code
@@ -36,7 +38,10 @@ Key layers:
   Python FastAPI + Pydantic AI scaffold can receive those requests.
 - **Tool layer**: `FunctionManager` exposes callable tools and tool descriptors.
   Tool results use a stable `status/code/message/data/retryable` shape.
-- **Task layer**: `NpcTaskController` runs one low-level Minecraft task at a time.
+- **Task layer**: `NpcTaskController` runs one low-level Minecraft task at a time,
+  with source priority and a FIFO queue for interrupted or waiting tasks.
+- **Default behavior layer**: idle NPCs can look around, stroll, or wait without
+  calling the external agent.
 
 ## Implemented
 
@@ -45,12 +50,23 @@ Key layers:
 - Basic NPC sensor state and observation-event buffering.
 - Event types for players, NPCs, chat, weather, health, and task state changes.
 - Project-owned `NpcTask` and `NpcTaskController`.
+- Task sources and priorities:
+  - `PLAYER`
+  - `AGENT`
+  - `SYSTEM`
+  - `DEFAULT`
+- FIFO task queue for player/agent/system tasks, with default behavior kept out
+  of the persistent queue.
+- Vanilla villager Brain behavior is suppressed for custom NPC entities so the
+  custom task controller owns navigation and look behavior.
 - Basic task implementations:
   - look at entity
   - walk to entity
   - follow entity
   - speak
   - wait
+  - idle look around
+  - random stroll
 - Tool wrappers for NPC actions:
   - `say`
   - `look_at_player`
@@ -82,6 +98,7 @@ Key layers:
   - text bubbles
   - task movement and look control
   - external agent HTTP loop
+  - vanilla Brain suppression effects
 - More sensors:
   - inventory
   - equipment
@@ -97,6 +114,7 @@ Key layers:
   - danger escalation
   - path failure details
 - More task/tool capabilities:
+  - sleep / wake
   - drop item
   - give item
   - pick up item

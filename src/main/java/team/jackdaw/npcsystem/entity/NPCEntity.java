@@ -1,5 +1,6 @@
 package team.jackdaw.npcsystem.entity;
 
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.npc.villager.Villager;
@@ -13,6 +14,7 @@ import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.sensor.NpcSensorState;
 import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
 import team.jackdaw.npcsystem.entity.sensor.ObservationCollector;
+import team.jackdaw.npcsystem.entity.task.DefaultBehaviorController;
 import team.jackdaw.npcsystem.entity.task.NpcTaskController;
 
 import java.util.Comparator;
@@ -24,6 +26,7 @@ public class NPCEntity extends Villager {
     protected TextBubbleEntity textBubble;
     private final NpcSensorState sensorState = new NpcSensorState();
     private final NpcTaskController taskController = new NpcTaskController();
+    private final DefaultBehaviorController defaultBehaviorController = new DefaultBehaviorController();
     private NpcSensorState.Snapshot lastSensorSnapshot = NpcSensorState.Snapshot.empty();
     private long lastSensorUpdateTick = -20L;
     private String lastObservationSummary = "";
@@ -55,7 +58,13 @@ public class NPCEntity extends Villager {
                 npc.observe(events);
             }
         }
+        defaultBehaviorController.tick(this);
         taskController.tick(this);
+    }
+
+    @Override
+    protected void customServerAiStep(ServerLevel level) {
+        // NPC behavior is driven by NpcTaskController, not the vanilla villager Brain.
     }
 
     public void sendMessage(String message, double range) {

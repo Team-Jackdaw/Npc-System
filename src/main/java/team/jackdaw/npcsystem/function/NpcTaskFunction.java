@@ -8,6 +8,7 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.task.NpcTask;
+import team.jackdaw.npcsystem.entity.task.TaskSource;
 
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ abstract class NpcTaskFunction extends CustomFunction {
         if (npc.isEmpty()) {
             return failure("npc_not_found", "No NPC is associated with this conversation.", false);
         }
-        boolean assigned = npc.get().getTaskController().assign(npc.get(), task);
+        boolean assigned = npc.get().getTaskController().assign(npc.get(), task, TaskSource.AGENT);
         if (!assigned) {
             return failure("task_rejected", "The NPC could not start task " + task.name() + ".", true);
         }
