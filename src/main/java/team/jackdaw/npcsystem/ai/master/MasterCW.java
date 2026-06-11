@@ -14,6 +14,7 @@ public class MasterCW extends ConversationWindow {
 
     @Override
     public boolean discard() {
+        super.discard();
         AsyncTask.call(() -> {
             String instruction = """
                     This is a conversation between the Master and a server manager player (OP). Summarise the conversation.

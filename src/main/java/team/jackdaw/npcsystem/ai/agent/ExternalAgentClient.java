@@ -6,6 +6,8 @@ import team.jackdaw.npcsystem.Config;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
+import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndRequest;
+import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
 import team.jackdaw.npcsystem.api.Header;
@@ -39,6 +41,14 @@ public class ExternalAgentClient {
         String json = sender.send(requestJson, endpoint("/agent/deliberate"), headers(), Request.Action.POST);
         NPCSystem.debugLog("[npc-system] Agent deliberate response: {}", json);
         return GSON.fromJson(json, DeliberateAgentResponse.class);
+    }
+
+    public ConversationEndResponse endConversation(@NotNull ConversationEndRequest request) throws Exception {
+        String requestJson = GSON.toJson(request);
+        NPCSystem.debugLog("[npc-system] Agent conversation end request: {}", requestJson);
+        String json = sender.send(requestJson, endpoint("/agent/conversation/end"), headers(), Request.Action.POST);
+        NPCSystem.debugLog("[npc-system] Agent conversation end response: {}", json);
+        return GSON.fromJson(json, ConversationEndResponse.class);
     }
 
     private static String endpoint(String path) {

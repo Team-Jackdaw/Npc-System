@@ -22,6 +22,7 @@ Endpoints:
 - `GET /health`
 - `POST /agent/fast`
 - `POST /agent/deliberate`
+- `POST /agent/conversation/end`
 
 ## Configuration
 
@@ -33,6 +34,15 @@ Environment variables:
 - `NPC_AGENT_HOST`: defaults to `127.0.0.1`.
 - `NPC_AGENT_PORT`: defaults to `8765`.
 - `NPC_AGENT_AUTH_TOKEN`: optional bearer token.
+- `NPC_AGENT_STATE_DIR`: defaults to `config/npc-system/agent-state`.
+- `NPC_AGENT_MAX_HISTORY_BYTES`: defaults to `65536`.
+
+## Context Storage
+
+The agent stores one context directory per NPC/Master. Current conversation
+state is saved as Pydantic AI `messages.json`; long conversations are compacted
+into `SUMMARY.md`, and ended conversations are summarized into `MEMORY.md`.
+`history.jsonl` is only for debug/audit logs.
 
 To use Pydantic AI with Ollama:
 

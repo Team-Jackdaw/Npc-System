@@ -1,0 +1,76 @@
+from npc_agent.config import AgentConfig
+from npc_agent.context_store import AgentContextStore
+from npc_agent.schemas import ConversationEndRequest, DeliberateAgentRequest, FastAgentRequest
+
+
+def test_context_store_creates_default_files(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert (context.root / "AGENTS.md").exists()
+    assert (context.root / "SOLU.md").exists()
+    assert (context.root / "SUMMARY.md").exists()
+    assert (context.root / "MEMORY.md").exists()
+    assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
+    assert (context.root / "history.jsonl").exists()
+
+
+def test_fast_and_master_use_separate_context_directories(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    npc_request = FastAgentRequest.model_validate({"rid": "r1", "npc": {"id": "npc-1", "kind": "npc"}})
+    master_request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r2", "npc": {"uuid": "master-1", "kind": "master", "permission": 3}}
+    )
+
+    npc_context = AgentContextStore(config).for_fast(npc_request)
+    master_context = AgentContextStore(config).for_deliberate(master_request)
+
+    assert npc_context.root == tmp_path / "npc" / "npc-1"
+    assert master_context.root == tmp_path / "master" / "master-1"
+
+
+def test_memory_updates_are_written_to_memory(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+    context = AgentContextStore(config).for_deliberate(request)
+
+    context.apply_memory_updates(["Steve likes mining."])
+
+    assert "Steve likes mining." in (context.root / "MEMORY.md").read_text(encoding="utf-8")
+
+
+def test_compacts_messages_when_history_exceeds_limit(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path), max_history_bytes=10)
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+    context = AgentContextStore(config).for_deliberate(request)
+
+    compacted = context.compact_if_needed()
+
+    assert compacted is False
+    context.save_messages(b'[{"kind":"request","parts":[{"content":"very long history"}]}]')
+    assert "Compressed Context" in (context.root / "SUMMARY.md").read_text(encoding="utf-8")
+    assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
+
+
+def test_end_conversation_writes_memory_and_resets_current_context(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = ConversationEndRequest.model_validate(
+        {"request_id": "end-1", "npc": {"uuid": "npc-1", "kind": "npc"}, "reason": "ended"}
+    )
+    context = AgentContextStore(config).for_end(request)
+    context.save_messages(b'[{"kind":"request","parts":[{"content":"Steve asked for help"}]}]')
+
+    updated = context.end_conversation(request)
+
+    assert updated is True
+    assert "Steve asked for help" in (context.root / "MEMORY.md").read_text(encoding="utf-8")
+    assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
+    assert (context.root / "SUMMARY.md").read_text(encoding="utf-8") == "# Summary\n\n"

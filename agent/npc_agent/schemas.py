@@ -140,3 +140,32 @@ class DeliberateAgentResponse(BaseModel):
     speech: str | None = None
     memory_updates: list[str] = Field(default_factory=list)
     reasoning_summary: str = ""
+
+
+class ConversationEndNpc(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    uuid: str = ""
+    id: str = ""
+    name: str = ""
+    kind: Literal["npc", "master"] = "npc"
+    permission: int = 1
+
+
+class ConversationEndRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    version: int = 1
+    request_id: str = ""
+    npc: ConversationEndNpc
+    reason: str = "ended"
+    snapshot: dict[str, Any] = Field(default_factory=dict)
+
+
+class ConversationEndResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    version: int = 1
+    request_id: str = ""
+    status: Literal["ok"] = "ok"
+    memory_updated: bool = False

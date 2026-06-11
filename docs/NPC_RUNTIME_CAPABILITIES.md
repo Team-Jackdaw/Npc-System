@@ -337,7 +337,9 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 
 ## 记忆储存与读取
 
-当前记忆模块使用 `memory` 包名和 `memory_query`/`memory_record` tool 名称。实现不是 embedding/vector 数据库，而是本地 JSON 文本记录：
+当前有两套记忆路径：
+
+1. Java 兼容记忆模块使用 `memory` 包名和 `memory_query`/`memory_record` tool 名称。实现不是 embedding/vector 数据库，而是本地 JSON 文本记录：
 
 - 存储目录：`config/npc-system/memory`
 - 每个 NPC 一个 JSON 文件：文件名来自 NPC UUID；Master 使用 `Master.json`。
@@ -350,6 +352,15 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 
 Ollama embedding 已不参与记忆写入和查询。`Memory.completion(...)` 仍会把查询结果拼入 prompt 后调用 Ollama completion，但普通记忆查询本身不依赖外部模型。
 
+2. 外部 agent 主线记忆位于 `config/npc-system/agent-state`：
+
+- 每个 NPC/Master 一个目录，按 `npc/<uuid>` 或 `master/<uuid>` 区分。
+- 当前会话上下文保存在 `messages.json`，格式来自 Pydantic AI `all_messages_json()`。
+- 当前会话过长时压缩到 `SUMMARY.md` 并重置 `messages.json`。
+- 会话结束后，agent 将当前会话和 summary 沉淀到 `MEMORY.md`。
+- `history.jsonl` 只用于 debug 和回放，不作为 prompt 主上下文。
+- `memory_updates` 当前由 agent 写入自己的 `MEMORY.md`。
+
 ## 当前运行边界
 
 当前版本可以支撑“玩家打开对话 -> NPC 感知上下文 -> external agent/Ollama 选择最多两个 action -> NPC 回复并执行基础 Minecraft 动作 -> tick loop 推进任务 -> AGENT batch 完成后回调 agent -> agent 继续下发下一批任务或恢复默认行为”的闭环。
@@ -358,4 +369,4 @@ Ollama embedding 已不参与记忆写入和查询。`Memory.completion(...)` �
 
 - 玩家交互直接映射到 `PLAYER` 优先级任务。
 - 背包、物品、方块、威胁、睡觉、工作站等 Minecraft 核心玩法能力。
-- `memory_updates` 自动写入本地记忆。
+- Agent polling mailbox/outbox，让 agent 可以在没有 Java 主动请求时排队下发 action。

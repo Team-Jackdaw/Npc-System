@@ -8,6 +8,7 @@ from pydantic_ai.models.ollama import OllamaModel
 from pydantic_ai.providers.ollama import OllamaProvider
 
 from .config import AgentConfig
+from .context_store import AgentContext
 from .schemas import (
     AgentAction,
     DeliberateAgentRequest,
@@ -44,19 +45,27 @@ async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig
 async def decide_deliberate_pydantic_ai(
     request: DeliberateAgentRequest,
     config: AgentConfig,
+    context: AgentContext,
 ) -> DeliberateAgentResponse:
     agent = build_agent(config, DeliberateAgentResponse)
     try:
         result = await agent.run(
             json.dumps(request.model_dump(), ensure_ascii=False),
+            message_history=context.message_history(),
+            conversation_id=context.agent_id,
             instructions=(
+                context.render_context_instructions()
+                + "\n\n"
                 "You control one Minecraft agent. Return the structured output only. "
                 "Use at most two actions. Prefer say followed by one task when replying and acting. "
                 "Only requests with npc.kind='master' and permission>=3 may call call_command. "
                 "Do not reveal chain-of-thought; provide a concise reasoning_summary."
             ),
         )
-        return normalize_deliberate_response(result.output, request)
+        response = normalize_deliberate_response(result.output, request)
+        context.save_messages(result.all_messages_json())
+        context.apply_memory_updates(response.memory_updates)
+        return response
     except (ValidationError, Exception) as exc:
         return DeliberateAgentResponse(
             request_id=request.request_id,

@@ -7,8 +7,10 @@ import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.ai.agent.AgentActionExecutor;
 import team.jackdaw.npcsystem.ai.agent.AgentRequestBuilder;
 import team.jackdaw.npcsystem.ai.agent.ExternalAgentClient;
+import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
+import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.api.Ollama;
 import team.jackdaw.npcsystem.api.json.*;
 import team.jackdaw.npcsystem.entity.task.NpcTask;
@@ -20,6 +22,7 @@ import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class ConversationWindow {
@@ -34,6 +37,7 @@ public class ConversationWindow {
     private String lastInjectedContext = "";
     private String activeAgentBatchId;
     private boolean activeAgentBatchCallback;
+    private boolean externalAgentEndNotified = false;
 
     public ConversationWindow(UUID uuid) {
         this.uuid = uuid;
@@ -318,8 +322,45 @@ public class ConversationWindow {
         updateTime = 0L;
     }
 
+    public void endExternalAgentConversation(String reason) {
+        if (externalAgentEndNotified || !Config.agentEnabled) {
+            return;
+        }
+        externalAgentEndNotified = true;
+        try {
+            EXTERNAL_AGENT_CLIENT.endConversation(conversationEndRequest(reason));
+        } catch (Exception e) {
+            NPCSystem.LOGGER.warn("[npc-system] External agent conversation end notification failed", e);
+        }
+    }
 
     protected boolean discard() {
+        endExternalAgentConversation("conversation_removed");
         return true;
+    }
+
+    private ConversationEndRequest conversationEndRequest(String reason) {
+        Agent agent = getAgent();
+        ConversationEndRequest request = new ConversationEndRequest();
+        request.request_id = UUID.randomUUID().toString();
+        request.reason = reason == null || reason.isBlank() ? "ended" : reason;
+        request.npc = new ConversationEndRequest.Npc();
+        request.npc.uuid = agent.getUUID().toString();
+        request.npc.id = agent.getUUID().toString();
+        request.npc.name = agent instanceof Master ? "Master" : agent.getUUID().toString();
+        request.npc.kind = agent instanceof Master ? "master" : "npc";
+        request.npc.permission = agent.getPermissionLevel();
+        if (agent instanceof NPC npc) {
+            NPCEntity entity = NPC_AI.getNPCEntity(npc);
+            if (entity != null) {
+                request.snapshot = Map.of(
+                        "task", entity.getTaskController().status(),
+                        "last_observation", entity.getLastObservation() == null ? "" : entity.getLastObservation()
+                );
+                return request;
+            }
+        }
+        request.snapshot = Map.of("entity", "none");
+        return request;
     }
 }

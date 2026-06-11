@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import team.jackdaw.npcsystem.Config;
+import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndRequest;
+import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentRequest;
@@ -64,5 +66,28 @@ class ExternalAgentClientTest {
         DeliberateAgentResponse response = client.deliberate(request);
 
         assertEquals("r2", response.request_id);
+    }
+
+    @Test
+    void sendsConversationEndRequestToConversationEndEndpoint() throws Exception {
+        Config.agentBaseUrl = "http://example.test";
+        ExternalAgentClient client = new ExternalAgentClient((requestJson, url, headers, action) -> {
+            assertEquals("http://example.test/agent/conversation/end", url);
+            assertEquals(Request.Action.POST, action);
+            assertTrue(requestJson.contains("\"request_id\":\"end-1\""));
+            ConversationEndResponse response = new ConversationEndResponse();
+            response.request_id = "end-1";
+            response.status = "ok";
+            response.memory_updated = true;
+            return GSON.toJson(response);
+        });
+        ConversationEndRequest request = new ConversationEndRequest();
+        request.request_id = "end-1";
+        request.reason = "test";
+
+        ConversationEndResponse response = client.endConversation(request);
+
+        assertEquals("end-1", response.request_id);
+        assertTrue(response.memory_updated);
     }
 }

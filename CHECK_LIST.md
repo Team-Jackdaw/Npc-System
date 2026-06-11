@@ -1,6 +1,6 @@
 # NPC System 实机测试清单
 
-Last updated: 2026-06-11
+Last updated: 2026-06-11 21:56:01 CST
 
 本文面向服务器管理员，用于安装、运行和逐项验证 NPC System。
 
@@ -18,6 +18,7 @@ Last updated: 2026-06-11
 6. 如需外部 agent，先启动 Python agent 服务：
    - `PYTHONPATH=agent python -m npc_agent.server`
    - 默认地址：`http://127.0.0.1:8765`
+   - 默认上下文目录：`config/npc-system/agent-state`
 
 ## 关键配置
 
@@ -101,6 +102,10 @@ Last updated: 2026-06-11
    - NPC 先说话；
    - NPC 开始跟随玩家；
    - 服务端日志记录 agent request、response、action result。
+8. 检查 agent 状态目录：
+   - `config/npc-system/agent-state/npc/<uuid>/messages.json`
+   - `AGENTS.md`、`SOLU.md`、`SUMMARY.md`、`MEMORY.md`
+   - `history.jsonl`
 
 ## Master Agent 测试
 
@@ -152,10 +157,16 @@ Last updated: 2026-06-11
 ## Memory 测试
 
 1. 与 NPC 对话，请求它记住一条信息。
-2. 观察是否调用 `memory_record`。
-3. 检查 `config/npc-system/memory/` 是否生成对应 JSON 文件。
-4. 再询问相关问题，观察是否调用 `memory_query`。
-5. 确认日志和回复中没有旧 `rag_*` tool 名称。
+2. 如果 agent 调用了 `memory_record`，检查 Java 兼容记忆目录：
+   - `config/npc-system/memory/`
+3. 如果外部 agent 返回 `memory_updates`，检查 agent 主线记忆：
+   - `config/npc-system/agent-state/npc/<uuid>/MEMORY.md`
+4. 调用 `end_conversation` 或等待 conversation timeout。
+5. 预期：
+   - Java 请求 `/agent/conversation/end`；
+   - agent 将当前 `messages.json` 和 `SUMMARY.md` 总结进 `MEMORY.md`；
+   - `messages.json` 被重置为 `[]`。
+6. 确认日志和回复中没有旧 `rag_*` tool 名称。
 
 ## 显示测试
 
@@ -181,4 +192,4 @@ Last updated: 2026-06-11
 - 还没有睡觉、工作站、物品、背包、战斗等复杂 Minecraft 行为。
 - 玩家交互目前主要走对话和 agent，不直接生成 `PLAYER` 优先级 task。
 - 外部 agent 每次最多返回 2 个 action，主要用于 `say + do`。
-- `memory_updates` 字段尚未自动写入本地 memory。
+- agent 主动下发 action 的 polling mailbox/outbox 尚未实现；当前仍依赖 Java 主动请求和 task callback。

@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 19:36:22 CST
+Last updated: 2026-06-11 21:56:01 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -13,6 +13,7 @@ Minecraft NPC Entity
   -> Observation Events
   -> NPC Context Buffers
   -> External Agent Request
+  -> Agent-side Conversation Context
   -> Tool / Task Action
   -> Priority Task Queue
   -> NpcTaskController
@@ -35,7 +36,8 @@ Key layers:
 - **AI/context layer**: `NPC` stores recent and important observation events and
   exposes context to conversations and external agent requests.
 - **External agent layer**: Java DTOs define fast/deliberate JSON protocols;
-  Python FastAPI + Pydantic AI scaffold can receive those requests.
+  Python FastAPI + Pydantic AI scaffold receives those requests and manages
+  per-NPC conversation context.
 - **Tool layer**: `FunctionManager` exposes callable tools and tool descriptors.
   Tool results use a stable `status/code/message/data/retryable` shape.
 - **Task layer**: `NpcTaskController` runs one low-level Minecraft task at a time,
@@ -85,6 +87,10 @@ Key layers:
 - Python external agent scaffold:
   - FastAPI server
   - Pydantic schemas
+  - per-NPC/Master context store under `config/npc-system/agent-state`
+  - Pydantic AI `message_history` persistence through `messages.json`
+  - current conversation compression into `SUMMARY.md`
+  - conversation-end long-term memory writing into `MEMORY.md`
   - deterministic stub decision path
   - optional Pydantic AI + Ollama path
 - Java external agent integration:
@@ -131,8 +137,9 @@ Key layers:
   - inspect inventory
 - Agent loop improvements:
   - deliberate mode trigger policy
-  - memory update handling from external agent response
   - tool execution result reporting back to the Python agent
+  - NPC polling mailbox/outbox so agent can queue actions without waiting for a
+    Java-initiated request
 - Python agent improvements:
   - stronger prompts
   - integration tests against local Ollama `qwen3.5`

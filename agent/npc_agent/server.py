@@ -4,8 +4,15 @@ import uvicorn
 from fastapi import Depends, FastAPI, Header, HTTPException
 
 from .config import AgentConfig, load_config
-from .decision import decide_deliberate, decide_fast
-from .schemas import DeliberateAgentRequest, DeliberateAgentResponse, FastAgentRequest, FastAgentResponse
+from .decision import decide_deliberate, decide_fast, end_conversation
+from .schemas import (
+    ConversationEndRequest,
+    ConversationEndResponse,
+    DeliberateAgentRequest,
+    DeliberateAgentResponse,
+    FastAgentRequest,
+    FastAgentResponse,
+)
 
 app = FastAPI(title="NPC External Agent", version="1")
 
@@ -45,6 +52,15 @@ async def deliberate_endpoint(
     _: None = Depends(authorize),
 ) -> DeliberateAgentResponse:
     return await decide_deliberate(request, config)
+
+
+@app.post("/agent/conversation/end", response_model=ConversationEndResponse)
+async def conversation_end_endpoint(
+    request: ConversationEndRequest,
+    config: AgentConfig = Depends(get_config),
+    _: None = Depends(authorize),
+) -> ConversationEndResponse:
+    return await end_conversation(request, config)
 
 
 def main() -> None:

@@ -1,6 +1,6 @@
 # External Agent Interface
 
-Last updated: 2026-06-11 19:36:22 CST
+Last updated: 2026-06-11 21:56:01 CST
 
 Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
 agent scaffold exists under `agent/`, and Java can call the external agent when
@@ -25,6 +25,8 @@ version.
 - Request `npc.kind` is `npc` or `master`.
 - Request `npc.permission` mirrors Java-side tool permission. Only
   `kind: "master"` with `permission >= 3` may call `call_command`.
+- Java remains the Minecraft fact source and executor. The Python agent owns
+  per-NPC conversation context when external agent mode is enabled.
 
 ## Fast Mode
 
@@ -201,6 +203,81 @@ Response:
 `action.type` is `none` or `call`. `actions` is preferred and currently limited
 to two entries, mainly for `say + do` responses. `reasoning_summary` is a
 concise decision summary, not a hidden chain-of-thought transcript.
+
+## Agent-Side Context
+
+The Python agent stores context under `config/npc-system/agent-state` by
+default. Override it with `NPC_AGENT_STATE_DIR`.
+
+Each NPC/Master has its own directory:
+
+```text
+agent-state/
+  npc/<uuid>/
+  master/<uuid>/
+```
+
+Each directory contains:
+
+- `AGENTS.md`: identity, behavior boundaries, and permission notes.
+- `SOLU.md`: current plan and unresolved goals.
+- `SUMMARY.md`: compressed context from the current conversation.
+- `MEMORY.md`: long-term memory written when a conversation ends.
+- `messages.json`: current Pydantic AI message history.
+- `history.jsonl`: debug/audit log only.
+
+Pydantic AI integration uses `message_history` when calling `Agent.run(...)`
+and persists the resulting context with `result.all_messages_json()`. When
+`messages.json` exceeds `NPC_AGENT_MAX_HISTORY_BYTES` (default `65536`), the
+agent compresses it into `SUMMARY.md` and resets the current message history.
+
+`history.jsonl` is not used as prompt memory; it exists for debugging and
+replay.
+
+## Conversation End
+
+Java notifies the agent when a conversation is explicitly ended or removed.
+
+Endpoint:
+
+```text
+POST /agent/conversation/end
+```
+
+Request:
+
+```json
+{
+  "version": 1,
+  "request_id": "request-uuid",
+  "npc": {
+    "uuid": "npc-uuid",
+    "id": "npc-uuid",
+    "name": "npc-name",
+    "kind": "npc",
+    "permission": 1
+  },
+  "reason": "end_conversation_tool",
+  "snapshot": {
+    "task": "idle",
+    "last_observation": "..."
+  }
+}
+```
+
+Response:
+
+```json
+{
+  "version": 1,
+  "request_id": "request-uuid",
+  "status": "ok",
+  "memory_updated": true
+}
+```
+
+On conversation end, the agent summarizes `messages.json` plus `SUMMARY.md`
+into `MEMORY.md`, then resets the current conversation context.
 
 ## Task Completion Callback
 

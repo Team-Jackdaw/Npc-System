@@ -15,6 +15,7 @@ public class EndConversationFunction extends CustomFunction {
     }
     @Override
     public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
+        conversation.endExternalAgentConversation("end_conversation_tool");
         if (conversation.getAgent() instanceof NPC npc) {
             NPC_AI.getNPCEntity(npc).getBrain().setMemory(NPCRegistration.MEMORY_IS_CHATTING, false);
         }
