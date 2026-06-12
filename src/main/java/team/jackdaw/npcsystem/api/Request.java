@@ -1,14 +1,13 @@
 package team.jackdaw.npcsystem.api;
 
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.*;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Map;
 
 public interface Request {
@@ -21,42 +20,38 @@ public interface Request {
      * @throws Exception If the request fails
      */
     static @NotNull String sendRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) throws Exception {
-        int timeoutMillis = timeoutMillis();
-        RequestConfig requestConfig = RequestConfig.custom()
-                .setConnectTimeout(timeoutMillis)
-                .setSocketTimeout(timeoutMillis)
-                .setCookieSpec("ignoreCookies")
+        Duration timeout = Duration.ofMillis(timeoutMillis());
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(timeout)
                 .build();
-
-        try (CloseableHttpClient client = HttpClients.custom()
-                .setDefaultRequestConfig(requestConfig)
-                .build()) {
-            HttpRequestBase request = getHttpRequestBase(url, headers, action);
-
-            if (requestJson != null && request instanceof HttpPost) {
-                ((HttpPost) request).setEntity(new StringEntity(requestJson, "UTF-8"));
-            }
-
-            try (CloseableHttpResponse response = client.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
+        HttpRequest request = buildRequest(requestJson, url, headers, action, timeout);
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() >= 400) {
+            throw new IllegalStateException("HTTP request failed with status " + response.statusCode() + ": " + response.body());
         }
+        return response.body();
     }
 
     @NotNull
-    private static HttpRequestBase getHttpRequestBase(@NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action) {
-        HttpRequestBase request = null;
-        if (action == Action.GET) {
-            request = new HttpGet(url);
-        } else if (action == Action.POST) {
-            request = new HttpPost(url);
-        } else if (action == Action.DELETE) {
-            request = new HttpDelete(url);
-        }
+    private static HttpRequest buildRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action, @NotNull Duration timeout) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(timeout);
         for (Map.Entry<String, String> entry : headers.entrySet()) {
-            request.setHeader(entry.getKey(), entry.getValue());
+            builder.header(entry.getKey(), entry.getValue());
         }
-        return request;
+        if (action == Action.GET) {
+            builder.GET();
+        } else if (action == Action.POST) {
+            builder.POST(HttpRequest.BodyPublishers.ofString(requestJson == null ? "" : requestJson));
+        } else if (action == Action.DELETE) {
+            if (requestJson == null || requestJson.isBlank()) {
+                builder.DELETE();
+            } else {
+                builder.method("DELETE", HttpRequest.BodyPublishers.ofString(requestJson));
+            }
+        }
+        return builder.build();
     }
 
     private static int timeoutMillis() {

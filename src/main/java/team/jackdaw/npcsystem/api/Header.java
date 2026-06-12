@@ -1,6 +1,5 @@
 package team.jackdaw.npcsystem.api;
 
-import org.apache.http.HttpHeaders;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,10 +44,10 @@ public class Header {
     public Header add(@NotNull Type type, @Nullable String value) {
         switch (type) {
             case AUTHORIZATION:
-                header.put(HttpHeaders.AUTHORIZATION, "Bearer " + value);
+                header.put("Authorization", "Bearer " + value);
                 break;
             case CONTENT_TYPE:
-                header.put(HttpHeaders.CONTENT_TYPE, "application/json");
+                header.put("Content-Type", "application/json");
                 break;
         }
         return this;
