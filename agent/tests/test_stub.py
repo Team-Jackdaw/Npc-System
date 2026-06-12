@@ -35,6 +35,25 @@ def test_fast_stub_returns_none_without_tools():
     assert response.a == "none"
 
 
+def test_fast_stub_does_not_repeat_chat_on_task_follow_up():
+    request = FastAgentRequest.model_validate(
+        {
+            "rid": "r1",
+            "npc": {"id": "npc", "name": "npc"},
+            "evt": [
+                ["CHAT_HEARD", 7, "Steve: hello", 1],
+                ["TASK_BATCH_FINISHED", 8, "speak:finished", 2],
+            ],
+            "tools": ["say"],
+        }
+    )
+
+    response = decide_fast_stub(request)
+
+    assert response.a == "none"
+    assert response.note == "task_batch_finished"
+
+
 def test_deliberate_stub_follows_player_when_requested():
     request = DeliberateAgentRequest.model_validate(
         {

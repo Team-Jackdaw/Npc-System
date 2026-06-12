@@ -70,3 +70,12 @@ explicitly.
 ```bash
 PYTHONPATH=agent pytest agent/tests
 ```
+
+Model backend connectivity is skipped by default. To verify that Pydantic AI can
+actually reach the configured Ollama model:
+
+```bash
+NPC_AGENT_RUN_MODEL_TESTS=1 \
+NPC_AGENT_MODEL=qwen3.5 \
+PYTHONPATH=agent pytest agent/tests/test_model_integration.py
+```

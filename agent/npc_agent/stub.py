@@ -10,6 +10,8 @@ from .schemas import (
 
 
 def decide_fast_stub(request: FastAgentRequest) -> FastAgentResponse:
+    if latest_event_type(request.evt) == "TASK_BATCH_FINISHED":
+        return FastAgentResponse(rid=request.rid, a="none", note="task_batch_finished")
     if is_fast_master(request) and "master_reply" in request.tools:
         message = latest_chat_text(request.evt)
         if message:
@@ -144,10 +146,15 @@ def extract_command(message: str) -> str:
 
 
 def latest_chat_text(events: list[list[object]]) -> str:
-    for event in reversed(events):
-        if len(event) >= 3 and event[0] == "CHAT_HEARD":
-            return str(event[2])
+    if events and len(events[-1]) >= 3 and events[-1][0] == "CHAT_HEARD":
+        return str(events[-1][2])
     return ""
+
+
+def latest_event_type(events: list[list[object]]) -> str:
+    if not events:
+        return ""
+    return str(events[-1][0])
 
 
 def fast_reply(message: str, max_chars: int) -> str:

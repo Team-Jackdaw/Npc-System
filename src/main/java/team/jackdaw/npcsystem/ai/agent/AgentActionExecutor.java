@@ -116,8 +116,14 @@ public class AgentActionExecutor {
         return List.of(response.action);
     }
 
-    private static boolean shouldCallback(AgentAction action) {
-        return "task".equals(action.kind) && !Boolean.FALSE.equals(action.callback);
+    static boolean shouldCallback(AgentAction action) {
+        if (!"task".equals(action.kind)) {
+            return false;
+        }
+        if (action.callback != null) {
+            return action.callback;
+        }
+        return !"say".equals(action.name);
     }
 
     private static String responseText(FastAgentResponse response) {

@@ -162,6 +162,22 @@ class AgentActionExecutorTest {
         assertEquals("actions_executed", result.toolResult().get("code"));
     }
 
+    @Test
+    void sayActionDoesNotRequestFollowUpByDefault() {
+        AgentAction say = action("say", Map.of("message", "你好。"));
+        say.kind = "task";
+
+        assertFalse(AgentActionExecutor.shouldCallback(say));
+    }
+
+    @Test
+    void nonSayTaskRequestsFollowUpByDefault() {
+        AgentAction follow = action("follow_player", Map.of("player", "Steve"));
+        follow.kind = "task";
+
+        assertTrue(AgentActionExecutor.shouldCallback(follow));
+    }
+
     private static AgentAction action(String name, Map<String, Object> arguments) {
         AgentAction action = new AgentAction();
         action.type = "call";
