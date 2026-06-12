@@ -87,7 +87,20 @@ public interface NPC_AI {
     }
 
     static void startPlayerConversation(NPCEntity entity, Player player) {
-        ConversationWindow window = getAI(entity).getNewConversationWindows();
+        if (entity.level().isClientSide()) {
+            return;
+        }
+        NPC npc = getAI(entity);
+        if (npc == null) {
+            NPCSystem.LOGGER.warn("[npc-system] NPC {} was missing AI registration; registering before conversation.", entity.getUUID());
+            registerNPC(entity);
+            npc = getAI(entity);
+        }
+        if (npc == null) {
+            NPCSystem.LOGGER.warn("[npc-system] Cannot start conversation for NPC {} because AI registration is unavailable.", entity.getUUID());
+            return;
+        }
+        ConversationWindow window = npc.getNewConversationWindows();
         if (window.isOnWait()) {
             return;
         }

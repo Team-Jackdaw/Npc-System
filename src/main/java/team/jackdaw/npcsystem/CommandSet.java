@@ -120,6 +120,7 @@ public class CommandSet {
                 .append("\nPosition: ").append(Component.literal(npc.blockPosition().toShortString()))
                 .append("\nTask: ").append(Component.literal(npc.getTaskController().status()).withStyle(ChatFormatting.AQUA))
                 .append("\nDebug Logging: ").append(Config.debug ? yes : no)
+                .append("\nDebug Log File: ").append(Component.literal(NPCSystem.debugLogFile.toAbsolutePath().toString()).withStyle(ChatFormatting.GRAY))
                 .append("\nAgent Registered: ").append(AgentManager.getInstance().isRegistered(npc.getUUID()) ? yes : no)
                 .append("\nConversation Registered: ")
                 .append(ConversationManager.getInstance().isRegistered(npc.getUUID()) ? yes : no)
@@ -141,7 +142,9 @@ public class CommandSet {
     private static int setDebug(CommandContext<CommandSourceStack> context, boolean enabled) {
         Config.debug = enabled;
         ConfigManager.save();
-        sendFeedback(context, Component.literal("[npc-system] Debug logging " + (enabled ? "enabled" : "disabled") + "."), true);
+        Component message = Component.literal("[npc-system] Debug logging " + (enabled ? "enabled" : "disabled") + ".")
+                .append(Component.literal(" Log file: " + NPCSystem.debugLogFile.toAbsolutePath()).withStyle(ChatFormatting.GRAY));
+        sendFeedback(context, message, true);
         return 1;
     }
 

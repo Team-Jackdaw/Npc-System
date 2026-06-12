@@ -59,6 +59,9 @@ Last updated: 2026-06-11 22:11:08 CST
    - `Debug Logging` 状态正确。
 4. 执行 `/npc debug on`。
 5. 查看服务端日志，确认 debug 开关开启信息出现。
+6. Debug 详细日志同时写入：
+   - 服务端标准日志：`logs/latest.log`
+   - 插件专用日志：`config/npc-system/debug.log`
 
 ## NPC 生成与默认行为
 

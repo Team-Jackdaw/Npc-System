@@ -9,6 +9,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.InteractionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.helpers.MessageFormatter;
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.entity.NPCEntity;
@@ -20,15 +21,34 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 
 public class NPCSystem implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("npc-system");
     public static final Path workingDirectory = Paths.get(System.getProperty("user.dir"), "config", "npc-system");
+    public static final Path debugLogFile = workingDirectory.resolve("debug.log");
     public static MinecraftServer server;
 
     public static void debugLog(String message, Object... args) {
         if (Config.debug) {
             LOGGER.info(message, args);
+            writeDebugLogFile(message, args);
+        }
+    }
+
+    private static void writeDebugLogFile(String message, Object... args) {
+        try {
+            Files.createDirectories(workingDirectory);
+            String formatted = MessageFormatter.arrayFormat(message, args).getMessage();
+            Files.writeString(
+                    debugLogFile,
+                    "[" + Instant.now() + "] " + formatted + System.lineSeparator(),
+                    StandardOpenOption.CREATE,
+                    StandardOpenOption.APPEND
+            );
+        } catch (IOException e) {
+            LOGGER.warn("[npc-system] Failed to write debug log file", e);
         }
     }
 
@@ -74,6 +94,7 @@ public class NPCSystem implements ModInitializer {
         }));
         // Register the starting conversation by player
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
+            if (world.isClientSide()) return InteractionResult.PASS;
             // The entity should be an NPC
             if (!(entity instanceof NPCEntity npc)) return InteractionResult.PASS;
             // The player must be sneaking to start a conversation
