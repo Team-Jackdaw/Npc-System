@@ -43,6 +43,26 @@ abstract class NpcTaskFunction extends CustomFunction {
         return Optional.ofNullable(NPCSystem.server.getPlayerList().getPlayer(name));
     }
 
+    protected static String stringArg(Map<String, Object> args, String primary, String... aliases) {
+        if (args == null) {
+            return null;
+        }
+        Object value = args.get(primary);
+        if (value == null) {
+            for (String alias : aliases) {
+                value = args.get(alias);
+                if (value != null) {
+                    break;
+                }
+            }
+        }
+        if (value == null) {
+            return null;
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
+    }
+
     protected Optional<NPCEntity> findNpc(String nameOrUuid) {
         if (nameOrUuid == null || nameOrUuid.isBlank()) {
             return Optional.empty();

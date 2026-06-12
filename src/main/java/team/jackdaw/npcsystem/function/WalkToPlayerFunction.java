@@ -18,11 +18,12 @@ public class WalkToPlayerFunction extends NpcTaskFunction {
 
     @Override
     public Map<String, Object> execute(ConversationWindow conversation, Map<String, Object> args) {
+        String playerName = stringArg(args, "player", "player_name", "target_player", "target");
         double stopDistance = number(args.get("stop_distance"), 2.0);
         int timeoutTicks = secondsToTicks(args.get("timeout_seconds"), 15);
-        return findPlayer((String) args.get("player"))
+        return findPlayer(playerName)
                 .map(player -> assign(conversation, new WalkToEntityTask(player, 0.6, stopDistance, timeoutTicks)))
-                .orElseGet(() -> failure("target_not_found", "Player not found: " + args.get("player"), true));
+                .orElseGet(() -> failure("target_not_found", "Player not found: " + playerName, true));
     }
 
     private static double number(Object value, double fallback) {

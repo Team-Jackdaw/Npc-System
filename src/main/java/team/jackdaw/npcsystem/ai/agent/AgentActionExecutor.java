@@ -117,11 +117,11 @@ public class AgentActionExecutor {
     }
 
     static boolean shouldCallback(AgentAction action) {
-        if (!"task".equals(action.kind)) {
-            return false;
-        }
         if (action.callback != null) {
             return action.callback;
+        }
+        if (!"task".equals(action.kind)) {
+            return false;
         }
         return !"say".equals(action.name);
     }

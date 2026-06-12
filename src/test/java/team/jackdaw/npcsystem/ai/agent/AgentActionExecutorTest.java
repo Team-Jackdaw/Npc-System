@@ -178,6 +178,15 @@ class AgentActionExecutorTest {
         assertTrue(AgentActionExecutor.shouldCallback(follow));
     }
 
+    @Test
+    void explicitCallbackIsRespectedForToolKindActions() {
+        AgentAction walk = action("walk_to_player", Map.of("player_name", "Steve"));
+        walk.kind = "tool";
+        walk.callback = true;
+
+        assertTrue(AgentActionExecutor.shouldCallback(walk));
+    }
+
     private static AgentAction action(String name, Map<String, Object> arguments) {
         AgentAction action = new AgentAction();
         action.type = "call";
