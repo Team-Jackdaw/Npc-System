@@ -134,7 +134,7 @@ public class AgentActionExecutor {
         if (isReplyAction(response.name) && response.args != null && response.args.get("message") != null) {
             return response.args.get("message").toString();
         }
-        return response.note == null ? "" : response.note;
+        return "";
     }
 
     private static String responseText(DeliberateAgentResponse response) {
@@ -154,7 +154,7 @@ public class AgentActionExecutor {
         if (response.action != null && isReplyAction(response.action.name) && response.action.arguments != null && response.action.arguments.get("message") != null) {
             return response.action.arguments.get("message").toString();
         }
-        return response.reasoning_summary == null ? "" : response.reasoning_summary;
+        return "";
     }
 
     private static boolean isReplyAction(String name) {
@@ -168,6 +168,10 @@ public class AgentActionExecutor {
 
         public static AgentExecutionResult failure(String responseText, Map<String, Object> toolResult) {
             return new AgentExecutionResult(false, responseText, toolResult);
+        }
+
+        public boolean isNoAction() {
+            return toolResult != null && "no_action".equals(toolResult.get("code"));
         }
     }
 }

@@ -2,6 +2,7 @@ package team.jackdaw.npcsystem.ai.agent;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.AgentAction;
 import team.jackdaw.npcsystem.ai.AgentManager;
@@ -33,11 +34,28 @@ class AgentActionExecutorTest {
         FastAgentResponse response = new FastAgentResponse();
         response.rid = "r1";
         response.a = "none";
+        response.note = "no_action";
 
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
 
         assertTrue(result.success());
         assertEquals("no_action", result.toolResult().get("code"));
+        assertEquals("", result.responseText());
+        assertTrue(result.isNoAction());
+    }
+
+    @Test
+    void deliberateNoneActionDoesNotExposeReasoningAsResponseText() {
+        DeliberateAgentResponse response = new DeliberateAgentResponse();
+        response.request_id = "r1";
+        response.reasoning_summary = "No useful action is available.";
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
+        assertEquals("no_action", result.toolResult().get("code"));
+        assertEquals("", result.responseText());
+        assertTrue(result.isNoAction());
     }
 
     @Test
