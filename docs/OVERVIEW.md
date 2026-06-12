@@ -104,6 +104,7 @@ Key layers:
 - Master external agent integration:
   - same fast/deliberate endpoints as NPCs
   - `kind=master`, `permission=3`
+  - stable Java UUID and `agent-state/master/default` context directory
   - normal administrator conversation through `master_reply`
   - high-permission `call_command` guarded by Java and agent-side identity.
 

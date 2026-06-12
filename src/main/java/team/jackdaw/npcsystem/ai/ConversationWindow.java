@@ -270,7 +270,11 @@ public class ConversationWindow {
         try {
             EXTERNAL_AGENT_CLIENT.endConversation(conversationEndRequest(reason));
         } catch (Exception e) {
-            NPCSystem.LOGGER.warn("[npc-system] External agent conversation end notification failed", e);
+            if (Config.debug) {
+                NPCSystem.LOGGER.warn("[npc-system] External agent conversation end notification failed", e);
+            } else {
+                NPCSystem.LOGGER.warn("[npc-system] External agent conversation end notification failed: {}", e.toString());
+            }
         }
     }
 

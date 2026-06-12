@@ -113,7 +113,24 @@ def test_fast_and_master_use_separate_context_directories(tmp_path):
     master_context = AgentContextStore(config).for_deliberate(master_request)
 
     assert npc_context.root == tmp_path / "npc" / "npc-1"
-    assert master_context.root == tmp_path / "master" / "master-1"
+    assert master_context.root == tmp_path / "master" / "default"
+
+
+def test_master_context_ignores_changing_uuid(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    first = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "master-1", "kind": "master", "permission": 3}}
+    )
+    second = DeliberateAgentRequest.model_validate(
+        {"request_id": "r2", "npc": {"uuid": "master-2", "kind": "master", "permission": 3}}
+    )
+
+    first_context = AgentContextStore(config).for_deliberate(first)
+    second_context = AgentContextStore(config).for_deliberate(second)
+
+    assert first_context.root == tmp_path / "master" / "default"
+    assert second_context.root == first_context.root
+    assert first_context.agent_id == "default"
 
 
 def test_memory_updates_are_written_to_memory(tmp_path):

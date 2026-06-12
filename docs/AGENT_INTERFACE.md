@@ -214,7 +214,7 @@ Each NPC/Master has its own directory:
 ```text
 agent-state/
   npc/<uuid>/
-  master/<uuid>/
+  master/default/
 ```
 
 Each directory contains:
@@ -331,8 +331,10 @@ Available completion-control tool:
 
 Master uses the same protocol as NPCs, but current Java routes Master chat
 through `/agent/deliberate` so server-administrator monitoring and command
-decisions can use the richer request. Master has no Minecraft entity and cannot
-run task actions. Its request identity is:
+decisions can use the richer request. Master has a stable Java UUID and the
+Python agent always stores its context under `master/default`, so Master memory
+does not split across restarts or changing UUIDs. Master has no Minecraft entity
+and cannot run task actions. Its request identity is:
 
 ```json
 {

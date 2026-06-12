@@ -195,8 +195,8 @@ class AgentContextStore:
         return self._context(agent_id, request.npc.kind)
 
     def _context(self, agent_id: str, kind: str) -> AgentContext:
-        safe_id = sanitize(agent_id)
         safe_kind = "master" if kind == "master" else "npc"
+        safe_id = "default" if safe_kind == "master" else sanitize(agent_id)
         context = AgentContext(
             root=self.base / safe_kind / safe_id,
             agent_id=safe_id,

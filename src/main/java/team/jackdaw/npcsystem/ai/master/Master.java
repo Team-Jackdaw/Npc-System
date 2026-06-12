@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class Master extends Agent {
+    public static final UUID MASTER_UUID = UUID.nameUUIDFromBytes("npc-system:master".getBytes(java.nio.charset.StandardCharsets.UTF_8));
     private static final Master master;
 
     static {
@@ -23,7 +24,7 @@ public class Master extends Agent {
     }
 
     private Master() {
-        this.uuid = UUID.randomUUID();
+        this.uuid = MASTER_UUID;
         this.permissionLevel = 3;
     }
 

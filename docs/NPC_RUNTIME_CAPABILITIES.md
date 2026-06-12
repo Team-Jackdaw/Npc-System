@@ -308,6 +308,7 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 
 - `kind=master`
 - `permission=3`
+- Java 端使用固定 UUID；agent 侧记忆固定在 `agent-state/master/default`。
 - 不具备 sensor、默认行为和 task batch。
 - 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
 - 普通对话使用 `master_reply` 返回文本。
@@ -350,7 +351,7 @@ Master 专用接口：
 
 外部 agent 主线记忆位于 `config/npc-system/agent-state`：
 
-- 每个 NPC/Master 一个目录，按 `npc/<uuid>` 或 `master/<uuid>` 区分。
+- 每个 NPC 一个目录，按 `npc/<uuid>` 区分；Master 固定使用 `master/default`。
 - 当前会话上下文保存在 `messages.json`，格式来自 Pydantic AI `all_messages_json()`。
 - 当前会话过长时压缩到 `SUMMARY.md` 并重置 `messages.json`。
 - 会话结束后，agent 将当前会话和 summary 沉淀到 `MEMORY.md`。

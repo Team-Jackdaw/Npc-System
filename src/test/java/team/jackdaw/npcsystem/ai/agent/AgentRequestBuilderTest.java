@@ -79,6 +79,7 @@ class AgentRequestBuilderTest {
 
         DeliberateAgentRequest request = new AgentRequestBuilder().deliberate(conversation, "/time set day", master);
 
+        assertEquals(Master.MASTER_UUID.toString(), request.npc.uuid);
         assertEquals("master", request.npc.kind);
         assertEquals(3, request.npc.permission);
         assertEquals("Master", request.npc.name);
