@@ -11,39 +11,41 @@ import team.jackdaw.npcsystem.ai.agent.protocol.ConversationEndRequest;
 import team.jackdaw.npcsystem.ai.agent.protocol.DeliberateAgentResponse;
 import team.jackdaw.npcsystem.ai.agent.protocol.FastAgentResponse;
 import team.jackdaw.npcsystem.ai.master.Master;
-import team.jackdaw.npcsystem.api.Ollama;
-import team.jackdaw.npcsystem.api.json.*;
 import team.jackdaw.npcsystem.entity.task.NpcTask;
 import team.jackdaw.npcsystem.entity.task.NpcTaskAssignment;
 import team.jackdaw.npcsystem.entity.task.NpcTaskBatchResult;
 import team.jackdaw.npcsystem.entity.task.TaskSource;
 import team.jackdaw.npcsystem.entity.NPCEntity;
-import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.UUID;
 
 public class ConversationWindow {
     private static final AgentRequestBuilder AGENT_REQUEST_BUILDER = new AgentRequestBuilder();
     private static final AgentActionExecutor AGENT_ACTION_EXECUTOR = new AgentActionExecutor();
     private static final ExternalAgentClient EXTERNAL_AGENT_CLIENT = new ExternalAgentClient();
+    private static final List<String> OPENING_LINES = List.of(
+            "你好，有什么需要我帮忙的吗？",
+            "你好，想聊些什么？",
+            "我在这儿，需要我做什么？"
+    );
+    private static final String AGENT_UNAVAILABLE_REPLY = "我现在有点走神，稍后再说。";
     protected final UUID uuid;
-    protected List<Message> messages;
     protected long updateTime = 0L;
     protected UUID target;
     private boolean onWait = false;
-    private String lastInjectedContext = "";
     private String activeAgentBatchId;
     private boolean activeAgentBatchCallback;
     private boolean externalAgentEndNotified = false;
+    private String lastUserMessage = "";
+    private String lastAssistantMessage = "";
+    private String lastAgentResultSummary = "";
 
     public ConversationWindow(UUID uuid) {
         this.uuid = uuid;
-        messages = Ollama.messageBuilder()
-                .addMessage(Role.SYSTEM, AgentManager.getInstance().get(uuid).getInstruction())
-                .build();
     }
 
     public Agent getAgent() {
@@ -58,19 +60,8 @@ public class ConversationWindow {
         this.target = target;
     }
 
-    public List<Message> getMessages() {
-        return messages;
-    }
-
     public String getLastMessage() {
-        return messages.get(messages.size() - 1).content;
-    }
-
-    public List<Tool> getTools() {
-        return getAgent().getTools()
-                .stream()
-                .map(FunctionManager.getInstance()::getTools)
-                .toList();
+        return lastAssistantMessage;
     }
 
     public boolean isOnWait() {
@@ -90,52 +81,18 @@ public class ConversationWindow {
      *
      * @return The response
      */
-    public ChatResponse chat(String message) {
+    public String chat(String message) {
         updateTime = System.currentTimeMillis();
+        lastUserMessage = message == null ? "" : message;
         NPCSystem.debugLog("[npc-system] Conversation {} received player message: {}", uuid, message);
         if (Config.agentEnabled) {
-            ChatResponse externalResponse = chatWithExternalAgent(message, getAgent());
-            if (externalResponse != null || !Config.agentFallbackToOllama) {
-                return externalResponse;
-            }
+            return chatWithExternalAgent(message, getAgent());
         }
-        return chatWithOllama(message);
+        lastAssistantMessage = AGENT_UNAVAILABLE_REPLY;
+        return lastAssistantMessage;
     }
 
-    private ChatResponse chatWithOllama(String message) {
-        MessageBuilder builder = Ollama.messageBuilder(messages);
-        addCurrentContext(builder);
-        messages = builder
-                .addMessage(Role.USER, message)
-                .build();
-        ChatResponse response;
-        try {
-            response = Ollama.chat(messages, getTools());
-            if (response.message.tool_calls != null) {
-                MessageBuilder messagedBuilder = Ollama.messageBuilder(messages);
-                for (ChatResponse.Message.ToolCall toolCall : response.message.tool_calls) {
-                    String functionResult = FunctionManager.getInstance()
-                            .callFunction(this, toolCall.function.name, toolCall.function.arguments)
-                            .toString();
-                    messagedBuilder.addToolMessage(toolCall.function.name, functionResult);
-                }
-                List<Message> messages2 = messagedBuilder.build();
-                response = Ollama.chat(messages2, null);
-            }
-            messages = Ollama.messageBuilder(messages)
-                    .addMessage(Role.ASSISTANT, response.message.content)
-                    .build();
-        } catch (Exception e) {
-            messages = Ollama.messageBuilder(messages)
-                    .addMessage(Role.ASSISTANT, "I'm sorry, I can't do that.")
-                    .build();
-            response = null;
-        }
-
-        return response;
-    }
-
-    private ChatResponse chatWithExternalAgent(String message, Agent agent) {
+    private String chatWithExternalAgent(String message, Agent agent) {
         try {
             AgentActionExecutor.AgentExecutionResult result;
             if ("deliberate".equalsIgnoreCase(Config.agentMode)) {
@@ -146,19 +103,17 @@ public class ConversationWindow {
                 result = AGENT_ACTION_EXECUTOR.execute(this, response);
             }
             NPCSystem.debugLog("[npc-system] External agent chat result success={} toolResult={}", result.success(), result.toolResult());
-            if (!result.success() && Config.agentFallbackToOllama) {
-                return null;
+            lastAgentResultSummary = result.toolResult() == null ? "" : result.toolResult().toString();
+            lastAssistantMessage = result.responseText() == null ? "" : result.responseText();
+            if (!result.success() && lastAssistantMessage.isBlank()) {
+                lastAssistantMessage = AGENT_UNAVAILABLE_REPLY;
             }
-            ChatResponse response = agentChatResponse(result.responseText());
-            messages = Ollama.messageBuilder(messages)
-                    .addMessage(Role.USER, message)
-                    .addMessage(Role.ASSISTANT, response.message.content)
-                    .build();
-            return response;
+            return lastAssistantMessage;
         } catch (Exception e) {
             NPCSystem.LOGGER.error("[npc-system] External agent request failed", e);
             resumeDefaultAfterAgentFailure("external agent request failed");
-            return null;
+            lastAssistantMessage = AGENT_UNAVAILABLE_REPLY;
+            return lastAssistantMessage;
         }
     }
 
@@ -225,11 +180,10 @@ public class ConversationWindow {
             }
             String responseText = result.responseText();
             if (responseText != null && !responseText.isBlank()) {
-                messages = Ollama.messageBuilder(messages)
-                        .addMessage(Role.USER, message)
-                        .addMessage(Role.ASSISTANT, responseText)
-                        .build();
+                lastUserMessage = message;
+                lastAssistantMessage = responseText;
             }
+            lastAgentResultSummary = result.toolResult() == null ? "" : result.toolResult().toString();
         }
 
         @Override
@@ -270,48 +224,14 @@ public class ConversationWindow {
         }
     }
 
-    private static ChatResponse agentChatResponse(String content) {
-        ChatResponse response = new ChatResponse();
-        response.message = new ChatResponse.Message();
-        response.message.role = "assistant";
-        response.message.content = content == null ? "" : content;
-        response.done = true;
-        response.done_reason = "stop";
-        return response;
-    }
-
     /**
      * Let Agent start the conversation
      * @return The response
      */
-    public ChatResponse chat() {
+    public String chat() {
         updateTime = System.currentTimeMillis();
-        ChatResponse response;
-        try {
-            MessageBuilder builder = Ollama.messageBuilder(messages);
-            addCurrentContext(builder);
-            messages = builder.build();
-            response = Ollama.chat(messages, null);
-            messages = Ollama.messageBuilder(messages)
-                    .addMessage(Role.ASSISTANT, response.message.content)
-                    .build();
-        } catch (Exception e) {
-            messages = Ollama.messageBuilder(messages)
-                    .addMessage(Role.ASSISTANT, "I'm sorry, I can't do that.")
-                    .build();
-            response = null;
-        }
-        return response;
-    }
-
-    private void addCurrentContext(MessageBuilder builder) {
-        if (getAgent() instanceof NPC npc) {
-            String context = npc.getContextPrompt();
-            if (context != null && !context.isBlank() && !context.equals(lastInjectedContext)) {
-                builder.addMessage(Role.SYSTEM, "当前NPC上下文:\n" + context);
-                lastInjectedContext = context;
-            }
-        }
+        lastAssistantMessage = OPENING_LINES.get(ThreadLocalRandom.current().nextInt(OPENING_LINES.size()));
+        return lastAssistantMessage;
     }
 
     public long getUpdateTime() {
@@ -320,6 +240,18 @@ public class ConversationWindow {
 
     public void resetUpdateTime() {
         updateTime = 0L;
+    }
+
+    public String getLastUserMessage() {
+        return lastUserMessage;
+    }
+
+    public String getLastAssistantMessage() {
+        return lastAssistantMessage;
+    }
+
+    public String getLastAgentResultSummary() {
+        return lastAgentResultSummary;
     }
 
     public void endExternalAgentConversation(String reason) {

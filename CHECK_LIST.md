@@ -1,6 +1,6 @@
 # NPC System 实机测试清单
 
-Last updated: 2026-06-11 22:11:08 CST
+Last updated: 2026-06-12 09:34:13 CST
 
 本文面向服务器管理员，用于安装、运行和逐项验证 NPC System。
 
@@ -28,19 +28,16 @@ Last updated: 2026-06-11 22:11:08 CST
 
 - `enabled`: 是否启用插件。
 - `debug`: 是否开启详细交互日志。
-- `apiURL`: Ollama 地址，默认 `http://localhost:11434`。
-- `chat_model`: Ollama 模型名。
 - `agentEnabled`: 是否启用外部 agent。
 - `agentBaseUrl`: 外部 agent 地址。
 - `agentMode`: `fast` 或 `deliberate`。
-- `agentFallbackToOllama`: agent 失败时是否回退 Ollama。
 - `range`: NPC 聊天和感知范围。
 - `isBubble`: 是否显示头顶气泡。
 - `isChatBar`: 是否在聊天栏显示 NPC 发言。
 
 ## 管理命令
 
-- `/npc`: 查看插件状态、debug 状态、memory 路径、模型和显示设置。
+- `/npc`: 查看插件状态、debug 状态、agent 地址、显示设置。
 - `/npc spawn`: 在管理员当前位置生成 NPC。
 - `/npc debug`: 查询当前维度中距离命令源最近的 NPC 调试信息。
 - `/npc debug on`: 开启详细日志，记录玩家/NPC/agent 交互。
@@ -55,7 +52,8 @@ Last updated: 2026-06-11 22:11:08 CST
 2. 进入服务器，执行 `/npc`。
 3. 确认显示：
    - `Enabled: Yes`
-   - `Memory Storage` 指向 `config/npc-system/memory`
+   - `Agent Base URL` 指向外部 agent 地址
+   - `Agent State` 指向 `config/npc-system/agent-state`
    - `Debug Logging` 状态正确。
 4. 执行 `/npc debug on`。
 5. 查看服务端日志，确认 debug 开关开启信息出现。
@@ -162,19 +160,17 @@ Last updated: 2026-06-11 22:11:08 CST
    - NPC 应恢复默认行为。
 5. 执行 `/npc debug` 检查当前 task 是否回到 idle/default 相关状态。
 
-## Memory 测试
+## Agent Context 测试
 
 1. 与 NPC 对话，请求它记住一条信息。
-2. 如果 agent 调用了 `memory_record`，检查 Java 兼容记忆目录：
-   - `config/npc-system/memory/`
-3. 如果外部 agent 返回 `memory_updates`，检查 agent 主线记忆：
+2. 如果外部 agent 返回 `memory_updates`，检查 agent 主线记忆：
    - `config/npc-system/agent-state/npc/<uuid>/MEMORY.md`
-4. 调用 `end_conversation` 或等待 conversation timeout。
-5. 预期：
+3. 调用 `end_conversation` 或等待 conversation timeout。
+4. 预期：
    - Java 请求 `/agent/conversation/end`；
    - agent 将当前 `messages.json` 和 `SUMMARY.md` 总结进 `MEMORY.md`；
    - `messages.json` 被重置为 `[]`。
-6. 确认日志和回复中没有旧 `rag_*` tool 名称。
+5. 确认 Java 端没有生成 `config/npc-system/memory/` 作为长期记忆来源。
 
 ## 显示测试
 

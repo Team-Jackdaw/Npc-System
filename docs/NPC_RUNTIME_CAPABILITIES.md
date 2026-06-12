@@ -1,6 +1,6 @@
 # NPC 运行能力说明
 
-Last updated: 2026-06-11 19:36:22 CST
+Last updated: 2026-06-12 09:36:54 CST
 
 本文按当前代码实现说明 NPC 在游戏中可以预期完成的任务、运行循环、玩家交互、外部 agent 协议、可调用接口和记忆存储方式。
 
@@ -72,8 +72,6 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 | `wait` | task | 等待，对应 `WaitTask` |
 | `stop_task` | task | 停止当前任务并清空队列 |
 | `resume_default_behavior` | tool | 结束 agent 等待状态并恢复默认行为 |
-| `memory_query` | tool | 查询本地文本记忆 |
-| `memory_record` | tool | 写入本地文本记忆 |
 | `end_conversation` | tool | 结束当前对话 |
 
 另外还有 `call_command`，但它的权限等级为 3，默认 NPC 权限不能调用。`NoCallableFunction` 可从 `config/npc-system/functions/*.json` 动态加载数据包函数桥接 tool。
@@ -140,7 +138,7 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 限制：
 
 - 玩家聊天本身不会自动创建新对话，通常需要先通过潜行攻击开启会话。
-- 玩家交互目前没有把“玩家命令式请求”直接转换成 `PLAYER` 优先级 task；它会先进入对话/agent，再由 agent 或 Ollama tool 调用生成 `AGENT` task。
+- 玩家交互目前没有把“玩家命令式请求”直接转换成 `PLAYER` 优先级 task；它会先进入对话/agent，再由 agent 返回 tool action 生成 `AGENT` task。
 
 ## 与后端 Agent 的交互
 
@@ -150,11 +148,12 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 - `Config.agentBaseUrl`: 默认 `http://127.0.0.1:8765`。
 - `Config.agentMode`: `fast` 或 `deliberate`，默认 `fast`。
 - `Config.agentAuthToken`: 可选 Authorization。
-- `Config.agentFallbackToOllama`: agent 失败时是否回退 Ollama，默认 `true`。
 
 交互时机：
 
-- 玩家开启或继续 NPC 对话时，`ConversationWindow.chat(...)` 会优先尝试外部 agent。
+- 玩家开启 NPC 对话时，Java 端返回固定候选开场白，不再调用本地模型。
+- 玩家继续 NPC 对话时，如果 `agentEnabled=true`，`ConversationWindow.chat(...)` 会请求外部 agent。
+- 如果 `agentEnabled=false` 或请求失败，Java 端只返回固定失败提示并恢复默认行为；不会 fallback 到本地 LLM。
 - 如果 `agentMode=fast`，POST 到 `/agent/fast`。
 - 如果 `agentMode=deliberate`，POST 到 `/agent/deliberate`。
 - agent 响应中的 action 会由 `AgentActionExecutor` 调用 `FunctionManager` 执行。
@@ -301,7 +300,7 @@ Deliberate 响应字段：
 }
 ```
 
-当前 Java 端会使用 `speech` 或 action 中 `say.message` 作为对话文本。`memory_updates` 字段已在协议中存在，但尚未自动写入本地记忆。
+当前 Java 端会使用 `speech` 或 action 中 `say.message` 作为对话文本。`memory_updates` 字段已在协议中存在，但 Java 端不再写入本地持久记忆；持久上下文由外部 agent 管理。
 
 ### Master Agent
 
@@ -311,7 +310,7 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 - `permission=3`
 - 不具备 sensor、默认行为和 task batch。
 - 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
-- 可以使用 `memory_query`、`memory_record`、`end_conversation`。
+- 可以使用 `end_conversation`。
 - 可以在权限验证通过时使用 `call_command` 执行管理员级 Minecraft 命令。
 
 普通 NPC 的 `permission=1`，即使 agent 返回 `call_command`，Java 侧也会拒绝。
@@ -329,41 +328,31 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 - `wait(seconds)`
 - `stop_task()`
 - `resume_default_behavior()`
-- `memory_query(context)`
-- `memory_record(context)`
 - `end_conversation()`
 
 这些接口隐藏 Minecraft 内部类，只暴露 JSON 参数。task 类接口会在 Java 端解析目标实体、创建 `NpcTask`，并交给 `NpcTaskController`。
 
-## 记忆储存与读取
+## 上下文与记忆储存
 
-当前有两套记忆路径：
+当前 Java 端不再维护 embedding、RAG、文本检索记忆，也不再提供 `memory_query` / `memory_record` tool。Java 只保留运行时短期 snapshot：
 
-1. Java 兼容记忆模块使用 `memory` 包名和 `memory_query`/`memory_record` tool 名称。实现不是 embedding/vector 数据库，而是本地 JSON 文本记录：
+- `NpcSensorState`: 最近一次 sensor 快照。
+- `ObservationEvent`: 最近和重要事件缓冲。
+- `ConversationWindow`: 当前窗口的最后一条玩家消息、最后一条 NPC/agent 回复、最后一次 agent action 结果摘要。
+- `history.jsonl`: 外部 agent 侧的调试/回放日志，不作为 Java prompt 上下文。
 
-- 存储目录：`config/npc-system/memory`
-- 每个 NPC 一个 JSON 文件：文件名来自 NPC UUID；Master 使用 `Master.json`。
-- 写入时调用 `Memory.record(text, className)`。
-- 文本按 `Memory.CHUNK_SIZE = 150` 做简单空白分词 chunk。
-- JSON 记录包含 `id`、原始 `text`、`chunks`、`createdAt`。
-- 查询时调用 `Memory.query(text, topK, className)`。
-- 查询使用本地关键词计数打分：中文按单字 token，英文/数字按词 token。
-- 如果查询文本没有 token，则返回最近记录的 chunk。
-
-Ollama embedding 已不参与记忆写入和查询。`Memory.completion(...)` 仍会把查询结果拼入 prompt 后调用 Ollama completion，但普通记忆查询本身不依赖外部模型。
-
-2. 外部 agent 主线记忆位于 `config/npc-system/agent-state`：
+外部 agent 主线记忆位于 `config/npc-system/agent-state`：
 
 - 每个 NPC/Master 一个目录，按 `npc/<uuid>` 或 `master/<uuid>` 区分。
 - 当前会话上下文保存在 `messages.json`，格式来自 Pydantic AI `all_messages_json()`。
 - 当前会话过长时压缩到 `SUMMARY.md` 并重置 `messages.json`。
 - 会话结束后，agent 将当前会话和 summary 沉淀到 `MEMORY.md`。
 - `history.jsonl` 只用于 debug 和回放，不作为 prompt 主上下文。
-- `memory_updates` 当前由 agent 写入自己的 `MEMORY.md`。
+- `memory_updates` 由 agent 自行决定如何写入自己的 `MEMORY.md` 或其他外部存储。
 
 ## 当前运行边界
 
-当前版本可以支撑“玩家打开对话 -> NPC 感知上下文 -> external agent/Ollama 选择最多两个 action -> NPC 回复并执行基础 Minecraft 动作 -> tick loop 推进任务 -> AGENT batch 完成后回调 agent -> agent 继续下发下一批任务或恢复默认行为”的闭环。
+当前版本可以支撑“玩家打开对话 -> NPC 感知上下文 -> external agent 选择最多两个 action -> NPC 回复并执行基础 Minecraft 动作 -> tick loop 推进任务 -> AGENT batch 完成后回调 agent -> agent 继续下发下一批任务或恢复默认行为”的闭环。
 
 最需要继续补齐的是：
 

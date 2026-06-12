@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-11 22:11:08 CST
+Last updated: 2026-06-12 09:34:13 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -48,7 +48,8 @@ Key layers:
 ## Implemented
 
 - MC 26.1.2 / Fabric migration with Java 25 and Gradle 9.5.1.
-- Local JSON/text memory storage replacing vector embedding storage.
+- Java-side LLM calls and local long-term memory have been removed; persistent
+  context is owned by the external agent.
 - Basic NPC sensor state and observation-event buffering.
 - Event types for players, NPCs, chat, weather, health, and task state changes.
 - Project-owned `NpcTask` and `NpcTaskController`.
@@ -94,12 +95,12 @@ Key layers:
   - conversation-end long-term memory writing into `MEMORY.md`
   - `agent/skills/dummy_skill.md` as a placeholder for shared skills
   - deterministic stub decision path
-  - optional Pydantic AI + Ollama path
+  - optional Pydantic AI model path
 - Java external agent integration:
   - `ExternalAgentClient`
   - `AgentRequestBuilder`
   - `AgentActionExecutor`
-  - configurable NPC conversation routing to external agent with Ollama fallback.
+  - NPC conversation routing to the external agent without Java LLM fallback.
 - Master external agent integration:
   - same fast/deliberate endpoints as NPCs
   - `kind=master`, `permission=3`
@@ -144,7 +145,7 @@ Key layers:
     Java-initiated request
 - Python agent improvements:
   - stronger prompts
-  - integration tests against local Ollama `qwen3.5`
+  - integration tests against the configured external-agent model backend
   - optional auth test coverage
   - model output repair/fallback strategy
 
@@ -154,7 +155,8 @@ Key layers:
 - Default agent endpoint: `http://127.0.0.1:8765`.
 - Default Java agent mode: `fast`.
 - Default Python agent mode: `stub`.
-- Java can fall back to Ollama when external agent calls fail.
+- Java does not call local LLMs directly. If the external agent is disabled or
+  unavailable, NPCs use fixed fallback text and default behavior.
 
 ## Documentation Map
 

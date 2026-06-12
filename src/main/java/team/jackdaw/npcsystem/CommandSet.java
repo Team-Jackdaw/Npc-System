@@ -25,8 +25,8 @@ import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.entity.NPCRegistration;
 import team.jackdaw.npcsystem.group.Group;
 import team.jackdaw.npcsystem.group.GroupManager;
-import team.jackdaw.npcsystem.memory.Memory;
 
+import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.Optional;
 
@@ -292,9 +292,10 @@ public class CommandSet {
                 .append("").withStyle(ChatFormatting.RESET)
                 .append("\nEnabled: ").append(Config.enabled ? yes : no)
                 .append("\nDebug Logging: ").append(Config.debug ? yes : no)
-                .append("\nMemory Storage: ").append(Component.literal(Memory.storagePath()))
-                .append("\nAPI URL: ").append(Component.literal(Config.apiURL))
-                .append("\nChat Model: ").append(Component.literal(Config.chat_model))
+                .append("\nExternal Agent: ").append(Config.agentEnabled ? yes : no)
+                .append("\nAgent Base URL: ").append(Component.literal(Config.agentBaseUrl))
+                .append("\nAgent Mode: ").append(Component.literal(Config.agentMode))
+                .append("\nAgent State: ").append(Component.literal(Paths.get(System.getProperty("user.dir"), "config", "npc-system", "agent-state").toString()))
                 .append("\nChat Range: ").append(Component.literal(String.valueOf(Config.range)))
                 .append("\nText Bubble: ").append(Config.isBubble ? yes : no)
                 .append("\nChat Bar: ").append(Config.isChatBar ? yes : no)

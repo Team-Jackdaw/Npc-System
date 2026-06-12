@@ -23,8 +23,6 @@ public class NPC extends Agent {
         this.uuid = uuid;
         setTools(List.of(
                 "end_conversation",
-                "memory_query",
-                "memory_record",
                 "say",
                 "look_at_player",
                 "look_at_npc",
@@ -105,7 +103,7 @@ public class NPC extends Agent {
 
     @Override
     public String getInstruction() {
-        return "Your are a Minecraft NPC. You can talk in Chinese and keep responses within 30 words. Use tools when you need to move, look at someone, follow, wait, remember, or query memory.";
+        return "Your are a Minecraft NPC. You can talk in Chinese and keep responses within 30 words. Use tools when you need to move, look at someone, follow, wait, or stop.";
     }
 
     @Override

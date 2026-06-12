@@ -24,7 +24,7 @@ public class FunctionManager extends BaseManager<String, CustomFunction> {
     }
 
     /**
-     * Call a function by its name. It will be executed by Ollama LLM and work on the conversation.
+     * Call a registered function by name.
      *
      * @param functionName The name of the function
      * @param conversation The conversation handler

@@ -37,19 +37,6 @@ public class Header {
     }
 
     /**
-     * Build the beta headers for the API
-     * @param apiKey The API key to use
-     * @return The beta headers for the API
-     */
-    public static Map<String, String> buildBeta(@NotNull String apiKey) {
-        return Header.builder()
-                .add(Type.CONTENT_TYPE, null)
-                .add(Type.AUTHORIZATION, apiKey)
-                .add(Type.OPENAI_BETA, null)
-                .build();
-    }
-
-    /**
      * Add a header to the builder
      * @param type The type of header to add
      * @param value The value of the header (Not needed for some types)
@@ -62,9 +49,6 @@ public class Header {
                 break;
             case CONTENT_TYPE:
                 header.put(HttpHeaders.CONTENT_TYPE, "application/json");
-                break;
-            case OPENAI_BETA:
-                header.put("OpenAI-Beta", "assistants=v2");
                 break;
         }
         return this;
@@ -101,9 +85,5 @@ public class Header {
          * The content type header
          */
         CONTENT_TYPE,
-        /**
-         * The OpenAI beta header
-         */
-        OPENAI_BETA
     }
 }

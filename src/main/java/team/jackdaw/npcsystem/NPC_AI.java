@@ -115,7 +115,7 @@ public interface NPC_AI {
             }
             // stop if player is not chatting
             AsyncTask.sleep(15000);
-            if (!window.isOnWait() || window.getMessages().get(window.getMessages().size() - 1).role.equals("assistant")) {
+            if (!window.isOnWait() || !window.getLastAssistantMessage().isBlank()) {
                 entity.getBrain().setMemory(NPCRegistration.MEMORY_IS_CHATTING, false);
             }
             return AsyncTask.nothingToDo();

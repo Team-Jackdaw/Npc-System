@@ -16,15 +16,10 @@ public class Config {
     public static final long outOfTime = 300000L;
     public static boolean enabled = true;
     public static boolean debug = false;
-    @Deprecated
-    public static String dbURL = "http://localhost:8080";
-    public static String apiURL = "http://localhost:11434";
-    public static String chat_model = "qwen2.5:7b";
     public static boolean agentEnabled = false;
     public static String agentBaseUrl = "http://127.0.0.1:8765";
     public static String agentMode = "fast";
     public static String agentAuthToken = "";
-    public static boolean agentFallbackToOllama = true;
     public static double range = 10.0;
     public static boolean isBubble = true;
     public static boolean isChatBar = true;
