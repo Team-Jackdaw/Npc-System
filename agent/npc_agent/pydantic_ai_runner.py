@@ -4,7 +4,10 @@ import json
 
 from pydantic import ValidationError
 from pydantic_ai import Agent
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.models.ollama import OllamaModel
+from pydantic_ai.providers.deepseek import DeepSeekProvider
+from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.providers.ollama import OllamaProvider
 
 from .config import AgentConfig
@@ -19,11 +22,27 @@ from .schemas import (
 
 
 def build_agent(config: AgentConfig, output_type):
-    model = OllamaModel(
-        config.model,
-        provider=OllamaProvider(base_url=config.ollama_base_url),
-    )
+    model = build_model(config)
     return Agent(model=model, output_type=output_type, retries=1)
+
+
+def build_model(config: AgentConfig):
+    if config.provider == "ollama":
+        return OllamaModel(
+            config.model,
+            provider=OllamaProvider(base_url=config.base_url),
+        )
+    if config.provider == "deepseek":
+        return OpenAIChatModel(
+            config.model,
+            provider=DeepSeekProvider(api_key=config.api_key or None),
+        )
+    if config.provider in {"openai", "openai-compatible"}:
+        return OpenAIChatModel(
+            config.model,
+            provider=OpenAIProvider(base_url=config.base_url or None, api_key=config.api_key or None),
+        )
+    raise ValueError(f"Unsupported NPC_AGENT_PROVIDER: {config.provider}")
 
 
 async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig) -> FastAgentResponse:

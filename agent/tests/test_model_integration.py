@@ -16,8 +16,13 @@ from npc_agent.schemas import DeliberateAgentRequest
 async def test_pydantic_ai_ollama_backend_can_reply_as_master(tmp_path):
     config = AgentConfig(
         mode="pydantic_ai",
+        provider=os.getenv("NPC_AGENT_PROVIDER", "ollama"),
         model=os.getenv("NPC_AGENT_MODEL", "qwen3.5"),
-        ollama_base_url=os.getenv("NPC_AGENT_OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+        api_key=os.getenv("NPC_AGENT_API_KEY", os.getenv("DEEPSEEK_API_KEY", "")),
+        base_url=os.getenv(
+            "NPC_AGENT_BASE_URL",
+            os.getenv("NPC_AGENT_OLLAMA_BASE_URL", "http://localhost:11434/v1"),
+        ),
         state_dir=str(tmp_path),
     )
     request = DeliberateAgentRequest.model_validate(

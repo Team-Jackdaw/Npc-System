@@ -30,8 +30,11 @@ Endpoints:
 Environment variables:
 
 - `NPC_AGENT_MODE`: `pydantic_ai` or `stub`; defaults to `pydantic_ai`.
-- `NPC_AGENT_OLLAMA_BASE_URL`: defaults to `http://localhost:11434/v1`.
+- `NPC_AGENT_PROVIDER`: `ollama`, `deepseek`, or `openai-compatible`; defaults to `ollama`.
 - `NPC_AGENT_MODEL`: defaults to `qwen3.5`.
+- `NPC_AGENT_API_KEY`: API key for hosted providers. `DEEPSEEK_API_KEY` is also accepted for DeepSeek.
+- `NPC_AGENT_BASE_URL`: base URL for `ollama` or `openai-compatible` providers.
+- `NPC_AGENT_OLLAMA_BASE_URL`: legacy Ollama base URL; defaults to `http://localhost:11434/v1` when provider is `ollama`.
 - `NPC_AGENT_HOST`: defaults to `0.0.0.0`.
 - `NPC_AGENT_PORT`: defaults to `8765`.
 - `NPC_AGENT_AUTH_TOKEN`: optional bearer token.
@@ -65,6 +68,24 @@ To use Pydantic AI with Ollama, make sure Ollama is running and serving the
 configured model, then start the agent normally or set `NPC_AGENT_MODE=pydantic_ai`
 explicitly.
 
+To use the official DeepSeek API:
+
+```bash
+NPC_AGENT_PROVIDER=deepseek \
+NPC_AGENT_MODEL=deepseek-chat \
+NPC_AGENT_API_KEY=sk-... \
+PYTHONPATH=agent python3 -m npc_agent.server
+```
+
+For DeepSeek reasoner:
+
+```bash
+NPC_AGENT_PROVIDER=deepseek \
+NPC_AGENT_MODEL=deepseek-reasoner \
+NPC_AGENT_API_KEY=sk-... \
+PYTHONPATH=agent python3 -m npc_agent.server
+```
+
 ## Test
 
 ```bash
@@ -77,5 +98,15 @@ actually reach the configured Ollama model:
 ```bash
 NPC_AGENT_RUN_MODEL_TESTS=1 \
 NPC_AGENT_MODEL=qwen3.5 \
+PYTHONPATH=agent pytest agent/tests/test_model_integration.py
+```
+
+For DeepSeek:
+
+```bash
+NPC_AGENT_RUN_MODEL_TESTS=1 \
+NPC_AGENT_PROVIDER=deepseek \
+NPC_AGENT_MODEL=deepseek-chat \
+NPC_AGENT_API_KEY=sk-... \
 PYTHONPATH=agent pytest agent/tests/test_model_integration.py
 ```

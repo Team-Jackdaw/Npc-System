@@ -12,6 +12,10 @@ external NPC agent. The transport is expected to be HTTP, but endpoint paths,
 authentication, timeout, and retry policy are intentionally left outside this
 version.
 
+The Python agent can use different Pydantic AI model providers through
+environment variables. Supported providers are `ollama`, `deepseek`, and
+`openai-compatible`; see `agent/README.md` for exact configuration.
+
 ## Protocol Rules
 
 - `version` / `v` is currently `1`.

@@ -88,6 +88,7 @@ Key layers:
 - Python external agent scaffold:
   - FastAPI server
   - Pydantic schemas
+  - selectable model provider: `ollama`, `deepseek`, or `openai-compatible`
   - per-NPC/Master context store under `config/npc-system/agent-state`
   - template-based first context creation from `agent/templates`
   - Pydantic AI `message_history` persistence through `messages.json`
@@ -157,6 +158,7 @@ Key layers:
 - Default agent endpoint: `http://127.0.0.1:8765`.
 - Default Java agent mode: `fast`.
 - Default Python agent mode: `pydantic_ai`.
+- Default Python model provider: `ollama`.
 - Java does not call local LLMs directly. If the external agent is disabled or
   unavailable, NPCs use fixed fallback text and default behavior.
 
