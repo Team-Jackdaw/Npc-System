@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.helpers.MessageFormatter;
 import team.jackdaw.npcsystem.ai.ConversationManager;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
+import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.entity.NPCEntity;
 import team.jackdaw.npcsystem.function.NoCallableFunction;
 import team.jackdaw.npcsystem.listener.PlayerSendMessageCallback;
@@ -116,6 +117,7 @@ public class NPCSystem implements ModInitializer {
                     ConversationManager.getInstance().map
                             .values()
                             .stream()
+                            .filter(window -> window.getAgent() instanceof NPC)
                             .filter(window -> window.getTarget() != null && window.getTarget().equals(player.getUUID()))
                             .findFirst()
                             .orElse(null);
