@@ -6,7 +6,7 @@ import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Awaitable, Callable
 
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
@@ -14,10 +14,10 @@ from .config import AgentConfig
 from .schemas import (
     ConversationEndRequest,
     DeliberateAgentRequest,
-    DeliberateAgentResponse,
     FastAgentRequest,
-    FastAgentResponse,
 )
+
+SummaryFunction = Callable[[str, dict[str, Any]], Awaitable[str]]
 
 
 DEFAULT_AGENTS = """# Agent Profile
@@ -116,16 +116,37 @@ class AgentContext:
             self.append_history({"type": "message_history_invalid", "error": type(exc).__name__})
             return None
 
-    def save_messages(self, messages_json: bytes) -> None:
+    async def save_messages(self, messages_json: bytes, summarizer: SummaryFunction | None = None) -> bool:
         self.messages_path.write_bytes(messages_json)
-        self.compact_if_needed()
+        return await self.compact_if_needed(summarizer)
 
-    def compact_if_needed(self) -> bool:
+    async def compact_if_needed(self, summarizer: SummaryFunction | None = None) -> bool:
         if self.max_history_bytes <= 0 or not self.messages_path.exists():
             return False
         if self.messages_path.stat().st_size <= self.max_history_bytes:
             return False
-        summary = summarize_json_bytes(self.messages_path.read_bytes(), "Context compressed because message history exceeded limit.")
+        summarizer = summarizer or deterministic_summary
+        message_text = self.messages_path.read_text(encoding="utf-8", errors="replace")
+        existing_summary = self.summary_path.read_text(encoding="utf-8") if self.summary_path.exists() else ""
+        prompt = (
+            "请将下面 Minecraft NPC 当前会话上下文压缩成自然语言摘要。"
+            "保留正在进行的话题、任务、承诺、玩家偏好、未解决目标和重要世界状态。"
+            "不要输出 JSON、字段名列表或调试日志。"
+        )
+        payload = {
+            "agent_id": self.agent_id,
+            "kind": self.kind,
+            "existing_summary": existing_summary,
+            "messages": message_text,
+        }
+        try:
+            summary = await summarizer(prompt, payload)
+        except Exception as exc:
+            self.append_history({"type": "context_compaction_failed", "error": type(exc).__name__})
+            return False
+        if not summary or not summary.strip():
+            self.append_history({"type": "context_compaction_failed", "error": "empty_summary"})
+            return False
         append_markdown_section(self.summary_path, "Compressed Context", summary)
         self.messages_path.write_text("[]", encoding="utf-8")
         self.append_history({"type": "context_compacted", "summary": summary})
@@ -139,18 +160,34 @@ class AgentContext:
                 append_markdown_section(self.memory_path, "Memory Update", update.strip())
         self.append_history({"type": "memory_updates", "count": len(updates)})
 
-    def end_conversation(self, request: ConversationEndRequest) -> bool:
-        message_bytes = self.messages_path.read_bytes() if self.messages_path.exists() else b"[]"
+    async def end_conversation(self, request: ConversationEndRequest, summarizer: SummaryFunction | None = None) -> bool:
+        message_text = self.messages_path.read_text(encoding="utf-8", errors="replace") if self.messages_path.exists() else "[]"
         summary_text = self.summary_path.read_text(encoding="utf-8") if self.summary_path.exists() else ""
-        if message_bytes.strip() in (b"", b"[]") and not meaningful_markdown(summary_text):
+        if message_text.strip() in ("", "[]") and not meaningful_markdown(summary_text):
             self.append_history({"type": "conversation_ended", "reason": request.reason, "memory_updated": False})
             return False
-        memory = summarize_json_bytes(
-            message_bytes,
-            f"Conversation ended because {request.reason}. Preserve stable facts, player preferences, promises, and unresolved goals.",
+        summarizer = summarizer or deterministic_summary
+        prompt = (
+            "请根据当前 Minecraft NPC 会话记录和 SUMMARY.md 上下文，生成要写入 MEMORY.md 的长期自然语言记忆。"
+            "只保留稳定事实、玩家偏好、NPC 承诺、重要事件、未完成目标和后续需要记住的关系。"
+            "不要输出 JSON、字段名列表或原始消息转储。"
         )
-        if meaningful_markdown(summary_text):
-            memory = summary_text.strip() + "\n\n" + memory
+        payload = {
+            "agent_id": self.agent_id,
+            "kind": self.kind,
+            "reason": request.reason,
+            "snapshot": request.snapshot,
+            "summary": summary_text,
+            "messages": message_text,
+        }
+        try:
+            memory = await summarizer(prompt, payload)
+        except Exception as exc:
+            self.append_history({"type": "conversation_end_summary_failed", "reason": request.reason, "error": type(exc).__name__})
+            return False
+        if not memory or not memory.strip():
+            self.append_history({"type": "conversation_end_summary_failed", "reason": request.reason, "error": "empty_memory"})
+            return False
         append_markdown_section(self.memory_path, "Conversation Memory", memory)
         self.messages_path.write_text("[]", encoding="utf-8")
         self.summary_path.write_text("# Summary\n\n", encoding="utf-8")
@@ -235,9 +272,8 @@ def meaningful_markdown(text: str) -> bool:
     return bool(stripped)
 
 
-def summarize_json_bytes(data: bytes, prefix: str) -> str:
-    text = data.decode("utf-8", errors="replace")
-    compact = " ".join(text.split())
-    if len(compact) > 4000:
-        compact = compact[-4000:]
-    return f"{prefix}\n\n{compact}"
+async def deterministic_summary(prompt: str, payload: dict[str, Any]) -> str:
+    if "MEMORY.md" in prompt:
+        reason = payload.get("reason", "ended")
+        return f"本次会话因 {reason} 结束。当前运行在未启用模型总结的模式，未提取新的长期事实。"
+    return "当前运行在未启用模型总结的模式。会话仍在进行中，但未提取新的压缩上下文。"

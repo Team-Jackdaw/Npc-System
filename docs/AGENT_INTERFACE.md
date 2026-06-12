@@ -225,8 +225,8 @@ Each directory contains:
 
 - `AGENTS.md`: identity, behavior boundaries, and permission notes.
 - `SOLU.md`: current plan and unresolved goals.
-- `SUMMARY.md`: compressed context from the current conversation.
-- `MEMORY.md`: long-term memory written when a conversation ends.
+- `SUMMARY.md`: LLM-written natural-language summary for the current conversation.
+- `MEMORY.md`: LLM-written long-term natural-language memory written when a conversation ends.
 - `messages.json`: current Pydantic AI message history.
 - `history.jsonl`: debug/audit log only.
 
@@ -241,7 +241,9 @@ is only a placeholder and is not loaded into prompts yet.
 Pydantic AI integration uses `message_history` when calling `Agent.run(...)`
 and persists the resulting context with `result.all_messages_json()`. When
 `messages.json` exceeds `NPC_AGENT_MAX_HISTORY_BYTES` (default `65536`), the
-agent compresses it into `SUMMARY.md` and resets the current message history.
+agent asks the configured model to summarize it into natural language in
+`SUMMARY.md` and then resets the current message history. `SUMMARY.md` should
+not contain raw JSON, message dumps, or debug logs.
 
 `history.jsonl` is not used as prompt memory; it exists for debugging and
 replay.
@@ -288,8 +290,11 @@ Response:
 }
 ```
 
-On conversation end, the agent summarizes `messages.json` plus `SUMMARY.md`
-into `MEMORY.md`, then resets the current conversation context.
+On conversation end, the agent asks the configured model to summarize
+`messages.json` plus `SUMMARY.md` into natural-language long-term memory in
+`MEMORY.md`, then resets the current conversation context. If summarization
+fails, the agent records the failure in `history.jsonl`, keeps the current
+context for retry, and does not write raw JSON into memory files.
 
 ## Task Completion Callback
 

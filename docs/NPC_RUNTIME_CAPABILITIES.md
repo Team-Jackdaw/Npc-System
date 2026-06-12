@@ -353,8 +353,9 @@ Master 专用接口：
 
 - 每个 NPC 一个目录，按 `npc/<uuid>` 区分；Master 固定使用 `master/default`。
 - 当前会话上下文保存在 `messages.json`，格式来自 Pydantic AI `all_messages_json()`。
-- 当前会话过长时压缩到 `SUMMARY.md` 并重置 `messages.json`。
-- 会话结束后，agent 将当前会话和 summary 沉淀到 `MEMORY.md`。
+- 当前会话过长时，agent 调用当前配置的大模型，将 `messages.json` 总结为自然语言写入 `SUMMARY.md`，然后重置 `messages.json`。
+- 会话结束后，agent 调用当前配置的大模型，根据 `SUMMARY.md` 和当前 `messages.json` 总结长期自然语言记忆，写入 `MEMORY.md`。
+- 如果总结失败，agent 会记录失败并保留当前上下文以便重试，不会把原始 JSON dump 写入 `SUMMARY.md` 或 `MEMORY.md`。
 - `history.jsonl` 只用于 debug 和回放，不作为 prompt 主上下文。
 - `memory_updates` 由 agent 自行决定如何写入自己的 `MEMORY.md` 或其他外部存储。
 

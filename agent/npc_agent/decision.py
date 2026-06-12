@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .config import AgentConfig
 from .context_store import AgentContextStore
-from .pydantic_ai_runner import decide_deliberate_pydantic_ai, decide_fast_pydantic_ai
+from .pydantic_ai_runner import decide_deliberate_pydantic_ai, decide_fast_pydantic_ai, summarize_context_pydantic_ai
 from .schemas import (
     ConversationEndRequest,
     ConversationEndResponse,
@@ -40,7 +40,10 @@ async def decide_deliberate(request: DeliberateAgentRequest, config: AgentConfig
 async def end_conversation(request: ConversationEndRequest, config: AgentConfig) -> ConversationEndResponse:
     context = AgentContextStore(config).for_end(request)
     context.record_request("conversation_end", request.model_dump())
-    memory_updated = context.end_conversation(request)
+    summarizer = None
+    if config.mode == "pydantic_ai":
+        summarizer = lambda prompt, payload: summarize_context_pydantic_ai(prompt, payload, config)
+    memory_updated = await context.end_conversation(request, summarizer)
     response = ConversationEndResponse(
         request_id=request.request_id,
         memory_updated=memory_updated,

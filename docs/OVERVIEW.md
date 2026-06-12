@@ -92,8 +92,8 @@ Key layers:
   - per-NPC/Master context store under `config/npc-system/agent-state`
   - template-based first context creation from `agent/templates`
   - Pydantic AI `message_history` persistence through `messages.json`
-  - current conversation compression into `SUMMARY.md`
-  - conversation-end long-term memory writing into `MEMORY.md`
+  - model-generated natural-language current conversation summaries in `SUMMARY.md`
+  - model-generated natural-language long-term memory writing into `MEMORY.md`
   - `agent/skills/dummy_skill.md` as a placeholder for shared skills
   - deterministic stub decision path
   - optional Pydantic AI model path

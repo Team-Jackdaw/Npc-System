@@ -1,3 +1,5 @@
+import pytest
+
 from npc_agent.config import AgentConfig
 from npc_agent.context_store import AgentContextStore, TEMPLATE_ROOT
 from npc_agent.schemas import ConversationEndRequest, DeliberateAgentRequest, FastAgentRequest
@@ -145,32 +147,85 @@ def test_memory_updates_are_written_to_memory(tmp_path):
     assert "Steve likes mining." in (context.root / "MEMORY.md").read_text(encoding="utf-8")
 
 
-def test_compacts_messages_when_history_exceeds_limit(tmp_path):
+async def mock_summary(prompt, payload):
+    if "MEMORY.md" in prompt:
+        assert "先前摘要：玩家正在请求帮助。" in payload["summary"]
+        assert "Steve asked for help" in payload["messages"]
+        return "玩家 Steve 请求帮助。NPC 需要记住这个未完成请求。"
+    assert "very long history" in payload["messages"]
+    return "玩家正在请求帮助，这是当前会话的压缩上下文。"
+
+
+async def failing_summary(prompt, payload):
+    raise RuntimeError("model unavailable")
+
+
+@pytest.mark.asyncio
+async def test_compacts_messages_when_history_exceeds_limit(tmp_path):
     config = AgentConfig(state_dir=str(tmp_path), max_history_bytes=10)
     request = DeliberateAgentRequest.model_validate(
         {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
     )
     context = AgentContextStore(config).for_deliberate(request)
 
-    compacted = context.compact_if_needed()
+    compacted = await context.compact_if_needed(mock_summary)
 
     assert compacted is False
-    context.save_messages(b'[{"kind":"request","parts":[{"content":"very long history"}]}]')
+    await context.save_messages(b'[{"kind":"request","parts":[{"content":"very long history"}]}]', mock_summary)
     assert "Compressed Context" in (context.root / "SUMMARY.md").read_text(encoding="utf-8")
+    assert "玩家正在请求帮助" in (context.root / "SUMMARY.md").read_text(encoding="utf-8")
+    assert "very long history" not in (context.root / "SUMMARY.md").read_text(encoding="utf-8")
     assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
 
 
-def test_end_conversation_writes_memory_and_resets_current_context(tmp_path):
+@pytest.mark.asyncio
+async def test_end_conversation_writes_memory_and_resets_current_context(tmp_path):
     config = AgentConfig(state_dir=str(tmp_path))
     request = ConversationEndRequest.model_validate(
         {"request_id": "end-1", "npc": {"uuid": "npc-1", "kind": "npc"}, "reason": "ended"}
     )
     context = AgentContextStore(config).for_end(request)
-    context.save_messages(b'[{"kind":"request","parts":[{"content":"Steve asked for help"}]}]')
+    context.summary_path.write_text("# Summary\n\n先前摘要：玩家正在请求帮助。\n", encoding="utf-8")
+    await context.save_messages(b'[{"kind":"request","parts":[{"content":"Steve asked for help"}]}]')
 
-    updated = context.end_conversation(request)
+    updated = await context.end_conversation(request, mock_summary)
 
     assert updated is True
-    assert "Steve asked for help" in (context.root / "MEMORY.md").read_text(encoding="utf-8")
+    memory = (context.root / "MEMORY.md").read_text(encoding="utf-8")
+    assert "玩家 Steve 请求帮助" in memory
+    assert "Steve asked for help" not in memory
     assert (context.root / "messages.json").read_text(encoding="utf-8") == "[]"
     assert (context.root / "SUMMARY.md").read_text(encoding="utf-8") == "# Summary\n\n"
+
+
+@pytest.mark.asyncio
+async def test_summary_failure_keeps_current_context_and_does_not_write_json_dump(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path), max_history_bytes=10)
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+    context = AgentContextStore(config).for_deliberate(request)
+    raw_messages = b'[{"kind":"request","parts":[{"content":"very long history"}]}]'
+
+    compacted = await context.save_messages(raw_messages, failing_summary)
+
+    assert compacted is False
+    assert context.messages_path.read_bytes() == raw_messages
+    assert "very long history" not in context.summary_path.read_text(encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_end_conversation_summary_failure_keeps_context(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path))
+    request = ConversationEndRequest.model_validate(
+        {"request_id": "end-1", "npc": {"uuid": "npc-1", "kind": "npc"}, "reason": "ended"}
+    )
+    context = AgentContextStore(config).for_end(request)
+    raw_messages = b'[{"kind":"request","parts":[{"content":"Steve asked for help"}]}]'
+    await context.save_messages(raw_messages)
+
+    updated = await context.end_conversation(request, failing_summary)
+
+    assert updated is False
+    assert context.messages_path.read_bytes() == raw_messages
+    assert "Steve asked for help" not in context.memory_path.read_text(encoding="utf-8")

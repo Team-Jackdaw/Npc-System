@@ -88,7 +88,10 @@ async def decide_deliberate_pydantic_ai(
             ),
         )
         response = normalize_deliberate_response(result.output, request)
-        context.save_messages(result.all_messages_json())
+        await context.save_messages(
+            result.all_messages_json(),
+            lambda prompt, payload: summarize_context_pydantic_ai(prompt, payload, config),
+        )
         context.apply_memory_updates(response.memory_updates)
         return response
     except ValidationError as exc:
@@ -126,3 +129,18 @@ def normalize_deliberate_response(
         response.action.name = None
         response.action.arguments = {}
     return response
+
+
+async def summarize_context_pydantic_ai(prompt: str, payload: dict, config: AgentConfig) -> str:
+    agent = build_agent(config, str)
+    result = await agent.run(
+        json.dumps(payload, ensure_ascii=False),
+        instructions=(
+            prompt
+            + "\n\n"
+            "输出要求：使用简洁中文自然语言，写成 Markdown 段落或短列表。"
+            "不要输出 JSON、代码块、字段名表、原始消息转储或调试日志。"
+            "如果没有值得长期保留的信息，请明确写出没有新增长期记忆。"
+        ),
+    )
+    return result.output.strip()
