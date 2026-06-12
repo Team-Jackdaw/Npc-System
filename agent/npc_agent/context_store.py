@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -179,6 +180,7 @@ class AgentContextStore:
     def __init__(self, config: AgentConfig):
         self.base = Path(config.state_dir)
         self.max_history_bytes = config.max_history_bytes
+        self._cleanup_legacy_storage_dirs()
 
     def for_fast(self, request: FastAgentRequest) -> AgentContext:
         agent_id = request.npc.id or request.rid
@@ -203,6 +205,14 @@ class AgentContextStore:
         )
         context.initialize()
         return context
+
+    def _cleanup_legacy_storage_dirs(self) -> None:
+        candidates = [self.base / "memory", self.base / "rag"]
+        if self.base.name == "agent-state":
+            candidates.extend([self.base.parent / "memory", self.base.parent / "rag"])
+        for path in candidates:
+            if path.exists() and path.is_dir():
+                shutil.rmtree(path)
 
 
 def now_iso() -> str:

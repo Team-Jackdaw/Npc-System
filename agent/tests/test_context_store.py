@@ -19,6 +19,28 @@ def test_context_store_creates_default_files(tmp_path):
     assert (context.root / "history.jsonl").exists()
 
 
+def test_context_store_removes_legacy_memory_and_rag_dirs(tmp_path):
+    state_dir = tmp_path / "config" / "npc-system" / "agent-state"
+    legacy_memory = state_dir.parent / "memory"
+    legacy_rag = state_dir.parent / "rag"
+    legacy_state_memory = state_dir / "memory"
+    legacy_state_rag = state_dir / "rag"
+    for path in (legacy_memory, legacy_rag, legacy_state_memory, legacy_state_rag):
+        path.mkdir(parents=True)
+        (path / "old.txt").write_text("legacy", encoding="utf-8")
+    config = AgentConfig(state_dir=str(state_dir))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    AgentContextStore(config).for_deliberate(request)
+
+    assert not legacy_memory.exists()
+    assert not legacy_rag.exists()
+    assert not legacy_state_memory.exists()
+    assert not legacy_state_rag.exists()
+
+
 def test_context_store_copies_npc_templates(tmp_path):
     config = AgentConfig(state_dir=str(tmp_path))
     request = DeliberateAgentRequest.model_validate(

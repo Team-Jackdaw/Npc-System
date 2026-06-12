@@ -23,6 +23,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 public class NPCSystem implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("npc-system");
@@ -64,6 +66,7 @@ public class NPCSystem implements ModInitializer {
                 throw new RuntimeException(e);
             }
         }
+        cleanupLegacyStorageDirs();
         // sync config
         ConfigManager.sync();
         if (!Config.enabled) return;
@@ -148,5 +151,28 @@ public class NPCSystem implements ModInitializer {
             LiveCycleManager.shutdown();
             LiveCycleManager.saveAll();
         });
+    }
+
+    private static void cleanupLegacyStorageDirs() {
+        deleteLegacyDirectory(workingDirectory.resolve("memory"));
+        deleteLegacyDirectory(workingDirectory.resolve("rag"));
+    }
+
+    private static void deleteLegacyDirectory(Path directory) {
+        if (!Files.exists(directory)) {
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(directory)) {
+            paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (IOException e) {
+                    LOGGER.warn("[npc-system] Failed to delete legacy storage path {}", path, e);
+                }
+            });
+            LOGGER.info("[npc-system] Removed legacy storage directory {}", directory);
+        } catch (IOException e) {
+            LOGGER.warn("[npc-system] Failed to clean legacy storage directory {}", directory, e);
+        }
     }
 }
