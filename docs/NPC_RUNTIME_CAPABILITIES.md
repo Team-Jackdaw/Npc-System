@@ -310,8 +310,10 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 - `permission=3`
 - 不具备 sensor、默认行为和 task batch。
 - 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
+- 普通对话使用 `master_reply` 返回文本。
 - 可以使用 `end_conversation`。
 - 可以在权限验证通过时使用 `call_command` 执行管理员级 Minecraft 命令。
+- Master 对话会强制走 deliberate 请求，即使普通 NPC 配置仍为 `agentMode=fast`。
 
 普通 NPC 的 `permission=1`，即使 agent 返回 `call_command`，Java 侧也会拒绝。
 
@@ -329,6 +331,11 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 - `stop_task()`
 - `resume_default_behavior()`
 - `end_conversation()`
+
+Master 专用接口：
+
+- `master_reply(message)`
+- `call_command(command)`
 
 这些接口隐藏 Minecraft 内部类，只暴露 JSON 参数。task 类接口会在 Java 端解析目标实体、创建 `NpcTask`，并交给 `NpcTaskController`。
 

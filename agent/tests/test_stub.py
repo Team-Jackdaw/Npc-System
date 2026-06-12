@@ -97,6 +97,22 @@ def test_master_stub_can_call_command_when_authorized():
     assert response.actions[0].arguments["command"] == "time set day"
 
 
+def test_master_stub_replies_to_normal_conversation():
+    request = DeliberateAgentRequest.model_validate(
+        {
+            "request_id": "master-2",
+            "npc": {"uuid": "master", "name": "Master", "kind": "master", "permission": 3},
+            "conversation": {"speaker": "Admin", "message": "你好"},
+            "available_tools": [{"name": "master_reply", "kind": "tool"}],
+        }
+    )
+
+    response = decide_deliberate_stub(request)
+
+    assert response.action.name == "master_reply"
+    assert response.action.arguments["message"]
+
+
 def test_npc_stub_cannot_call_command_even_if_tool_is_present():
     request = DeliberateAgentRequest.model_validate(
         {

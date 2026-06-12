@@ -34,12 +34,15 @@ async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig
             instructions=(
                 "You control one Minecraft agent. Return only the structured output. "
                 "Use at most two actions. Prefer say followed by one task when replying and acting. "
+                "For normal Master conversation, call master_reply with a concise message. "
                 "Only requests with npc.kind='master' and permission>=3 may call call_command."
             ),
         )
         return normalize_fast_response(result.output, request)
-    except (ValidationError, Exception) as exc:
+    except ValidationError as exc:
         return FastAgentResponse(rid=request.rid, a="none", note=f"fallback:{type(exc).__name__}")
+    except Exception as exc:
+        raise RuntimeError(f"pydantic_ai_fast_failed:{type(exc).__name__}") from exc
 
 
 async def decide_deliberate_pydantic_ai(
@@ -58,6 +61,7 @@ async def decide_deliberate_pydantic_ai(
                 + "\n\n"
                 "You control one Minecraft agent. Return the structured output only. "
                 "Use at most two actions. Prefer say followed by one task when replying and acting. "
+                "For normal Master conversation, call master_reply with a concise message. "
                 "Only requests with npc.kind='master' and permission>=3 may call call_command. "
                 "Do not reveal chain-of-thought; provide a concise reasoning_summary."
             ),
@@ -66,12 +70,14 @@ async def decide_deliberate_pydantic_ai(
         context.save_messages(result.all_messages_json())
         context.apply_memory_updates(response.memory_updates)
         return response
-    except (ValidationError, Exception) as exc:
+    except ValidationError as exc:
         return DeliberateAgentResponse(
             request_id=request.request_id,
             action=AgentAction(type="none"),
             reasoning_summary=f"fallback:{type(exc).__name__}",
         )
+    except Exception as exc:
+        raise RuntimeError(f"pydantic_ai_deliberate_failed:{type(exc).__name__}") from exc
 
 
 def normalize_fast_response(response: FastAgentResponse, request: FastAgentRequest) -> FastAgentResponse:

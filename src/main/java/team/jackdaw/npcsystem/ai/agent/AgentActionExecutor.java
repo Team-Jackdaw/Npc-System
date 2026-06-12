@@ -126,12 +126,12 @@ public class AgentActionExecutor {
         }
         if (response.actions != null) {
             for (AgentAction action : response.actions) {
-                if ("say".equals(action.name) && action.arguments != null && action.arguments.get("message") != null) {
+                if (isReplyAction(action.name) && action.arguments != null && action.arguments.get("message") != null) {
                     return action.arguments.get("message").toString();
                 }
             }
         }
-        if ("say".equals(response.name) && response.args != null && response.args.get("message") != null) {
+        if (isReplyAction(response.name) && response.args != null && response.args.get("message") != null) {
             return response.args.get("message").toString();
         }
         return response.note == null ? "" : response.note;
@@ -146,15 +146,19 @@ public class AgentActionExecutor {
         }
         if (response.actions != null) {
             for (AgentAction action : response.actions) {
-                if ("say".equals(action.name) && action.arguments != null && action.arguments.get("message") != null) {
+                if (isReplyAction(action.name) && action.arguments != null && action.arguments.get("message") != null) {
                     return action.arguments.get("message").toString();
                 }
             }
         }
-        if (response.action != null && "say".equals(response.action.name) && response.action.arguments != null && response.action.arguments.get("message") != null) {
+        if (response.action != null && isReplyAction(response.action.name) && response.action.arguments != null && response.action.arguments.get("message") != null) {
             return response.action.arguments.get("message").toString();
         }
         return response.reasoning_summary == null ? "" : response.reasoning_summary;
+    }
+
+    private static boolean isReplyAction(String name) {
+        return "say".equals(name) || "master_reply".equals(name);
     }
 
     public record AgentExecutionResult(boolean success, String responseText, Map<String, Object> toolResult) {

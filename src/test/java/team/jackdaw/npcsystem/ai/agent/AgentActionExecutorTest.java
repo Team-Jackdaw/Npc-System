@@ -9,6 +9,7 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.function.FunctionManager;
+import team.jackdaw.npcsystem.function.MasterReplyFunction;
 import team.jackdaw.npcsystem.function.MasterPermissionFunction;
 import team.jackdaw.npcsystem.function.TestFunction;
 
@@ -24,6 +25,7 @@ class AgentActionExecutorTest {
     static void registerFunction() {
         FunctionManager.getInstance().register("agent_test_weather", new TestFunction());
         FunctionManager.getInstance().register("agent_test_master_only", new MasterPermissionFunction());
+        FunctionManager.getInstance().register("master_reply", new MasterReplyFunction());
     }
 
     @Test
@@ -125,6 +127,20 @@ class AgentActionExecutorTest {
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
 
         assertTrue(result.success());
+        assertEquals("actions_executed", result.toolResult().get("code"));
+    }
+
+    @Test
+    void masterReplyActionProvidesResponseText() {
+        ConversationWindow conversation = Master.getMaster().getConversationWindows();
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(action("master_reply", Map.of("message", "我在。")));
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
+
+        assertTrue(result.success());
+        assertEquals("我在。", result.responseText());
         assertEquals("actions_executed", result.toolResult().get("code"));
     }
 

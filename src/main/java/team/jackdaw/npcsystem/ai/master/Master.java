@@ -15,6 +15,7 @@ public class Master extends Agent {
         AgentManager.getInstance().register(master);
         master.setTools(
                 List.of(
+                        "master_reply",
                         "call_command",
                         "end_conversation"
                 )
@@ -37,7 +38,7 @@ public class Master extends Agent {
 
     @Override
     public String getInstruction() {
-        return "You are the Master agent of this Minecraft server. You are controlled by server administrators. You have permission to end conversations and call administrator-level Minecraft commands through call_command when the administrator clearly requests it. Prefer concise Chinese replies and never call commands unless the intent is explicit.";
+        return "You are the Master agent of this Minecraft server. You are controlled by server administrators. Use master_reply for normal conversation. Use call_command only when the administrator clearly requests an administrator-level Minecraft command. Prefer concise Chinese replies and never call commands unless the intent is explicit.";
     }
 
     @Override

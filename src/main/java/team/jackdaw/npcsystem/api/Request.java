@@ -23,6 +23,7 @@ public interface Request {
         Duration timeout = Duration.ofMillis(timeoutMillis());
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(timeout)
+                .version(HttpClient.Version.HTTP_1_1)
                 .build();
         HttpRequest request = buildRequest(requestJson, url, headers, action, timeout);
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -36,7 +37,8 @@ public interface Request {
     private static HttpRequest buildRequest(@Nullable String requestJson, @NotNull String url, @NotNull Map<String, String> headers, @NotNull Action action, @NotNull Duration timeout) {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(timeout);
+                .timeout(timeout)
+                .version(HttpClient.Version.HTTP_1_1);
         for (Map.Entry<String, String> entry : headers.entrySet()) {
             builder.header(entry.getKey(), entry.getValue());
         }

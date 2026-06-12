@@ -30,7 +30,7 @@ Last updated: 2026-06-12 09:34:13 CST
 - `debug`: 是否开启详细交互日志。
 - `agentEnabled`: 是否启用外部 agent。
 - `agentBaseUrl`: 外部 agent 地址。
-- `agentMode`: `fast` 或 `deliberate`。
+- `agentMode`: 普通 NPC 使用的 `fast` 或 `deliberate`；Master 对话固定使用 deliberate。
 - `range`: NPC 聊天和感知范围。
 - `isBubble`: 是否显示头顶气泡。
 - `isChatBar`: 是否在聊天栏显示 NPC 发言。
@@ -90,6 +90,8 @@ Last updated: 2026-06-12 09:34:13 CST
 ## 外部 Agent 测试
 
 1. 启动 Python agent 服务。
+   - 默认 `NPC_AGENT_MODE=pydantic_ai`，需要本机 Ollama 或兼容模型服务可用。
+   - 如只测试协议，可显式设置 `NPC_AGENT_MODE=stub`。
 2. 在 `config.json` 中设置：
    - `agentEnabled=true`
    - `agentBaseUrl=http://127.0.0.1:8765`

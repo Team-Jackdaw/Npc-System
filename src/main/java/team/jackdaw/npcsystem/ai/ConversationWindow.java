@@ -95,7 +95,7 @@ public class ConversationWindow {
     private String chatWithExternalAgent(String message, Agent agent) {
         try {
             AgentActionExecutor.AgentExecutionResult result;
-            if ("deliberate".equalsIgnoreCase(Config.agentMode)) {
+            if (shouldUseDeliberateMode(agent)) {
                 DeliberateAgentResponse response = EXTERNAL_AGENT_CLIENT.deliberate(AGENT_REQUEST_BUILDER.deliberate(this, message, agent));
                 result = AGENT_ACTION_EXECUTOR.execute(this, response);
             } else {
@@ -115,6 +115,10 @@ public class ConversationWindow {
             lastAssistantMessage = AGENT_UNAVAILABLE_REPLY;
             return lastAssistantMessage;
         }
+    }
+
+    private static boolean shouldUseDeliberateMode(Agent agent) {
+        return agent instanceof Master || "deliberate".equalsIgnoreCase(Config.agentMode);
     }
 
     public AsyncTask.TaskResult requestAgentFollowUp(NpcTaskBatchResult taskResult) {

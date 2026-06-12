@@ -104,6 +104,7 @@ Key layers:
 - Master external agent integration:
   - same fast/deliberate endpoints as NPCs
   - `kind=master`, `permission=3`
+  - normal administrator conversation through `master_reply`
   - high-permission `call_command` guarded by Java and agent-side identity.
 
 ## Waiting To Implement
@@ -154,7 +155,7 @@ Key layers:
 - External agent is disabled by default: `Config.agentEnabled = false`.
 - Default agent endpoint: `http://127.0.0.1:8765`.
 - Default Java agent mode: `fast`.
-- Default Python agent mode: `stub`.
+- Default Python agent mode: `pydantic_ai`.
 - Java does not call local LLMs directly. If the external agent is disabled or
   unavailable, NPCs use fixed fallback text and default behavior.
 

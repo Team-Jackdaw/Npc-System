@@ -3,6 +3,7 @@ package team.jackdaw.npcsystem.function;
 public class FunctionRegistration {
     static {
         FunctionManager.getInstance().register("end_conversation", new EndConversationFunction());
+        FunctionManager.getInstance().register("master_reply", new MasterReplyFunction());
         FunctionManager.getInstance().register("call_command", new CallCommandFunction());
         FunctionManager.getInstance().register("say", new SayFunction());
         FunctionManager.getInstance().register("look_at_player", new LookAtPlayerFunction());

@@ -1,7 +1,8 @@
 # NPC External Agent
 
 Python scaffold for the external NPC agent described in `../docs/AGENT_INTERFACE.md`.
-The default mode is deterministic and offline; real model calls are opt-in.
+The default mode uses Pydantic AI with the configured model backend. A deterministic
+offline stub is available for tests and local protocol debugging.
 
 ## Install
 
@@ -28,7 +29,7 @@ Endpoints:
 
 Environment variables:
 
-- `NPC_AGENT_MODE`: `stub` or `pydantic_ai`; defaults to `stub`.
+- `NPC_AGENT_MODE`: `pydantic_ai` or `stub`; defaults to `pydantic_ai`.
 - `NPC_AGENT_OLLAMA_BASE_URL`: defaults to `http://localhost:11434/v1`.
 - `NPC_AGENT_MODEL`: defaults to `qwen3.5`.
 - `NPC_AGENT_HOST`: defaults to `0.0.0.0`.
@@ -53,13 +54,16 @@ overwritten.
 Shared skills live under `agent/skills`. `dummy_skill.md` is a placeholder for
 the future skill-loading system and is not injected into prompts yet.
 
-To use Pydantic AI with Ollama:
+To use the offline deterministic stub:
 
 ```bash
-NPC_AGENT_MODE=pydantic_ai \
-NPC_AGENT_MODEL=qwen3.5 \
+NPC_AGENT_MODE=stub \
 PYTHONPATH=agent python3 -m npc_agent.server
 ```
+
+To use Pydantic AI with Ollama, make sure Ollama is running and serving the
+configured model, then start the agent normally or set `NPC_AGENT_MODE=pydantic_ai`
+explicitly.
 
 ## Test
 

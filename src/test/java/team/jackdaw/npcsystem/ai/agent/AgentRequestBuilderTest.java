@@ -12,6 +12,7 @@ import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
 import team.jackdaw.npcsystem.entity.sensor.ObservationType;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.CallCommandFunction;
+import team.jackdaw.npcsystem.function.MasterReplyFunction;
 import team.jackdaw.npcsystem.function.SayFunction;
 import team.jackdaw.npcsystem.function.TestFunction;
 
@@ -27,6 +28,7 @@ class AgentRequestBuilderTest {
     static void registerFunctions() {
         FunctionManager.getInstance().register("say", new SayFunction());
         FunctionManager.getInstance().register("call_command", new CallCommandFunction());
+        FunctionManager.getInstance().register("master_reply", new MasterReplyFunction());
         FunctionManager.getInstance().register("agent_test_weather", new TestFunction());
     }
 
@@ -83,6 +85,11 @@ class AgentRequestBuilderTest {
         assertEquals("/time set day", request.conversation.message);
         assertEquals("call_command", request.available_tools.stream()
                 .filter(tool -> tool.name.equals("call_command"))
+                .findFirst()
+                .orElseThrow()
+                .name);
+        assertEquals("master_reply", request.available_tools.stream()
+                .filter(tool -> tool.name.equals("master_reply"))
                 .findFirst()
                 .orElseThrow()
                 .name);

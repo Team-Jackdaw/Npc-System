@@ -14,6 +14,7 @@ def test_health_endpoint():
 
 
 def test_fast_endpoint(monkeypatch, tmp_path):
+    monkeypatch.setenv("NPC_AGENT_MODE", "stub")
     monkeypatch.setenv("NPC_AGENT_STATE_DIR", str(tmp_path))
     response = client.post(
         "/agent/fast",
@@ -33,6 +34,7 @@ def test_fast_endpoint(monkeypatch, tmp_path):
 
 
 def test_deliberate_endpoint(monkeypatch, tmp_path):
+    monkeypatch.setenv("NPC_AGENT_MODE", "stub")
     monkeypatch.setenv("NPC_AGENT_STATE_DIR", str(tmp_path))
     response = client.post(
         "/agent/deliberate",
@@ -51,6 +53,7 @@ def test_deliberate_endpoint(monkeypatch, tmp_path):
 
 
 def test_conversation_end_endpoint(monkeypatch, tmp_path):
+    monkeypatch.setenv("NPC_AGENT_MODE", "stub")
     monkeypatch.setenv("NPC_AGENT_STATE_DIR", str(tmp_path))
     npc = tmp_path / "npc" / "npc"
     npc.mkdir(parents=True)

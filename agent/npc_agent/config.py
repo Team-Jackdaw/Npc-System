@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class AgentConfig:
-    mode: str = "stub"
+    mode: str = "pydantic_ai"
     ollama_base_url: str = "http://localhost:11434/v1"
     model: str = "qwen3.5"
     host: str = "0.0.0.0"
@@ -18,7 +18,7 @@ class AgentConfig:
 
 def load_config() -> AgentConfig:
     return AgentConfig(
-        mode=os.getenv("NPC_AGENT_MODE", "stub").strip().lower(),
+        mode=os.getenv("NPC_AGENT_MODE", "pydantic_ai").strip().lower(),
         ollama_base_url=os.getenv("NPC_AGENT_OLLAMA_BASE_URL", "http://localhost:11434/v1"),
         model=os.getenv("NPC_AGENT_MODEL", "qwen3.5"),
         host=os.getenv("NPC_AGENT_HOST", "0.0.0.0"),

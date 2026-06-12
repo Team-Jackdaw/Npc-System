@@ -329,8 +329,10 @@ Available completion-control tool:
 
 ## Master Agent
 
-Master uses the same `/agent/fast` and `/agent/deliberate` endpoints as NPCs,
-but has no Minecraft entity and cannot run task actions. Its request identity is:
+Master uses the same protocol as NPCs, but current Java routes Master chat
+through `/agent/deliberate` so server-administrator monitoring and command
+decisions can use the richer request. Master has no Minecraft entity and cannot
+run task actions. Its request identity is:
 
 ```json
 {
@@ -343,10 +345,12 @@ but has no Minecraft entity and cannot run task actions. Its request identity is
 }
 ```
 
-Master may receive `call_command` in `available_tools`. The external agent must
-only emit `call_command` when `npc.kind == "master"` and `npc.permission >= 3`.
-Java also enforces this permission through `FunctionManager`, so normal NPCs
-cannot execute administrator commands even if a response tries to call the tool.
+Master may receive `master_reply` and `call_command` in `available_tools`. The
+external agent should use `master_reply(message)` for normal conversation and
+only emit `call_command(command)` when `npc.kind == "master"`, `npc.permission >=
+3`, and the administrator clearly requested a Minecraft command. Java also
+enforces this permission through `FunctionManager`, so normal NPCs cannot execute
+administrator commands even if a response tries to call the tool.
 
 ## Tool Result
 

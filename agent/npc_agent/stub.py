@@ -10,6 +10,17 @@ from .schemas import (
 
 
 def decide_fast_stub(request: FastAgentRequest) -> FastAgentResponse:
+    if is_fast_master(request) and "master_reply" in request.tools:
+        message = latest_chat_text(request.evt)
+        if message:
+            return FastAgentResponse(
+                rid=request.rid,
+                a="call",
+                kind="tool",
+                name="master_reply",
+                args={"message": clamp("我在。请说明你想查看或执行什么。", request.limits.max_reply_chars)},
+                note="master_reply",
+            )
     if "say" in request.tools:
         message = latest_chat_text(request.evt)
         if message:
@@ -47,6 +58,19 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
                 speech=f"执行命令：/{command}",
                 reasoning_summary="The administrator explicitly requested a Minecraft command.",
             )
+
+    if is_master(request) and "master_reply" in tool_names and message:
+        return DeliberateAgentResponse(
+            request_id=request.request_id,
+            action=AgentAction(
+                type="call",
+                kind="tool",
+                name="master_reply",
+                arguments={"message": deliberate_master_reply(message, request.limits.max_reply_chars)},
+            ),
+            speech=deliberate_master_reply(message, request.limits.max_reply_chars),
+            reasoning_summary="The administrator sent a normal conversation message.",
+        )
 
     if speaker and "follow_player" in tool_names and any(word in lower_message for word in ["follow", "跟着", "跟随"]):
         actions = [
@@ -100,6 +124,10 @@ def is_master(request: DeliberateAgentRequest) -> bool:
     return request.npc.kind == "master" and request.npc.permission >= 3
 
 
+def is_fast_master(request: FastAgentRequest) -> bool:
+    return request.npc.kind == "master" and request.npc.permission >= 3
+
+
 def command_requested(message: str) -> bool:
     return message.startswith("/") or "执行命令" in message or "run command" in message or "call command" in message
 
@@ -129,6 +157,11 @@ def fast_reply(message: str, max_chars: int) -> str:
 
 def deliberate_reply(message: str, max_chars: int) -> str:
     reply = "我明白了。"
+    return clamp(reply, max_chars)
+
+
+def deliberate_master_reply(message: str, max_chars: int) -> str:
+    reply = "我在。可以帮你查看服务器状态，或在你明确要求时执行管理员命令。"
     return clamp(reply, max_chars)
 
 
