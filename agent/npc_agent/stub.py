@@ -12,28 +12,23 @@ from .schemas import (
 def decide_fast_stub(request: FastAgentRequest) -> FastAgentResponse:
     if latest_event_type(request.evt) == "TASK_BATCH_FINISHED":
         return FastAgentResponse(rid=request.rid, a="none", note="task_batch_finished")
-    if is_fast_master(request) and "master_reply" in request.tools:
+    if is_fast_master(request):
         message = latest_chat_text(request.evt)
         if message:
             return FastAgentResponse(
                 rid=request.rid,
-                a="call",
-                kind="tool",
-                name="master_reply",
-                args={"message": clamp("我在。请说明你想查看或执行什么。", request.limits.max_reply_chars)},
+                a="none",
+                speech=clamp("我在。请说明你想查看或执行什么。", request.limits.max_reply_chars),
                 note="master_reply",
             )
-    if "say" in request.tools:
-        message = latest_chat_text(request.evt)
-        if message:
-            return FastAgentResponse(
-                rid=request.rid,
-                a="call",
-                kind="task",
-                name="say",
-                args={"message": fast_reply(message, request.limits.max_reply_chars)},
-                note="chat_reply",
-            )
+    message = latest_chat_text(request.evt)
+    if message:
+        return FastAgentResponse(
+            rid=request.rid,
+            a="none",
+            speech=fast_reply(message, request.limits.max_reply_chars),
+            note="chat_reply",
+        )
     return FastAgentResponse(rid=request.rid, a="none", note="no_action")
 
 
@@ -61,58 +56,34 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
                 reasoning_summary="The administrator explicitly requested a Minecraft command.",
             )
 
-    if is_master(request) and "master_reply" in tool_names and message:
+    if is_master(request) and message:
         return DeliberateAgentResponse(
             request_id=request.request_id,
-            action=AgentAction(
-                type="call",
-                kind="tool",
-                name="master_reply",
-                arguments={"message": deliberate_master_reply(message, request.limits.max_reply_chars)},
-            ),
             speech=deliberate_master_reply(message, request.limits.max_reply_chars),
             reasoning_summary="The administrator sent a normal conversation message.",
         )
 
     if speaker and "follow_player" in tool_names and any(word in lower_message for word in ["follow", "跟着", "跟随"]):
-        actions = [
-            AgentAction(
-                type="call",
-                kind="task",
-                name="follow_player",
-                arguments={"player": speaker, "seconds": 30},
-                label="follow_request",
-            )
-        ]
-        if "say" in tool_names:
-            actions.insert(
-                0,
+        return DeliberateAgentResponse(
+            request_id=request.request_id,
+            actions=[
                 AgentAction(
                     type="call",
                     kind="task",
-                    name="say",
-                    arguments={"message": "好，我跟着你。"},
-                    label="reply",
-                ),
-            )
-        return DeliberateAgentResponse(
-            request_id=request.request_id,
-            actions=actions,
+                    name="follow_player",
+                    arguments={"player": speaker, "seconds": 30},
+                    label="follow_request",
+                )
+            ],
             speech="好，我跟着你。",
             reasoning_summary="The player asked this NPC to follow.",
         )
 
-    if message and "say" in tool_names:
+    if message:
         return DeliberateAgentResponse(
             request_id=request.request_id,
-            action=AgentAction(
-                type="call",
-                kind="task",
-                name="say",
-                arguments={"message": deliberate_reply(message, request.limits.max_reply_chars)},
-            ),
             speech=deliberate_reply(message, request.limits.max_reply_chars),
-            reasoning_summary="The player sent a chat message and say is available.",
+            reasoning_summary="The player sent a chat message and speech is available.",
         )
 
     return DeliberateAgentResponse(

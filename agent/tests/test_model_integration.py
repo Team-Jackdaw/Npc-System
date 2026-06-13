@@ -30,7 +30,7 @@ async def test_pydantic_ai_ollama_backend_can_reply_as_master(tmp_path):
             "request_id": "model-1",
             "npc": {"uuid": "master", "name": "Master", "kind": "master", "permission": 3},
             "conversation": {"speaker": "Admin", "message": "你听得到吗，说句话"},
-            "available_tools": [{"name": "master_reply", "kind": "tool"}],
+            "available_tools": [],
             "limits": {"max_actions": 2, "max_reply_chars": 80},
         }
     )
@@ -39,4 +39,4 @@ async def test_pydantic_ai_ollama_backend_can_reply_as_master(tmp_path):
     response = await decide_deliberate_pydantic_ai(request, config, context)
 
     assert response.request_id == "model-1"
-    assert response.speech or response.action.name == "master_reply" or response.actions
+    assert response.speech or response.actions

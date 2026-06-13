@@ -178,6 +178,12 @@ public class ConversationWindow {
                     : AGENT_ACTION_EXECUTOR.execute(ConversationWindow.this, deliberateResponse);
             NPCSystem.debugLog("[npc-system] Agent follow-up result success={} toolResult={}", result.success(), result.toolResult());
             lastAgentResultSummary = result.toolResult() == null ? "" : result.toolResult().toString();
+            String responseText = result.responseText();
+            if (responseText != null && !responseText.isBlank()) {
+                lastUserMessage = message;
+                lastAssistantMessage = responseText;
+                NPC_AI.broadcastMessage(ConversationWindow.this);
+            }
             if (result.isNoAction()) {
                 resumeDefaultAfterAgentFailure("agent follow-up requested no action");
                 return;
@@ -186,11 +192,6 @@ public class ConversationWindow {
                 NPCSystem.LOGGER.warn("[npc-system] Agent follow-up failed: {}", result.toolResult());
                 resumeDefaultAfterAgentFailure("agent follow-up action failed");
                 return;
-            }
-            String responseText = result.responseText();
-            if (responseText != null && !responseText.isBlank()) {
-                lastUserMessage = message;
-                lastAssistantMessage = responseText;
             }
         }
 

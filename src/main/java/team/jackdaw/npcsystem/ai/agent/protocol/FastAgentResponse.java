@@ -12,5 +12,6 @@ public class FastAgentResponse {
     public String name;
     public Map<String, Object> args;
     public List<AgentAction> actions;
+    public String speech;
     public String note;
 }

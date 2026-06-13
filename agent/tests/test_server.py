@@ -22,15 +22,15 @@ def test_fast_endpoint(monkeypatch, tmp_path):
             "rid": "r1",
             "npc": {"id": "npc", "name": "npc"},
             "evt": [["CHAT_HEARD", 7, "Steve: hello", 1]],
-            "tools": ["say"],
+            "tools": [],
         },
     )
 
     assert response.status_code == 200
     body = response.json()
     assert body["rid"] == "r1"
-    assert body["a"] == "call"
-    assert body["name"] == "say"
+    assert body["a"] == "none"
+    assert body["speech"]
 
 
 def test_deliberate_endpoint(monkeypatch, tmp_path):
@@ -49,6 +49,7 @@ def test_deliberate_endpoint(monkeypatch, tmp_path):
     assert response.status_code == 200
     body = response.json()
     assert body["request_id"] == "r2"
+    assert body["speech"]
     assert body["actions"][0]["name"] == "follow_player"
 
 

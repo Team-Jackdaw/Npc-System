@@ -159,7 +159,51 @@ class AgentActionExecutorTest {
 
         assertTrue(result.success());
         assertEquals("我在。", result.responseText());
+        assertEquals("no_action", result.toolResult().get("code"));
+    }
+
+    @Test
+    void speechOnlyResponseDoesNotRequireAction() {
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.a = "none";
+        response.speech = "我来了。";
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
+        assertEquals("no_action", result.toolResult().get("code"));
+        assertEquals("我来了。", result.responseText());
+    }
+
+    @Test
+    void speechResponseExecutesOnlyNonReplyActions() {
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.speech = "我先看看天气。";
+        response.actions = List.of(
+                action("say", Map.of("message", "这条不应作为任务执行。")),
+                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius"))
+        );
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
         assertEquals("actions_executed", result.toolResult().get("code"));
+        assertEquals("我先看看天气。", result.responseText());
+    }
+
+    @Test
+    void legacySayActionIsConvertedToResponseTextButNotExecuted() {
+        FastAgentResponse response = new FastAgentResponse();
+        response.rid = "r1";
+        response.actions = List.of(action("say", Map.of("message", "旧版回复。")));
+
+        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
+
+        assertTrue(result.success());
+        assertEquals("no_action", result.toolResult().get("code"));
+        assertEquals("旧版回复。", result.responseText());
     }
 
     @Test

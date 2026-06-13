@@ -23,7 +23,6 @@ public class NPC extends Agent {
         this.uuid = uuid;
         setTools(List.of(
                 "end_conversation",
-                "say",
                 "look_at_player",
                 "look_at_npc",
                 "walk_to_player",

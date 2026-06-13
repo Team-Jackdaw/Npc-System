@@ -24,7 +24,7 @@ def test_fast_schema_round_trip():
             },
             "evt": [["CHAT_HEARD", 7, "Steve: hi", 123]],
             "near": {"p": ["Steve@3.0"], "n": [], "e": []},
-            "tools": ["say"],
+            "tools": [],
             "limits": {"max_actions": 1, "max_reply_chars": 60},
             "future_field": "allowed",
         }
@@ -38,9 +38,9 @@ def test_fast_schema_round_trip():
 
     response = FastAgentResponse(
         rid=request.rid,
-        actions=[{"type": "call", "kind": "task", "name": "say", "arguments": {"message": "hi"}}],
+        speech="hi",
     )
-    assert response.actions[0].name == "say"
+    assert response.speech == "hi"
 
 
 def test_deliberate_schema_round_trip():
@@ -75,10 +75,10 @@ def test_deliberate_schema_round_trip():
     response = DeliberateAgentResponse(
         request_id=request.request_id,
         actions=[
-            {"type": "call", "kind": "task", "name": "say", "arguments": {"message": "好。"}},
             {"type": "call", "kind": "task", "name": "follow_player", "arguments": {"player": "Steve"}},
         ],
         speech="好。",
         reasoning_summary="follow request",
     )
-    assert response.actions[1].name == "follow_player"
+    assert response.speech == "好。"
+    assert response.actions[0].name == "follow_player"

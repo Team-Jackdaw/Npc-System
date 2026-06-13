@@ -90,9 +90,12 @@ public class AgentActionExecutor {
             return List.of();
         }
         if (response.actions != null && !response.actions.isEmpty()) {
-            return response.actions.stream().filter(action -> "call".equals(action.type)).toList();
+            return response.actions.stream()
+                    .filter(action -> "call".equals(action.type))
+                    .filter(action -> !isReplyAction(action.name))
+                    .toList();
         }
-        if (!"call".equals(response.a)) {
+        if (!"call".equals(response.a) || isReplyAction(response.name)) {
             return List.of();
         }
         AgentAction action = new AgentAction();
@@ -108,9 +111,12 @@ public class AgentActionExecutor {
             return List.of();
         }
         if (response.actions != null && !response.actions.isEmpty()) {
-            return response.actions.stream().filter(action -> "call".equals(action.type)).toList();
+            return response.actions.stream()
+                    .filter(action -> "call".equals(action.type))
+                    .filter(action -> !isReplyAction(action.name))
+                    .toList();
         }
-        if (response.action == null || !"call".equals(response.action.type)) {
+        if (response.action == null || !"call".equals(response.action.type) || isReplyAction(response.action.name)) {
             return List.of();
         }
         return List.of(response.action);
@@ -129,6 +135,9 @@ public class AgentActionExecutor {
     private static String responseText(FastAgentResponse response) {
         if (response == null) {
             return "";
+        }
+        if (response.speech != null && !response.speech.isBlank()) {
+            return response.speech;
         }
         if (response.actions != null) {
             for (AgentAction action : response.actions) {

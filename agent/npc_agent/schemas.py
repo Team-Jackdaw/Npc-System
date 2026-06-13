@@ -57,6 +57,7 @@ class FastAgentResponse(BaseModel):
     name: str | None = None
     args: dict[str, Any] = Field(default_factory=dict)
     actions: list["AgentAction"] = Field(default_factory=list)
+    speech: str | None = None
     note: str | None = None
 
 

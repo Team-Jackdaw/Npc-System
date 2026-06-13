@@ -26,7 +26,7 @@ class AgentProtocolTest {
         request.evt = List.of(List.of("CHAT_HEARD", 7, "Steve: hi", 123L));
         request.near = new FastAgentRequest.Near();
         request.near.p = List.of("Steve@3.0");
-        request.tools = List.of("say");
+        request.tools = List.of("look_at_player");
         request.limits = new AgentLimits();
         request.limits.max_reply_chars = 60;
 
@@ -34,21 +34,23 @@ class AgentProtocolTest {
         assertEquals(1, parsedRequest.v);
         assertEquals("fast", parsedRequest.mode);
         assertEquals("request-1", parsedRequest.rid);
-        assertEquals("say", parsedRequest.tools.getFirst());
+        assertEquals("look_at_player", parsedRequest.tools.getFirst());
 
         FastAgentResponse response = new FastAgentResponse();
         response.rid = parsedRequest.rid;
         AgentAction fastAction = new AgentAction();
         fastAction.type = "call";
         fastAction.kind = "task";
-        fastAction.name = "say";
-        fastAction.arguments = Map.of("message", "hi");
-        fastAction.callback = true;
+        fastAction.name = "look_at_player";
+        fastAction.arguments = Map.of("player", "Steve", "seconds", 3);
+        fastAction.callback = false;
         response.actions = List.of(fastAction);
+        response.speech = "hi";
 
         FastAgentResponse parsedResponse = GSON.fromJson(GSON.toJson(response), FastAgentResponse.class);
-        assertEquals("say", parsedResponse.actions.getFirst().name);
-        assertEquals("hi", parsedResponse.actions.getFirst().arguments.get("message"));
+        assertEquals("look_at_player", parsedResponse.actions.getFirst().name);
+        assertEquals("Steve", parsedResponse.actions.getFirst().arguments.get("player"));
+        assertEquals("hi", parsedResponse.speech);
     }
 
     @Test
@@ -89,24 +91,18 @@ class AgentProtocolTest {
 
         DeliberateAgentResponse response = new DeliberateAgentResponse();
         response.request_id = parsedRequest.request_id;
-        AgentAction say = new AgentAction();
-        say.type = "call";
-        say.kind = "task";
-        say.name = "say";
-        say.arguments = Map.of("message", "好。");
         AgentAction follow = new AgentAction();
         follow.type = "call";
         follow.kind = "task";
         follow.name = "follow_player";
         follow.arguments = Map.of("player", "Steve");
-        response.actions = List.of(say, follow);
+        response.actions = List.of(follow);
         response.speech = "好。";
         response.memory_updates = List.of();
         response.reasoning_summary = "Player asked for follow.";
 
         DeliberateAgentResponse parsedResponse = GSON.fromJson(GSON.toJson(response), DeliberateAgentResponse.class);
-        assertEquals("say", parsedResponse.actions.getFirst().name);
-        assertEquals("follow_player", parsedResponse.actions.get(1).name);
+        assertEquals("follow_player", parsedResponse.actions.getFirst().name);
         assertEquals("好。", parsedResponse.speech);
     }
 }

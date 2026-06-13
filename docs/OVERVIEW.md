@@ -1,6 +1,6 @@
 # NPC System Overview
 
-Last updated: 2026-06-12 09:34:13 CST
+Last updated: 2026-06-13 00:00:00 CST
 
 This document is the rolling architecture and implementation overview for the
 project. Future feature work should update this file in place.
@@ -66,12 +66,10 @@ Key layers:
   - look at entity
   - walk to entity
   - follow entity
-  - speak
   - wait
   - idle look around
   - random stroll
 - Tool wrappers for NPC actions:
-  - `say`
   - `look_at_player`
   - `look_at_npc`
   - `walk_to_player`
@@ -83,6 +81,7 @@ Key layers:
 - External agent protocol:
   - compact `fast` mode
   - richer `deliberate` mode
+  - `speech` field for normal replies
   - up to two actions per response
   - AGENT task batch completion callback
 - Python external agent scaffold:
@@ -106,7 +105,7 @@ Key layers:
   - same fast/deliberate endpoints as NPCs
   - `kind=master`, `permission=3`
   - stable Java UUID and `agent-state/master/default` context directory
-  - normal administrator conversation through `master_reply`
+  - normal administrator conversation through `speech`
   - high-permission `call_command` guarded by Java and agent-side identity.
 
 ## Waiting To Implement

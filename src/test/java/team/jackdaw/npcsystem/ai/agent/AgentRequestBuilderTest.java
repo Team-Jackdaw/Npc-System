@@ -12,8 +12,6 @@ import team.jackdaw.npcsystem.entity.sensor.ObservationEvent;
 import team.jackdaw.npcsystem.entity.sensor.ObservationType;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.CallCommandFunction;
-import team.jackdaw.npcsystem.function.MasterReplyFunction;
-import team.jackdaw.npcsystem.function.SayFunction;
 import team.jackdaw.npcsystem.function.TestFunction;
 
 import java.util.List;
@@ -26,9 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class AgentRequestBuilderTest {
     @BeforeAll
     static void registerFunctions() {
-        FunctionManager.getInstance().register("say", new SayFunction());
         FunctionManager.getInstance().register("call_command", new CallCommandFunction());
-        FunctionManager.getInstance().register("master_reply", new MasterReplyFunction());
         FunctionManager.getInstance().register("agent_test_weather", new TestFunction());
     }
 
@@ -46,7 +42,7 @@ class AgentRequestBuilderTest {
         assertEquals(1, request.npc.permission);
         assertEquals(60, request.limits.max_reply_chars);
         assertFalse(request.rid.isBlank());
-        assertEquals("say", request.tools.getFirst());
+        assertEquals("agent_test_weather", request.tools.getFirst());
         assertFalse(request.evt.isEmpty());
     }
 
@@ -67,8 +63,8 @@ class AgentRequestBuilderTest {
         assertEquals("please follow me", request.conversation.message);
         assertEquals(200, request.limits.max_reply_chars);
         assertNotNull(request.observations.recent_events);
-        assertEquals("say", request.available_tools.getFirst().name);
-        assertEquals("task", request.available_tools.getFirst().kind);
+        assertEquals("agent_test_weather", request.available_tools.getFirst().name);
+        assertEquals("tool", request.available_tools.getFirst().kind);
     }
 
     @Test
@@ -89,16 +85,11 @@ class AgentRequestBuilderTest {
                 .findFirst()
                 .orElseThrow()
                 .name);
-        assertEquals("master_reply", request.available_tools.stream()
-                .filter(tool -> tool.name.equals("master_reply"))
-                .findFirst()
-                .orElseThrow()
-                .name);
     }
 
     private static NPC npcWithTools() {
         NPC npc = new NPC(UUID.randomUUID());
-        npc.setTools(List.of("say", "agent_test_weather"));
+        npc.setTools(List.of("agent_test_weather"));
         return npc;
     }
 

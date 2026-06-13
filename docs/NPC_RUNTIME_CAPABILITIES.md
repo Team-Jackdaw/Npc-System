@@ -8,15 +8,14 @@ Last updated: 2026-06-12 09:36:54 CST
 
 在不接入外部 agent 时，NPC 已经具备最小默认行为：空闲时会间隔 3-8 秒尝试看向附近实体、随机闲逛或等待。该默认行为不进入持久任务队列，任何玩家任务或 agent 任务都可以打断它。
 
-在接入对话或外部 agent 后，NPC 可以通过 tool 下发低层 Minecraft task：
+在接入对话或外部 agent 后，NPC 会通过 `speech` 字段回复玩家，并可以通过 tool 下发低层 Minecraft task：
 
-- 说话：在聊天栏和/或头顶气泡显示短消息。
 - 看向玩家或 NPC：按名称或 UUID 找到目标并持续看向目标。
 - 走向玩家或 NPC：导航到目标附近，达到停止距离或超时后结束。
 - 跟随玩家：在限定时间内跟随目标玩家并保持距离。
 - 等待：停止导航并持续若干秒。
 - 停止任务：取消当前任务并清空任务队列。
-- 多 action 队列：agent 可一次返回最多 2 个 action，典型用法是先 `say` 再执行 `look_at_player`、`follow_player` 等动作。
+- 多 action 队列：agent 可一次返回最多 2 个真实动作；`speech` 不占 action 数量，并由 Java 端先发送。
 
 当前还不能可靠完成睡觉、使用工作方块、使用方块、拿取/丢弃物品、战斗、采集、背包管理、路径规划链式任务等复杂行为。`MeetPlayerTask`、`MeetNPCTask`、`FollowChatTargetTask` 目前只是占位类，不应视为可用 task。
 
@@ -63,7 +62,6 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 
 | 名称 | 类型 | 作用 |
 | --- | --- | --- |
-| `say` | task | 让 NPC 说一句话，对应 `SpeakTask` |
 | `look_at_player` | task | 看向在线玩家，对应 `LookAtEntityTask` |
 | `look_at_npc` | task | 看向 NPC，对应 `LookAtEntityTask` |
 | `walk_to_player` | task | 走到玩家附近，对应 `WalkToEntityTask` |
@@ -156,8 +154,9 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 - 如果 `agentEnabled=false` 或请求失败，Java 端只返回固定失败提示并恢复默认行为；不会 fallback 到本地 LLM。
 - 如果 `agentMode=fast`，POST 到 `/agent/fast`。
 - 如果 `agentMode=deliberate`，POST 到 `/agent/deliberate`。
+- agent 响应中的 `speech` 会由 Java 端直接显示在聊天栏和/或头顶气泡。
 - agent 响应中的 action 会由 `AgentActionExecutor` 调用 `FunctionManager` 执行。
-- 当前每次 agent 响应最多执行 2 个 action，主要支持 `say + do`。
+- 当前每次 agent 响应最多执行 2 个真实 action；`speech` 不计入该上限。
 - AGENT 批次任务全部完成后，NPC 会短暂进入 SYSTEM wait，并把 `TASK_BATCH_FINISHED` 结果回调给 agent。
 - follow-up 回调返回新 action 时继续入队；agent 完成控制时应调用 `resume_default_behavior`。
 
@@ -186,7 +185,7 @@ Fast 模式使用短字段以节省 token：
     "n": ["Alice@5.1"],
     "e": ["minecraft:zombie@8.0"]
   },
-  "tools": ["say", "look_at_player", "walk_to_player"],
+  "tools": ["look_at_player", "walk_to_player"],
   "limits": {
     "max_actions": 2,
     "max_reply_chars": 60
@@ -201,18 +200,17 @@ Fast 响应字段：
   "v": 1,
   "rid": "request-uuid",
   "mode": "fast",
-  "a": "call",
-  "kind": "task",
-  "name": "say",
-  "args": {
-    "message": "你好。"
-  },
+  "a": "none",
+  "kind": null,
+  "name": null,
+  "args": {},
   "actions": [],
+  "speech": "你好。",
   "note": "reply"
 }
 ```
 
-`actions` 为推荐字段；为空时兼容旧的 `a/kind/name/args` 单 action。`a` 为 `call` 时执行 tool；其他值或空响应会视为无动作。
+`speech` 是普通回复字段，由 Java 端直接显示。`actions` 为推荐动作字段；为空时兼容旧的 `a/kind/name/args` 单 action。旧版 `say` action 会被 Java 当作回复文本兼容读取，但不会再作为 task 执行。
 
 ### Deliberate 请求字段
 
@@ -279,14 +277,6 @@ Deliberate 响应字段：
     {
       "type": "call",
       "kind": "task",
-      "name": "say",
-      "arguments": {
-        "message": "好，我跟着你。"
-      }
-    },
-    {
-      "type": "call",
-      "kind": "task",
       "name": "follow_player",
       "arguments": {
         "player": "Steve",
@@ -300,7 +290,7 @@ Deliberate 响应字段：
 }
 ```
 
-当前 Java 端会使用 `speech` 或 action 中 `say.message` 作为对话文本。`memory_updates` 字段已在协议中存在，但 Java 端不再写入本地持久记忆；持久上下文由外部 agent 管理。
+当前 Java 端优先使用 `speech` 作为对话文本。旧版 action 中的 `say.message` / `master_reply.message` 仅作为兼容文本来源，不再执行为 task/tool。`memory_updates` 字段已在协议中存在，但 Java 端不再写入本地持久记忆；持久上下文由外部 agent 管理。
 
 ### Master Agent
 
@@ -311,7 +301,7 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 - Java 端使用固定 UUID；agent 侧记忆固定在 `agent-state/master/default`。
 - 不具备 sensor、默认行为和 task batch。
 - 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
-- 普通对话使用 `master_reply` 返回文本。
+- 普通对话使用 `speech` 返回文本。
 - 可以使用 `end_conversation`。
 - 可以在权限验证通过时使用 `call_command` 执行管理员级 Minecraft 命令。
 - Master 对话会强制走 deliberate 请求，即使普通 NPC 配置仍为 `agentMode=fast`。
@@ -322,7 +312,6 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 
 agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `FunctionManager` 转成 descriptor。默认 NPC 可调用：
 
-- `say(message)`
 - `look_at_player(player, seconds?)`
 - `look_at_npc(npc, seconds?)`
 - `walk_to_player(player, stop_distance?, timeout_seconds?)`
@@ -335,7 +324,6 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 
 Master 专用接口：
 
-- `master_reply(message)`
 - `call_command(command)`
 
 这些接口隐藏 Minecraft 内部类，只暴露 JSON 参数。task 类接口会在 Java 端解析目标实体、创建 `NpcTask`，并交给 `NpcTaskController`。

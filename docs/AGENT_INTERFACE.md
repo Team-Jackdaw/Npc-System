@@ -62,7 +62,7 @@ Request:
     "n": ["Bob@5.1"],
     "e": ["Zombie@8.0"]
   },
-  "tools": ["say", "look_at_player", "walk_to_player", "follow_player", "wait", "stop_task"],
+  "tools": ["look_at_player", "walk_to_player", "follow_player", "wait", "stop_task"],
   "limits": {
     "max_actions": 2,
     "max_reply_chars": 60
@@ -77,31 +77,32 @@ Response:
   "v": 1,
   "rid": "request-uuid",
   "mode": "fast",
-  "a": "call",
-  "kind": "task",
-  "name": "say",
-  "args": {
-    "message": "你好。"
-  },
+  "a": "none",
+  "kind": null,
+  "name": null,
+  "args": {},
   "actions": [
     {
       "type": "call",
       "kind": "task",
-      "name": "say",
+      "name": "look_at_player",
       "arguments": {
-        "message": "你好。"
+        "player": "Steve",
+        "seconds": 3
       },
-      "callback": true,
-      "label": "reply"
+      "callback": false,
+      "label": "look_at_speaker"
     }
   ],
+  "speech": "你好。",
   "note": "reply"
 }
 ```
 
-`a` is `none` or `call`. `actions` is preferred. If `actions` is present, Java
-executes it before looking at legacy `a/kind/name/args`. `note` is optional and
-should stay short.
+`speech` is the normal NPC/Master reply and does not count against
+`max_actions`. `actions` is for real tools/tasks only. Java still accepts legacy
+`say` or `master_reply` actions as a compatibility source for response text, but
+does not execute them as tasks/tools. `note` is optional and should stay short.
 
 ## Deliberate Mode
 
@@ -181,15 +182,6 @@ Response:
     {
       "type": "call",
       "kind": "task",
-      "name": "say",
-      "arguments": {
-        "message": "好，我跟着你。"
-      },
-      "label": "reply"
-    },
-    {
-      "type": "call",
-      "kind": "task",
       "name": "follow_player",
       "arguments": {
         "player": "Steve",
@@ -205,8 +197,9 @@ Response:
 ```
 
 `action.type` is `none` or `call`. `actions` is preferred and currently limited
-to two entries, mainly for `say + do` responses. `reasoning_summary` is a
-concise decision summary, not a hidden chain-of-thought transcript.
+to two real tool/task entries. Put normal text replies in `speech`; do not spend
+an action on saying text. `reasoning_summary` is a concise decision summary, not
+a hidden chain-of-thought transcript.
 
 ## Agent-Side Context
 
@@ -302,7 +295,7 @@ When an AGENT task batch finishes, Java sends a follow-up request to the same
 fast or deliberate endpoint. Fast mode appends a compact event:
 
 ```json
-["TASK_BATCH_FINISHED", 8, "Agent task batch ... finished: say:finished, follow_entity:finished", 12345]
+["TASK_BATCH_FINISHED", 8, "Agent task batch ... finished: follow_entity:finished", 12345]
 ```
 
 Deliberate mode appends a structured `recent_events` entry with:
@@ -316,7 +309,7 @@ Deliberate mode appends a structured `recent_events` entry with:
   "facts": {
     "batch_id": "batch-uuid",
     "status": "finished",
-    "tasks": ["say:finished", "follow_entity:finished"]
+    "tasks": ["follow_entity:finished"]
   }
 }
 ```
@@ -356,12 +349,12 @@ and cannot run task actions. Its request identity is:
 }
 ```
 
-Master may receive `master_reply` and `call_command` in `available_tools`. The
-external agent should use `master_reply(message)` for normal conversation and
-only emit `call_command(command)` when `npc.kind == "master"`, `npc.permission >=
-3`, and the administrator clearly requested a Minecraft command. Java also
-enforces this permission through `FunctionManager`, so normal NPCs cannot execute
-administrator commands even if a response tries to call the tool.
+Master may receive `call_command` in `available_tools`. The external agent
+should use `speech` for normal Master conversation and only emit
+`call_command(command)` when `npc.kind == "master"`, `npc.permission >= 3`, and
+the administrator clearly requested a Minecraft command. Java also enforces this
+permission through `FunctionManager`, so normal NPCs cannot execute administrator
+commands even if a response tries to call the tool.
 
 ## Tool Result
 

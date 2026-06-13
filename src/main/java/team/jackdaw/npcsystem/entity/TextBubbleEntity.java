@@ -1,6 +1,7 @@
 package team.jackdaw.npcsystem.entity;
 
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.Display.TextDisplay;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
@@ -18,6 +19,7 @@ public class TextBubbleEntity extends TextDisplay {
     private static final Method SET_TEXT_OPACITY = findTextDisplayMethod("setTextOpacity", byte.class);
     private static final Method SET_BACKGROUND_COLOR = findTextDisplayMethod("setBackgroundColor", int.class);
     private static final Method SET_FLAGS = findTextDisplayMethod("setFlags", byte.class);
+    private static final Method SET_BILLBOARD_CONSTRAINTS = findDisplayMethod("setBillboardConstraints", Display.BillboardConstraints.class);
 
     private final NPCEntity speaker;
     private final double heightOffset = 0.55D;
@@ -69,6 +71,7 @@ public class TextBubbleEntity extends TextDisplay {
         invoke(SET_TEXT_OPACITY, (byte) -1);
         invoke(SET_TEXT, textBuilder(message, textBackgroundColor));
         invoke(SET_BACKGROUND_COLOR, (int) textBackgroundColor.getBackgroundARGBAsLong());
+        invoke(SET_BILLBOARD_CONSTRAINTS, Display.BillboardConstraints.CENTER);
         updateSeeThrough();
     }
 
@@ -98,8 +101,16 @@ public class TextBubbleEntity extends TextDisplay {
     }
 
     private static Method findTextDisplayMethod(String name, Class<?>... parameterTypes) {
+        return findMethod(TextDisplay.class, name, parameterTypes);
+    }
+
+    private static Method findDisplayMethod(String name, Class<?>... parameterTypes) {
+        return findMethod(Display.class, name, parameterTypes);
+    }
+
+    private static Method findMethod(Class<?> type, String name, Class<?>... parameterTypes) {
         try {
-            Method method = TextDisplay.class.getDeclaredMethod(name, parameterTypes);
+            Method method = type.getDeclaredMethod(name, parameterTypes);
             method.setAccessible(true);
             return method;
         } catch (ReflectiveOperationException e) {

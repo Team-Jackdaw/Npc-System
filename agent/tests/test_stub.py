@@ -2,25 +2,7 @@ from npc_agent.schemas import DeliberateAgentRequest, FastAgentRequest
 from npc_agent.stub import decide_deliberate_stub, decide_fast_stub
 
 
-def test_fast_stub_replies_to_chat_when_say_is_available():
-    request = FastAgentRequest.model_validate(
-        {
-            "rid": "r1",
-            "npc": {"id": "npc", "name": "npc"},
-            "evt": [["CHAT_HEARD", 7, "Steve: hello", 1]],
-            "tools": ["say"],
-        }
-    )
-
-    response = decide_fast_stub(request)
-
-    assert response.a == "call"
-    assert response.kind == "task"
-    assert response.name == "say"
-    assert response.args["message"]
-
-
-def test_fast_stub_returns_none_without_tools():
+def test_fast_stub_replies_to_chat_with_speech():
     request = FastAgentRequest.model_validate(
         {
             "rid": "r1",
@@ -33,6 +15,23 @@ def test_fast_stub_returns_none_without_tools():
     response = decide_fast_stub(request)
 
     assert response.a == "none"
+    assert response.speech
+
+
+def test_fast_stub_replies_even_without_tools():
+    request = FastAgentRequest.model_validate(
+        {
+            "rid": "r1",
+            "npc": {"id": "npc", "name": "npc"},
+            "evt": [["CHAT_HEARD", 7, "Steve: hello", 1]],
+            "tools": [],
+        }
+    )
+
+    response = decide_fast_stub(request)
+
+    assert response.a == "none"
+    assert response.speech
 
 
 def test_fast_stub_does_not_repeat_chat_on_task_follow_up():
@@ -44,7 +43,7 @@ def test_fast_stub_does_not_repeat_chat_on_task_follow_up():
                 ["CHAT_HEARD", 7, "Steve: hello", 1],
                 ["TASK_BATCH_FINISHED", 8, "speak:finished", 2],
             ],
-            "tools": ["say"],
+            "tools": [],
         }
     )
 
@@ -70,22 +69,23 @@ def test_deliberate_stub_follows_player_when_requested():
     assert response.actions[0].arguments["player"] == "Steve"
 
 
-def test_deliberate_stub_can_return_say_then_follow():
+def test_deliberate_stub_returns_speech_then_follow_action():
     request = DeliberateAgentRequest.model_validate(
         {
             "request_id": "r2",
             "npc": {"uuid": "npc", "name": "npc"},
             "conversation": {"speaker": "Steve", "message": "please follow me"},
-            "available_tools": [{"name": "say", "kind": "task"}, {"name": "follow_player", "kind": "task"}],
+            "available_tools": [{"name": "follow_player", "kind": "task"}],
         }
     )
 
     response = decide_deliberate_stub(request)
 
-    assert [action.name for action in response.actions] == ["say", "follow_player"]
+    assert response.speech == "好，我跟着你。"
+    assert [action.name for action in response.actions] == ["follow_player"]
 
 
-def test_deliberate_stub_returns_none_without_matching_tool():
+def test_deliberate_stub_replies_without_matching_tool():
     request = DeliberateAgentRequest.model_validate(
         {
             "request_id": "r2",
@@ -98,6 +98,7 @@ def test_deliberate_stub_returns_none_without_matching_tool():
     response = decide_deliberate_stub(request)
 
     assert response.action.type == "none"
+    assert response.speech
 
 
 def test_master_stub_can_call_command_when_authorized():
@@ -122,14 +123,14 @@ def test_master_stub_replies_to_normal_conversation():
             "request_id": "master-2",
             "npc": {"uuid": "master", "name": "Master", "kind": "master", "permission": 3},
             "conversation": {"speaker": "Admin", "message": "你好"},
-            "available_tools": [{"name": "master_reply", "kind": "tool"}],
+            "available_tools": [],
         }
     )
 
     response = decide_deliberate_stub(request)
 
-    assert response.action.name == "master_reply"
-    assert response.action.arguments["message"]
+    assert response.action.type == "none"
+    assert response.speech
 
 
 def test_npc_stub_cannot_call_command_even_if_tool_is_present():
@@ -146,3 +147,4 @@ def test_npc_stub_cannot_call_command_even_if_tool_is_present():
 
     assert not response.actions
     assert response.action.type == "none"
+    assert response.speech
