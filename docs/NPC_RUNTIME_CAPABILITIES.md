@@ -1,6 +1,6 @@
 # NPC 运行能力说明
 
-Last updated: 2026-06-12 09:36:54 CST
+最后更新：2026-06-13 CST
 
 本文按当前代码实现说明 NPC 在游戏中可以预期完成的任务、运行循环、玩家交互、外部 agent 协议、可调用接口和记忆存储方式。
 
@@ -300,7 +300,7 @@ Master 现在也复用外部 agent HTTP 接口。它是无实体、高权限、�
 - `permission=3`
 - Java 端使用固定 UUID；agent 侧记忆固定在 `agent-state/master/default`。
 - 不具备 sensor、默认行为和 task batch。
-- 不执行 `say`、`walk_to_player`、`follow_player` 等 NPC task。
+- 不执行 `walk_to_player`、`follow_player` 等 NPC task。
 - 普通对话使用 `speech` 返回文本。
 - 可以使用 `end_conversation`。
 - 可以在权限验证通过时使用 `call_command` 执行管理员级 Minecraft 命令。

@@ -1,15 +1,15 @@
 # NPC 基础能力架构计划
 
-Last updated: 2026-06-11 10:04:06 CST
+最后更新：2026-06-13 CST
 
-Status: 本文最初是基础能力规划。当前 `NpcSensorState`、`ObservationCollector`、
-`NPC.observe`、`NpcTask`、`NpcTaskController`、基础移动/看向/说话/等待 task、
-task tool 封装，以及外部 agent 通信闭环已经实现。最新总体状态见
-`OVERVIEW.md`。
+状态：本文最初是基础能力规划。当前 `NpcSensorState`、`ObservationCollector`、
+`NPC.observe`、`NpcTask`、`NpcTaskController`、基础移动/看向/等待 task、
+task tool 封装、`speech` 回复字段、任务队列、默认行为和外部 agent 通信闭环已经实现。
+最新总体状态见 `OVERVIEW.md`。
 
 ## 目标
 
-当前系统已经具备基础对话、工具调用、本地文本记忆、Minecraft 事件接入、基础 Sensor/Observe/Task 能力，以及外部 Agent HTTP 通信边界。下一阶段重点是扩展 NPC 在 Minecraft 世界中的感知和行动范围，让外部 AI Agent 能够基于更丰富的信息做决策，并通过稳定的工具接口驱动 NPC 行为。
+当前系统已经具备基础对话、工具调用、外部 agent 托管记忆、Minecraft 事件接入、基础 Sensor/Observe/Task 能力，以及外部 Agent HTTP 通信边界。下一阶段重点是扩展 NPC 在 Minecraft 世界中的感知和行动范围，让外部 AI Agent 能够基于更丰富的信息做决策，并通过稳定的工具接口驱动 NPC 行为。
 
 ## 核心分层
 
@@ -38,26 +38,23 @@ Observe 是主动观察层，基于 Sensor 的原始信息生成结构化观察�
 你刚刚听到 Steve 说：“你好”。
 ```
 
-Observe 不应该直接执行 Minecraft 行为。它的职责是为外部 Agent、记忆系统和 Planner 提供输入。
+Observe 不应该直接执行 Minecraft 行为。它的职责是为外部 Agent、agent 侧记忆系统和 Planner 提供输入。
 
 ### Tool
 
 Tool 是可供 NPC 或外部 Agent 调用的函数/指令接口。它偏系统能力，例如：
 
-- 查询记忆
-- 记录记忆
 - 结束对话
 - 执行命令
 - 请求 NPC 执行某个基础动作
 
 当前项目中 Tool 层已经包含：
 
-- `memory_query`
-- `memory_record`
 - `end_conversation`
 - `call_command`
 - 动态 JSON function 加载
-- NPC task tools，如 `say`、`look_at_player`、`walk_to_player`、`follow_player`、`wait`、`stop_task`
+- NPC task tools，如 `look_at_player`、`walk_to_player`、`follow_player`、`wait`、`stop_task`
+- `resume_default_behavior`
 
 后续应继续把更多 Minecraft 行为能力封装成 Tool，例如 `drop_item`、`pick_up_item`、`use_block`，供外部 Agent 调用。
 
@@ -68,10 +65,11 @@ Task 是 NPC 在 Minecraft 世界中的低层动作，不直接代表 LLM 推理
 - 走到某个实体或方块
 - 看向某个实体
 - 跟随某个目标
-- 说话
 - 丢出物品
 - 等待
 - 使用物品或交互方块
+
+普通说话目前不再作为推荐 task，而是通过 agent response 的 `speech` 字段由 Java 端直接显示。旧版 `SpeakTask` / `say` function 仅保留兼容用途。
 
 旧自定义 villager brain task 在 MC 26.1.2 迁移后仍是占位类：
 
@@ -150,11 +148,10 @@ interface NpcTask {
 1. `LookAtEntityTask`
 2. `WalkToEntityTask`
 3. `FollowEntityTask`
-4. `SpeakTask`
-5. `WaitTask`
-6. `DropItemTask`
-7. `MoveToBlockTask`
-8. `UseItemTask`
+4. `WaitTask`
+5. `DropItemTask`
+6. `MoveToBlockTask`
+7. `UseItemTask`
 
 这些基础 task 可以直接调用 Minecraft 的 navigation、look control 和实体 API，不必先接入 Villager Brain。
 
@@ -165,7 +162,6 @@ interface NpcTask {
 ```text
 walk_to_player(player_name)
 look_at_entity(entity_id)
-say(message)
 drop_item(item, count)
 follow_player(player_name)
 ```
@@ -178,7 +174,7 @@ Tool 的职责是校验参数、找到目标、创建 task，并交给 `NpcTaskC
 
 - 看到玩家后主动打招呼
 - 看到 NPC 后主动交流
-- 根据最近观察决定是否记录记忆
+- 根据最近观察决定是否交给 agent 总结为记忆
 - 根据外部 Agent 决策选择下一步 task
 - 将任务执行结果反馈给 Agent
 
@@ -186,8 +182,8 @@ Tool 的职责是校验参数、找到目标、创建 task，并交给 `NpcTaskC
 
 后续 AI 层计划调用外部 Agent 来完成高层决策。项目内应尽量提供稳定、清晰、可组合的输入输出：
 
-- 输入：Sensor/Observe/Memory/Status/Conversation
-- 输出：Tool 调用或高层 action
+- 输入：Sensor/Observe/Status/Conversation，以及 agent 侧 `SUMMARY.md` / `MEMORY.md`
+- 输出：`speech` 回复、Tool 调用或高层 action
 - 执行：Tool 将 action 转换为 Task
 - 反馈：Task 执行结果回写 Observation 或 Conversation
 
@@ -202,7 +198,7 @@ Tool 的职责是校验参数、找到目标、创建 task，并交给 `NpcTaskC
 3. `NPC.observe`
 4. `NpcTask`
 5. `NpcTaskController`
-6. 基础移动、看向、说话、等待 task
+6. 基础移动、看向、等待 task，以及 `speech` 回复
 7. Task Tool 封装
 
 暂缓事项：
@@ -220,10 +216,10 @@ Tool 的职责是校验参数、找到目标、创建 task，并交给 `NpcTaskC
 ```text
 Sensor: tick 被动感知
 Observe: 主动解释感知并形成观察
-Memory: 记录重要观察和总结
+Memory: 外部 agent 总结当前会话和长期记忆
 External Agent: 基于上下文进行高层决策
 Tool: Agent 可调用的能力入口
 Task: Minecraft 世界中的低层动作执行
 ```
 
-当前项目已经实现了 `Tool + Conversation + Memory` 的基础能力。下一阶段应集中补齐 `Sensor + Observe + Task`，让外部 Agent 拥有足够的信息输入和足够稳定的操作出口。
+当前项目已经实现了 `Sensor + Observe + Tool + Task + Conversation + Agent Memory` 的基础闭环。下一阶段应继续扩展 sensor、observe、tool 和 task 的覆盖面，让外部 Agent 拥有足够的信息输入和足够稳定的操作出口。

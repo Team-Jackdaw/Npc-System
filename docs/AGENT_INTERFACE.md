@@ -1,43 +1,32 @@
-# External Agent Interface
+# 外部 Agent 接口
 
-Last updated: 2026-06-11 22:11:08 CST
+最后更新：2026-06-13 CST
 
-Status: The protocol DTOs exist on the Java side, the Python FastAPI/Pydantic
-agent scaffold exists under `agent/`, and Java can call the external agent when
-`Config.agentEnabled` is enabled. This document remains the wire-contract
-reference.
+状态：Java 端已经具备协议 DTO、HTTP 客户端和 action 执行器；Python 端已经具备 FastAPI、Pydantic schema、Pydantic AI runner 和 per-NPC 上下文管理。启用 `Config.agentEnabled` 后，Java 会通过 HTTP 调用外部 agent。本文是当前线协议参考。
 
-This document defines the JSON boundary between the Minecraft mod and an
-external NPC agent. The transport is expected to be HTTP, but endpoint paths,
-authentication, timeout, and retry policy are intentionally left outside this
-version.
+本文定义 Minecraft mod 与外部 NPC agent 之间的 JSON 边界。传输方式当前是 HTTP。认证、超时、重试由配置和实现处理，不在单个响应 schema 中表达。
 
-The Python agent can use different Pydantic AI model providers through
-environment variables. Supported providers are `ollama`, `deepseek`, and
-`openai-compatible`; see `agent/README.md` for exact configuration.
+Python agent 可通过环境变量选择模型供应商：`ollama`、`deepseek`、`openai-compatible`。具体启动方式见 `agent/README.md`。
 
-## Protocol Rules
+## 协议规则
 
-- `version` / `v` is currently `1`.
-- `request_id` / `rid` must be echoed by the response.
-- `mode` is either `fast` or `deliberate`.
-- Each response may request at most two actions through `actions`.
-- Legacy single-action fields are still accepted for compatibility.
-- Actions call the same registered functions exposed by `FunctionManager`.
-- Use `kind: "task"` for functions that start Minecraft-only NPC tasks, and
-  `kind: "tool"` for other functions.
-- Request `npc.kind` is `npc` or `master`.
-- Request `npc.permission` mirrors Java-side tool permission. Only
-  `kind: "master"` with `permission >= 3` may call `call_command`.
-- Java remains the Minecraft fact source and executor. The Python agent owns
-  per-NPC conversation context when external agent mode is enabled.
+- `version` / `v` 当前为 `1`。
+- 响应必须回填请求中的 `request_id` / `rid`。
+- `mode` 为 `fast` 或 `deliberate`。
+- 普通文字回复统一放在 `speech` 字段，不占 action 数量。
+- `actions` 最多包含 2 个真实工具或任务调用。
+- 旧版单 action 字段仍兼容，但只建议用于过渡。
+- action 调用的函数来自 Java `FunctionManager`。
+- `kind: "task"` 表示启动 Minecraft 内 NPC 任务；`kind: "tool"` 表示其他工具。
+- `npc.kind` 为 `npc` 或 `master`。
+- `npc.permission` 对应 Java 工具权限；只有 `kind=master` 且 `permission>=3` 才能调用 `call_command`。
+- Java 是 Minecraft 世界事实来源和执行器；外部 agent 负责上下文、模型调用和决策。
 
-## Fast Mode
+## Fast 模式
 
-Fast mode is for chat replies, nearby event reactions, and urgent interrupts.
-It uses short keys and compact values to reduce token usage.
+Fast 模式用于短回复、附近事件反应和紧急打断。它使用短字段降低 token 消耗。
 
-Request:
+请求示例：
 
 ```json
 {
@@ -70,7 +59,7 @@ Request:
 }
 ```
 
-Response:
+响应示例：
 
 ```json
 {
@@ -99,17 +88,13 @@ Response:
 }
 ```
 
-`speech` is the normal NPC/Master reply and does not count against
-`max_actions`. `actions` is for real tools/tasks only. Java still accepts legacy
-`say` or `master_reply` actions as a compatibility source for response text, but
-does not execute them as tasks/tools. `note` is optional and should stay short.
+`speech` 是 NPC/Master 的普通回复，由 Java 端直接显示在聊天栏和/或头顶气泡。`actions` 只用于真实工具和任务。Java 仍兼容旧版 `say` / `master_reply` action，把其中的 `message` 当作回复文本读取，但不会再执行成 task/tool。
 
-## Deliberate Mode
+## Deliberate 模式
 
-Deliberate mode is for complex planning, memory use, and longer interaction.
-It sends complete field names and richer context.
+Deliberate 模式用于复杂计划、记忆参与和较长交互。它使用完整字段名和更丰富上下文。
 
-Request:
+请求示例：
 
 ```json
 {
@@ -162,7 +147,7 @@ Request:
 }
 ```
 
-Response:
+响应示例：
 
 ```json
 {
@@ -192,21 +177,17 @@ Response:
   ],
   "speech": "好，我跟着你。",
   "memory_updates": [],
-  "reasoning_summary": "Player asked this NPC to follow."
+  "reasoning_summary": "玩家请求 NPC 跟随。"
 }
 ```
 
-`action.type` is `none` or `call`. `actions` is preferred and currently limited
-to two real tool/task entries. Put normal text replies in `speech`; do not spend
-an action on saying text. `reasoning_summary` is a concise decision summary, not
-a hidden chain-of-thought transcript.
+`actions` 优先于旧版单 action 字段。`reasoning_summary` 是简短决策摘要，不应包含隐藏思维链。
 
-## Agent-Side Context
+## Agent 侧上下文
 
-The Python agent stores context under `config/npc-system/agent-state` by
-default. Override it with `NPC_AGENT_STATE_DIR`.
+Python agent 默认把上下文保存在 `config/npc-system/agent-state`，可用 `NPC_AGENT_STATE_DIR` 覆盖。
 
-Each NPC/Master has its own directory:
+目录结构：
 
 ```text
 agent-state/
@@ -214,44 +195,30 @@ agent-state/
   master/default/
 ```
 
-Each directory contains:
+每个目录包含：
 
-- `AGENTS.md`: identity, behavior boundaries, and permission notes.
-- `SOLU.md`: current plan and unresolved goals.
-- `SUMMARY.md`: LLM-written natural-language summary for the current conversation.
-- `MEMORY.md`: LLM-written long-term natural-language memory written when a conversation ends.
-- `messages.json`: current Pydantic AI message history.
-- `history.jsonl`: debug/audit log only.
+- `AGENTS.md`：身份、行为边界和权限说明。
+- `SOLU.md`：当前计划和未解决目标。
+- `SUMMARY.md`：当前会话的 LLM 自然语言摘要。
+- `MEMORY.md`：会话结束时写入的长期自然语言记忆。
+- `messages.json`：当前 Pydantic AI message history。
+- `history.jsonl`：调试和审计日志，不作为 prompt 主上下文。
 
-When a directory is first created, these Markdown files are copied from
-repository templates. Ordinary NPCs use `agent/templates/npc/AGENTS.md`, Master
-uses `agent/templates/master/AGENTS.md`, and shared files come from
-`agent/templates/common`. Existing runtime files are never overwritten.
+首次创建目录时，Markdown 文件会从 `agent/templates` 复制。普通 NPC 使用 `agent/templates/npc/AGENTS.md`，Master 使用 `agent/templates/master/AGENTS.md`，公共文件来自 `agent/templates/common`。已有运行时文件不会被覆盖。
 
-Shared skills are reserved under `agent/skills`. The current `dummy_skill.md`
-is only a placeholder and is not loaded into prompts yet.
+Pydantic AI 调用会使用 `message_history`，并通过 `result.all_messages_json()` 持久化当前会话。当 `messages.json` 超过 `NPC_AGENT_MAX_HISTORY_BYTES`，agent 会调用当前配置的大模型，把上下文总结为自然语言写入 `SUMMARY.md`，然后重置 `messages.json`。`SUMMARY.md` 不应包含原始 JSON、消息 dump 或调试日志。
 
-Pydantic AI integration uses `message_history` when calling `Agent.run(...)`
-and persists the resulting context with `result.all_messages_json()`. When
-`messages.json` exceeds `NPC_AGENT_MAX_HISTORY_BYTES` (default `65536`), the
-agent asks the configured model to summarize it into natural language in
-`SUMMARY.md` and then resets the current message history. `SUMMARY.md` should
-not contain raw JSON, message dumps, or debug logs.
+## 会话结束
 
-`history.jsonl` is not used as prompt memory; it exists for debugging and
-replay.
+Java 在会话显式结束或窗口被移除时通知 agent。
 
-## Conversation End
-
-Java notifies the agent when a conversation is explicitly ended or removed.
-
-Endpoint:
+端点：
 
 ```text
 POST /agent/conversation/end
 ```
 
-Request:
+请求示例：
 
 ```json
 {
@@ -272,7 +239,7 @@ Request:
 }
 ```
 
-Response:
+响应示例：
 
 ```json
 {
@@ -283,22 +250,17 @@ Response:
 }
 ```
 
-On conversation end, the agent asks the configured model to summarize
-`messages.json` plus `SUMMARY.md` into natural-language long-term memory in
-`MEMORY.md`, then resets the current conversation context. If summarization
-fails, the agent records the failure in `history.jsonl`, keeps the current
-context for retry, and does not write raw JSON into memory files.
+会话结束时，agent 会调用当前配置的大模型，根据 `messages.json` 与 `SUMMARY.md` 生成长期自然语言记忆并写入 `MEMORY.md`，然后重置当前会话上下文。如果总结失败，agent 会在 `history.jsonl` 记录失败并保留当前上下文以便重试，不会把原始 JSON 写入记忆文件。
 
-## Task Completion Callback
+## 任务完成回调
 
-When an AGENT task batch finishes, Java sends a follow-up request to the same
-fast or deliberate endpoint. Fast mode appends a compact event:
+AGENT 级任务批次完成后，Java 会向同一个 fast 或 deliberate 端点发送 follow-up 请求。Fast 模式追加紧凑事件：
 
 ```json
 ["TASK_BATCH_FINISHED", 8, "Agent task batch ... finished: follow_entity:finished", 12345]
 ```
 
-Deliberate mode appends a structured `recent_events` entry with:
+Deliberate 模式追加结构化 `recent_events`：
 
 ```json
 {
@@ -314,11 +276,7 @@ Deliberate mode appends a structured `recent_events` entry with:
 }
 ```
 
-The NPC enters a short system wait while this callback is in flight. If the
-agent returns new actions, they are queued as a new AGENT batch. If the agent is
-done, it should call `resume_default_behavior`.
-
-Available completion-control tool:
+回调期间 NPC 会短暂进入 SYSTEM wait。agent 如果返回新 action，它们会作为新的 AGENT 批次入队；如果控制结束，agent 应调用 `resume_default_behavior`。
 
 ```json
 {
@@ -331,12 +289,9 @@ Available completion-control tool:
 
 ## Master Agent
 
-Master uses the same protocol as NPCs, but current Java routes Master chat
-through `/agent/deliberate` so server-administrator monitoring and command
-decisions can use the richer request. Master has a stable Java UUID and the
-Python agent always stores its context under `master/default`, so Master memory
-does not split across restarts or changing UUIDs. Master has no Minecraft entity
-and cannot run task actions. Its request identity is:
+Master 复用普通 NPC 的协议，但 Java 当前把 Master 对话固定路由到 `/agent/deliberate`，便于管理员监控和命令决策使用完整上下文。Master 使用稳定 Java UUID，Python 端上下文固定在 `master/default`，不会因重启或 UUID 变化分裂记忆。Master 没有 Minecraft 实体，不能执行 NPC task。
+
+Master 请求身份：
 
 ```json
 {
@@ -349,16 +304,11 @@ and cannot run task actions. Its request identity is:
 }
 ```
 
-Master may receive `call_command` in `available_tools`. The external agent
-should use `speech` for normal Master conversation and only emit
-`call_command(command)` when `npc.kind == "master"`, `npc.permission >= 3`, and
-the administrator clearly requested a Minecraft command. Java also enforces this
-permission through `FunctionManager`, so normal NPCs cannot execute administrator
-commands even if a response tries to call the tool.
+Master 普通回复使用 `speech`。只有当管理员明确要求 Minecraft 管理命令时，且 `npc.kind=master`、`npc.permission>=3`，agent 才应调用 `call_command(command)`。Java 端也会通过 `FunctionManager` 做权限校验，普通 NPC 即使伪造响应也不能执行管理员命令。
 
-## Tool Result
+## 工具结果
 
-All tools and task functions return the same shape:
+所有 tool 和 task function 返回统一结构：
 
 ```json
 {
@@ -373,7 +323,7 @@ All tools and task functions return the same shape:
 }
 ```
 
-Failure:
+失败示例：
 
 ```json
 {
@@ -385,4 +335,4 @@ Failure:
 }
 ```
 
-`status`, `code`, `message`, `data`, and `retryable` are always present.
+`status`、`code`、`message`、`data`、`retryable` 总是存在。

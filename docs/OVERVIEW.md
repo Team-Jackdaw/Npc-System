@@ -1,11 +1,10 @@
-# NPC System Overview
+# NPC 系统总览
 
-Last updated: 2026-06-13 00:00:00 CST
+最后更新：2026-06-13 CST
 
-This document is the rolling architecture and implementation overview for the
-project. Future feature work should update this file in place.
+本文是项目架构与实现状态的滚动总览。后续功能变更应同步更新本文。
 
-## Current Architecture
+## 当前架构
 
 ```text
 Minecraft NPC Entity
@@ -20,56 +19,37 @@ Minecraft NPC Entity
   -> Default Behavior
 ```
 
-The project is a Java 25 Fabric mod for Minecraft 26.1.2. Minecraft-side code
-lives under `src/main/java/team/jackdaw/npcsystem`. The optional Python external
-agent scaffold lives under `agent/`.
+本项目是面向 Minecraft 26.1.2 的 Java 25 Fabric mod。Minecraft 侧代码位于 `src/main/java/team/jackdaw/npcsystem`，可选 Python 外部 agent 脚手架位于 `agent/`。
 
-Key layers:
+关键分层：
 
-- **Entity layer**: `NPCEntity` owns sensor state, task controller, chat display,
-  and the bridge to the NPC agent object.
-- **Sensor layer**: `NpcSensorState` records passive world state every tick
-  window, including nearby players/NPCs/entities, weather, biome, health,
-  position, task state, and recent chat.
-- **Observe layer**: `ObservationCollector` compares sensor snapshots and emits
-  structured `ObservationEvent` records.
-- **AI/context layer**: `NPC` stores recent and important observation events and
-  exposes context to conversations and external agent requests.
-- **External agent layer**: Java DTOs define fast/deliberate JSON protocols;
-  Python FastAPI + Pydantic AI scaffold receives those requests and manages
-  per-NPC conversation context.
-- **Tool layer**: `FunctionManager` exposes callable tools and tool descriptors.
-  Tool results use a stable `status/code/message/data/retryable` shape.
-- **Task layer**: `NpcTaskController` runs one low-level Minecraft task at a time,
-  with source priority and a FIFO queue for interrupted or waiting tasks.
-- **Default behavior layer**: idle NPCs can look around, stroll, or wait without
-  calling the external agent.
+- **实体层**：`NPCEntity` 持有 sensor 状态、任务控制器、聊天显示和 NPC agent 对象桥接。
+- **Sensor 层**：`NpcSensorState` 周期性记录附近玩家、NPC、实体、天气、生物群系、生命值、位置、任务状态和最近聊天。
+- **Observe 层**：`ObservationCollector` 比较 sensor 快照并生成结构化 `ObservationEvent`。
+- **AI/context 层**：`NPC` 保存最近事件和重要事件，并向 conversation 与外部 agent 请求暴露上下文。
+- **外部 agent 层**：Java DTO 定义 fast/deliberate JSON 协议；Python FastAPI + Pydantic AI 接收请求并管理每个 NPC 的上下文。
+- **Tool 层**：`FunctionManager` 暴露可调用工具和 descriptor，tool result 使用稳定的 `status/code/message/data/retryable` 结构。
+- **Task 层**：`NpcTaskController` 同时只运行一个低层 Minecraft task，并用优先级和 FIFO 队列管理等待任务。
+- **默认行为层**：空闲 NPC 可在不调用外部 agent 的情况下看向周围、闲逛或等待。
 
-## Implemented
+## 已实现
 
-- MC 26.1.2 / Fabric migration with Java 25 and Gradle 9.5.1.
-- Java-side LLM calls and local long-term memory have been removed; persistent
-  context is owned by the external agent.
-- Basic NPC sensor state and observation-event buffering.
-- Event types for players, NPCs, chat, weather, health, and task state changes.
-- Project-owned `NpcTask` and `NpcTaskController`.
-- Task sources and priorities:
-  - `PLAYER`
-  - `AGENT`
-  - `SYSTEM`
-  - `DEFAULT`
-- FIFO task queue for player/agent/system tasks, with default behavior kept out
-  of the persistent queue.
-- Vanilla villager Brain behavior is suppressed for custom NPC entities so the
-  custom task controller owns navigation and look behavior.
-- Basic task implementations:
-  - look at entity
-  - walk to entity
-  - follow entity
-  - wait
-  - idle look around
-  - random stroll
-- Tool wrappers for NPC actions:
+- 已迁移到 MC 26.1.2 / Fabric，使用 Java 25 与 Gradle 9.5.1。
+- Java 侧本地 LLM 调用和本地长期记忆已移除；持久上下文由外部 agent 管理。
+- 基础 NPC sensor 状态与 observe 事件缓冲。
+- 玩家、NPC、聊天、天气、生命值和任务状态等事件类型。
+- 项目自有 `NpcTask` 与 `NpcTaskController`。
+- 任务来源与优先级：`PLAYER`、`AGENT`、`SYSTEM`、`DEFAULT`。
+- 玩家/agent/system 任务 FIFO 队列；默认行为不进入持久队列。
+- 自定义 NPC 禁用原版村民 Brain 行为，由项目任务控制器接管导航和看向控制。
+- 基础 task：
+  - 看向实体
+  - 走向实体
+  - 跟随实体
+  - 等待
+  - 空闲看向周围
+  - 随机闲逛
+- NPC action tool：
   - `look_at_player`
   - `look_at_npc`
   - `walk_to_player`
@@ -78,93 +58,95 @@ Key layers:
   - `wait`
   - `stop_task`
   - `resume_default_behavior`
-- External agent protocol:
-  - compact `fast` mode
-  - richer `deliberate` mode
-  - `speech` field for normal replies
-  - up to two actions per response
-  - AGENT task batch completion callback
-- Python external agent scaffold:
+- 外部 agent 协议：
+  - 紧凑 `fast` 模式
+  - 完整 `deliberate` 模式
+  - `speech` 字段用于普通回复
+  - 每次响应最多 2 个真实 action
+  - AGENT 任务批次完成回调
+- Python 外部 agent 脚手架：
   - FastAPI server
   - Pydantic schemas
-  - selectable model provider: `ollama`, `deepseek`, or `openai-compatible`
-  - per-NPC/Master context store under `config/npc-system/agent-state`
-  - template-based first context creation from `agent/templates`
-  - Pydantic AI `message_history` persistence through `messages.json`
-  - model-generated natural-language current conversation summaries in `SUMMARY.md`
-  - model-generated natural-language long-term memory writing into `MEMORY.md`
-  - `agent/skills/dummy_skill.md` as a placeholder for shared skills
-  - deterministic stub decision path
-  - optional Pydantic AI model path
-- Java external agent integration:
+  - 可选模型供应商：`ollama`、`deepseek`、`openai-compatible`
+  - 每个 NPC/Master 独立上下文目录：`config/npc-system/agent-state`
+  - 首次创建上下文时复制 `agent/templates`
+  - 通过 `messages.json` 持久化 Pydantic AI `message_history`
+  - 用大模型生成 `SUMMARY.md` 当前会话自然语言摘要
+  - 会话结束时用大模型写入 `MEMORY.md` 长期自然语言记忆
+  - `agent/skills/dummy_skill.md` 作为共享 skill 占位
+  - deterministic stub 决策路径
+  - 可选 Pydantic AI 模型路径
+- Java 外部 agent 集成：
   - `ExternalAgentClient`
   - `AgentRequestBuilder`
   - `AgentActionExecutor`
-  - NPC conversation routing to the external agent without Java LLM fallback.
-- Master external agent integration:
-  - same fast/deliberate endpoints as NPCs
-  - `kind=master`, `permission=3`
-  - stable Java UUID and `agent-state/master/default` context directory
-  - normal administrator conversation through `speech`
-  - high-permission `call_command` guarded by Java and agent-side identity.
+  - NPC 对话路由到外部 agent，不再 fallback 到 Java 本地 LLM。
+- Master 外部 agent 集成：
+  - 复用 NPC 的 fast/deliberate endpoint
+  - `kind=master`、`permission=3`
+  - 稳定 Java UUID 和 `agent-state/master/default` 上下文目录
+  - 普通管理员对话使用 `speech`
+  - 高权限 `call_command` 由 Java 权限和 agent 身份共同约束
+- 文本气泡：
+  - `TextBubbleEntity` 使用 TextDisplay
+  - 支持背景色和透视配置
+  - 已设置 billboard，使气泡朝向玩家视角
 
-## Waiting To Implement
+## 待实现
 
-- Real in-game validation for MC 26.1.2 runtime behavior:
-  - mixins
-  - text bubbles
-  - task movement and look control
-  - external agent HTTP loop
-  - vanilla Brain suppression effects
-- More sensors:
-  - inventory
-  - equipment
-  - blocks of interest
-  - light level
-  - hostile threat details
-  - item entities
-  - status effects
-- More observe events:
-  - inventory changed
-  - item seen/picked up
-  - block/workstation discovered
-  - danger escalation
-  - path failure details
-- More task/tool capabilities:
-  - sleep / wake
-  - drop item
-  - give item
-  - pick up item
-  - move to block/coordinate
-  - use block
-  - use held item
-  - lead player to target
-  - inspect inventory
-- Agent loop improvements:
-  - deliberate mode trigger policy
-  - tool execution result reporting back to the Python agent
-  - NPC polling mailbox/outbox so agent can queue actions without waiting for a
-    Java-initiated request
-- Python agent improvements:
-  - stronger prompts
-  - integration tests against the configured external-agent model backend
-  - optional auth test coverage
-  - model output repair/fallback strategy
+- 更完整的实机验证：
+  - mixin 描述符
+  - 文本气泡显示
+  - 任务移动与看向控制
+  - 外部 agent HTTP 闭环
+  - 禁用原版 Brain 后的长期行为稳定性
+- 更多 sensor：
+  - 背包
+  - 装备
+  - 附近关键方块
+  - 光照
+  - 敌对威胁详情
+  - 物品实体
+  - 状态效果
+- 更多 observe 事件：
+  - 背包变化
+  - 看到/拾取物品
+  - 发现方块或工作站
+  - 危险升级
+  - 路径失败详情
+- 更多 task/tool：
+  - 睡觉 / 起床
+  - 丢物品
+  - 给物品
+  - 拾取物品
+  - 移动到方块或坐标
+  - 使用方块
+  - 使用手持物品
+  - 带路
+  - 检查背包
+- Agent loop 改进：
+  - deliberate 模式触发策略
+  - 更完整的工具执行结果反馈
+  - NPC mailbox/outbox，让 agent 可以在没有 Java 主动请求时排队动作
+- Python agent 改进：
+  - 更强 prompt
+  - 对真实模型后端的集成测试
+  - auth 测试覆盖
+  - 模型输出修复和 fallback 策略
 
-## Current Defaults
+## 当前默认值
 
-- External agent is disabled by default: `Config.agentEnabled = false`.
-- Default agent endpoint: `http://127.0.0.1:8765`.
-- Default Java agent mode: `fast`.
-- Default Python agent mode: `pydantic_ai`.
-- Default Python model provider: `ollama`.
-- Java does not call local LLMs directly. If the external agent is disabled or
-  unavailable, NPCs use fixed fallback text and default behavior.
+- 外部 agent 默认关闭：`Config.agentEnabled = false`。
+- 默认 agent endpoint：`http://127.0.0.1:8765`。
+- 默认 Java agent 模式：`fast`。
+- 默认 Python agent 模式：`pydantic_ai`。
+- 默认 Python 模型供应商：`ollama`。
+- Java 不直接调用本地 LLM。外部 agent 禁用或不可用时，NPC 使用固定 fallback 文本并恢复默认行为。
 
-## Documentation Map
+## 文档索引
 
-- `docs/AGENT_INTERFACE.md`: external agent JSON protocol.
-- `docs/FOUNDATION_PLAN.md`: foundation design notes for sensor/observe/tool/task.
-- `docs/MIGRATION_REPORT.md`: MC 26.1.2 migration report.
-- `docs/NPC_RUNTIME_CAPABILITIES.md`: current in-game NPC runtime capabilities.
-- `agent/README.md`: Python external agent scaffold usage.
+- `docs/AGENT_INTERFACE.md`：外部 agent JSON 协议。
+- `docs/FOUNDATION_PLAN.md`：sensor / observe / tool / task 基础能力设计。
+- `docs/MIGRATION_REPORT.md`：MC 26.1.2 迁移报告。
+- `docs/NPC_RUNTIME_CAPABILITIES.md`：当前游戏内 NPC 运行能力。
+- `agent/README.md`：Python 外部 agent 脚手架使用说明。
