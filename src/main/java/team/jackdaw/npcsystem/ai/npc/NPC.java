@@ -30,7 +30,14 @@ public class NPC extends Agent {
                 "follow_player",
                 "wait",
                 "stop_task",
-                "resume_default_behavior"
+                "resume_default_behavior",
+                "inspect_inventory",
+                "pickup_nearby_item",
+                "drop_item",
+                "give_item",
+                "observe_functional_blocks",
+                "walk_to_block",
+                "walk_to_functional_block"
         ));
     }
 
@@ -102,7 +109,7 @@ public class NPC extends Agent {
 
     @Override
     public String getInstruction() {
-        return "Your are a Minecraft NPC. You can talk in Chinese and keep responses within 30 words. Use tools when you need to move, look at someone, follow, wait, or stop.";
+        return "You are a Minecraft NPC. Reply in Chinese with the speech field. Use tools when you need to move, look, follow, wait, manage inventory, pick up or give items, or inspect functional blocks.";
     }
 
     @Override

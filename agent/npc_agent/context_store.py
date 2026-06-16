@@ -55,6 +55,7 @@ class AgentContext:
     agent_id: str
     kind: str
     max_history_bytes: int
+    skills_dir: Path | None = None
 
     @property
     def agents_path(self) -> Path:
@@ -195,14 +196,28 @@ class AgentContext:
         return True
 
     def render_context_instructions(self) -> str:
-        return "\n\n".join(
-            [
-                self.agents_path.read_text(encoding="utf-8").strip(),
-                self.solu_path.read_text(encoding="utf-8").strip(),
-                self.summary_path.read_text(encoding="utf-8").strip(),
-                self.memory_path.read_text(encoding="utf-8").strip(),
-            ]
-        )
+        sections = [
+            self.agents_path.read_text(encoding="utf-8").strip(),
+            self.solu_path.read_text(encoding="utf-8").strip(),
+            self.summary_path.read_text(encoding="utf-8").strip(),
+            self.memory_path.read_text(encoding="utf-8").strip(),
+        ]
+        skills = self.render_skills()
+        if skills:
+            sections.append(skills)
+        return "\n\n".join(sections)
+
+    def render_skills(self) -> str:
+        if self.skills_dir is None or not self.skills_dir.exists() or not self.skills_dir.is_dir():
+            return ""
+        parts: list[str] = []
+        for path in sorted(self.skills_dir.glob("*.md")):
+            text = path.read_text(encoding="utf-8").strip()
+            if text:
+                parts.append(f"## Skill: {path.stem}\n\n{text}")
+        if not parts:
+            return ""
+        return "# Shared Skills\n\n" + "\n\n".join(parts)
 
     @staticmethod
     def _write_default(path: Path, content: str, template_path: Path | None = None) -> None:
@@ -216,6 +231,7 @@ class AgentContext:
 class AgentContextStore:
     def __init__(self, config: AgentConfig):
         self.base = Path(config.state_dir)
+        self.skills_dir = Path(config.skills_dir)
         self.max_history_bytes = config.max_history_bytes
         self._cleanup_legacy_storage_dirs()
 
@@ -239,6 +255,7 @@ class AgentContextStore:
             agent_id=safe_id,
             kind=safe_kind,
             max_history_bytes=self.max_history_bytes,
+            skills_dir=self.skills_dir,
         )
         context.initialize()
         return context

@@ -19,6 +19,7 @@ public final class ObservationCollector {
         collectWorldEvents(previous, current, events);
         collectPlayerEvents(previous, current, events);
         collectNpcEvents(previous, current, events);
+        collectFunctionalBlockEvents(previous, current, events);
         collectChatEvents(previous, current, events);
         collectTaskEvents(previous, current, events);
         return events;
@@ -138,6 +139,35 @@ public final class ObservationCollector {
         }
     }
 
+    private static void collectFunctionalBlockEvents(NpcSensorState.Snapshot previous, NpcSensorState.Snapshot current, List<ObservationEvent> events) {
+        Map<String, FunctionalBlockScanner.FunctionalBlockSummary> previousBlocks = byBlockKey(previous.functionalBlocks());
+        Map<String, FunctionalBlockScanner.FunctionalBlockSummary> currentBlocks = byBlockKey(current.functionalBlocks());
+        for (String key : currentBlocks.keySet()) {
+            if (!previousBlocks.containsKey(key)) {
+                FunctionalBlockScanner.FunctionalBlockSummary block = currentBlocks.get(key);
+                events.add(new ObservationEvent(
+                        ObservationType.STATUS_CHANGED,
+                        4,
+                        "发现附近功能方块 " + block.blockId() + "，位置 " + block.pos().toShortString() + "，距离约 " + formatDistance(block.distance()) + " 格。",
+                        current.lastUpdatedGameTime(),
+                        Map.of("block", block.blockId(), "category", block.category(), "pos", block.pos().toShortString())
+                ));
+            }
+        }
+        for (String key : previousBlocks.keySet()) {
+            if (!currentBlocks.containsKey(key)) {
+                FunctionalBlockScanner.FunctionalBlockSummary block = previousBlocks.get(key);
+                events.add(new ObservationEvent(
+                        ObservationType.STATUS_CHANGED,
+                        3,
+                        "附近功能方块 " + block.blockId() + " 不再处于感知范围内。",
+                        current.lastUpdatedGameTime(),
+                        Map.of("block", block.blockId(), "category", block.category(), "pos", block.pos().toShortString())
+                ));
+            }
+        }
+    }
+
     private static void collectChatEvents(NpcSensorState.Snapshot previous, NpcSensorState.Snapshot current, List<ObservationEvent> events) {
         Set<String> previousChats = previous.heardChats().stream().map(ObservationCollector::chatKey).collect(Collectors.toSet());
         for (NpcSensorState.HeardChat chat : current.heardChats()) {
@@ -186,6 +216,10 @@ public final class ObservationCollector {
 
     private static Map<String, NpcSensorState.EntitySummary> byUuid(List<NpcSensorState.EntitySummary> entities) {
         return entities.stream().collect(Collectors.toMap(NpcSensorState.EntitySummary::uuid, Function.identity(), (a, b) -> a));
+    }
+
+    private static Map<String, FunctionalBlockScanner.FunctionalBlockSummary> byBlockKey(List<FunctionalBlockScanner.FunctionalBlockSummary> blocks) {
+        return blocks.stream().collect(Collectors.toMap(block -> block.blockId() + "@" + block.pos().toShortString(), Function.identity(), (a, b) -> a));
     }
 
     private static String chatKey(NpcSensorState.HeardChat chat) {

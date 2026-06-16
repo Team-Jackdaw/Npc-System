@@ -15,6 +15,7 @@ class AgentConfig:
     port: int = 8765
     auth_token: str = ""
     state_dir: str = "config/npc-system/agent-state"
+    skills_dir: str = "agent/skills"
     max_history_bytes: int = 65536
 
 
@@ -33,6 +34,7 @@ def load_config() -> AgentConfig:
         port=int(os.getenv("NPC_AGENT_PORT", "8765")),
         auth_token=os.getenv("NPC_AGENT_AUTH_TOKEN", ""),
         state_dir=os.getenv("NPC_AGENT_STATE_DIR", "config/npc-system/agent-state"),
+        skills_dir=os.getenv("NPC_AGENT_SKILLS_DIR", "agent/skills"),
         max_history_bytes=int(os.getenv("NPC_AGENT_MAX_HISTORY_BYTES", "65536")),
     )
 

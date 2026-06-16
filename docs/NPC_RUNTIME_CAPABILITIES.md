@@ -1,6 +1,6 @@
 # NPC 运行能力说明
 
-最后更新：2026-06-13 CST
+最后更新：2026-06-16 CST
 
 本文按当前代码实现说明 NPC 在游戏中可以预期完成的任务、运行循环、玩家交互、外部 agent 协议、可调用接口和记忆存储方式。
 
@@ -15,9 +15,15 @@
 - 跟随玩家：在限定时间内跟随目标玩家并保持距离。
 - 等待：停止导航并持续若干秒。
 - 停止任务：取消当前任务并清空任务队列。
+- 检查背包：返回 NPC 背包内物品摘要。
+- 捡起附近掉落物：移动到附近掉落物并合并进 NPC 背包。
+- 丢出物品：从 NPC 背包取出物品并丢在附近。
+- 给玩家物品：从 NPC 背包取出物品并尝试放入玩家背包，玩家背包满时掉落到附近。
+- 观察功能方块：扫描附近床、箱子、工作台、熔炉、工作站等功能方块。
+- 走向方块：走到指定坐标或最近匹配的功能方块附近。
 - 多 action 队列：agent 可一次返回最多 2 个真实动作；`speech` 不占 action 数量，并由 Java 端先发送。
 
-当前还不能可靠完成睡觉、使用工作方块、使用方块、拿取/丢弃物品、战斗、采集、背包管理、路径规划链式任务等复杂行为。`MeetPlayerTask`、`MeetNPCTask`、`FollowChatTargetTask` 目前只是占位类，不应视为可用 task。
+当前还不能可靠完成睡觉、使用工作方块、开箱、合成、烧炼、战斗、采集、复杂路径规划链式任务等复杂行为。`MeetPlayerTask`、`MeetNPCTask`、`FollowChatTargetTask` 目前只是占位类，不应视为可用 task。
 
 ## 已实现的 Sensor
 
@@ -26,7 +32,9 @@
 - 自身位置、维度、生物群系、天气、世界时间。
 - 生命值、最大生命值、是否在地面、是否在水中。
 - 当前任务状态和任务队列长度。
+- NPC 原版村民背包摘要，包括物品 id、数量和槽位占用。
 - 感知范围内最多 8 个玩家、8 个 NPC、8 个其他存活实体。
+- 附近最多 12 个功能方块，包括方块 id、分类、坐标和距离。
 - 实体名称、类型、距离、是否有视线。
 - 玩家是否正在看向该 NPC。
 - 最近听到的最多 8 条玩家聊天。
@@ -53,6 +61,7 @@
 - NPC 进入/离开范围。
 - 听到聊天。
 - 任务开始、完成、失败、取消。
+- 发现或丢失附近功能方块。
 
 NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会进入 `importantEvents`，同样最多 32 条。
 
@@ -70,6 +79,13 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 | `wait` | task | 等待，对应 `WaitTask` |
 | `stop_task` | task | 停止当前任务并清空队列 |
 | `resume_default_behavior` | tool | 结束 agent 等待状态并恢复默认行为 |
+| `inspect_inventory` | tool | 查看 NPC 背包摘要 |
+| `pickup_nearby_item` | task | 走向并拾取附近掉落物 |
+| `drop_item` | tool | 从 NPC 背包丢出物品 |
+| `give_item` | tool | 把 NPC 背包物品交给玩家 |
+| `observe_functional_blocks` | tool | 扫描附近功能方块 |
+| `walk_to_block` | task | 走到指定方块坐标附近 |
+| `walk_to_functional_block` | task | 走到最近匹配功能方块附近 |
 | `end_conversation` | tool | 结束当前对话 |
 
 另外还有 `call_command`，但它的权限等级为 3，默认 NPC 权限不能调用。`NoCallableFunction` 可从 `config/npc-system/functions/*.json` 动态加载数据包函数桥接 tool。
@@ -232,7 +248,20 @@ Deliberate 模式使用完整字段，适合更长推理：
       "position": {"x": 10, "y": 64, "z": -5},
       "dimension": "minecraft:overworld",
       "biome": "minecraft:plains",
-      "weather": "clear"
+      "weather": "clear",
+      "inventory": {
+        "occupied_slots": 1,
+        "total_slots": 8,
+        "items": [{"id": "minecraft:apple", "count": 2}]
+      },
+      "functional_blocks": [
+        {
+          "blockId": "minecraft:crafting_table",
+          "category": "crafting",
+          "pos": {"x": 12, "y": 64, "z": -6},
+          "distance": 2.2
+        }
+      ]
     }
   },
   "observations": {
@@ -320,6 +349,13 @@ agent 实际可调用接口来自当前 NPC agent 的 tool 列表，并由 `Func
 - `wait(seconds)`
 - `stop_task()`
 - `resume_default_behavior()`
+- `inspect_inventory()`
+- `pickup_nearby_item(item?, count?, max_distance?, timeout_seconds?)`
+- `drop_item(item, count?)`
+- `give_item(player, item, count?)`
+- `observe_functional_blocks(radius?)`
+- `walk_to_block(x, y, z, stop_distance?, timeout_seconds?)`
+- `walk_to_functional_block(block_type, radius?, stop_distance?, timeout_seconds?)`
 - `end_conversation()`
 
 Master 专用接口：
@@ -354,5 +390,5 @@ Master 专用接口：
 最需要继续补齐的是：
 
 - 玩家交互直接映射到 `PLAYER` 优先级任务。
-- 背包、物品、方块、威胁、睡觉、工作站等 Minecraft 核心玩法能力。
+- 使用方块、威胁处理、睡觉、工作站等 Minecraft 核心玩法能力。
 - Agent polling mailbox/outbox，让 agent 可以在没有 Java 主动请求时排队下发 action。

@@ -126,7 +126,13 @@ public class AgentRequestBuilder {
                     "position", Map.of("x", snapshot.position().getX(), "y", snapshot.position().getY(), "z", snapshot.position().getZ()),
                     "dimension", snapshot.dimension(),
                     "biome", snapshot.biome(),
-                    "weather", snapshot.weather()
+                    "weather", snapshot.weather(),
+                    "inventory", Map.of(
+                            "occupied_slots", snapshot.inventory().occupiedSlots(),
+                            "total_slots", snapshot.inventory().totalSlots(),
+                            "items", snapshot.inventory().items()
+                    ),
+                    "functional_blocks", compactBlocks(snapshot.functionalBlocks())
             );
         }
         return dto;
@@ -214,6 +220,19 @@ public class AgentRequestBuilder {
     private static List<String> compactEntities(List<NpcSensorState.EntitySummary> entities) {
         return entities.stream()
                 .map(entity -> entity.name() + "@" + String.format(Locale.ROOT, "%.1f", entity.distance()))
+                .toList();
+    }
+
+    private static List<Map<String, Object>> compactBlocks(List<team.jackdaw.npcsystem.entity.sensor.FunctionalBlockScanner.FunctionalBlockSummary> blocks) {
+        return blocks.stream()
+                .map(block -> Map.<String, Object>of(
+                        "block_id", block.blockId(),
+                        "category", block.category(),
+                        "x", block.pos().getX(),
+                        "y", block.pos().getY(),
+                        "z", block.pos().getZ(),
+                        "distance", Double.parseDouble(String.format(Locale.ROOT, "%.1f", block.distance()))
+                ))
                 .toList();
     }
 

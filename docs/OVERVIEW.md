@@ -1,6 +1,6 @@
 # NPC 系统总览
 
-最后更新：2026-06-13 CST
+最后更新：2026-06-16 CST
 
 本文是项目架构与实现状态的滚动总览。后续功能变更应同步更新本文。
 
@@ -24,7 +24,7 @@ Minecraft NPC Entity
 关键分层：
 
 - **实体层**：`NPCEntity` 持有 sensor 状态、任务控制器、聊天显示和 NPC agent 对象桥接。
-- **Sensor 层**：`NpcSensorState` 周期性记录附近玩家、NPC、实体、天气、生物群系、生命值、位置、任务状态和最近聊天。
+- **Sensor 层**：`NpcSensorState` 周期性记录附近玩家、NPC、实体、天气、生物群系、生命值、位置、任务状态、背包、附近功能方块和最近聊天。
 - **Observe 层**：`ObservationCollector` 比较 sensor 快照并生成结构化 `ObservationEvent`。
 - **AI/context 层**：`NPC` 保存最近事件和重要事件，并向 conversation 与外部 agent 请求暴露上下文。
 - **外部 agent 层**：Java DTO 定义 fast/deliberate JSON 协议；Python FastAPI + Pydantic AI 接收请求并管理每个 NPC 的上下文。
@@ -37,7 +37,7 @@ Minecraft NPC Entity
 - 已迁移到 MC 26.1.2 / Fabric，使用 Java 25 与 Gradle 9.5.1。
 - Java 侧本地 LLM 调用和本地长期记忆已移除；持久上下文由外部 agent 管理。
 - 基础 NPC sensor 状态与 observe 事件缓冲。
-- 玩家、NPC、聊天、天气、生命值和任务状态等事件类型。
+- 玩家、NPC、聊天、天气、生命值、任务状态和功能方块发现等事件类型。
 - 项目自有 `NpcTask` 与 `NpcTaskController`。
 - 任务来源与优先级：`PLAYER`、`AGENT`、`SYSTEM`、`DEFAULT`。
 - 玩家/agent/system 任务 FIFO 队列；默认行为不进入持久队列。
@@ -49,6 +49,8 @@ Minecraft NPC Entity
   - 等待
   - 空闲看向周围
   - 随机闲逛
+  - 走向方块
+  - 捡起附近掉落物
 - NPC action tool：
   - `look_at_player`
   - `look_at_npc`
@@ -58,6 +60,13 @@ Minecraft NPC Entity
   - `wait`
   - `stop_task`
   - `resume_default_behavior`
+  - `inspect_inventory`
+  - `pickup_nearby_item`
+  - `drop_item`
+  - `give_item`
+  - `observe_functional_blocks`
+  - `walk_to_block`
+  - `walk_to_functional_block`
 - 外部 agent 协议：
   - 紧凑 `fast` 模式
   - 完整 `deliberate` 模式
@@ -73,7 +82,7 @@ Minecraft NPC Entity
   - 通过 `messages.json` 持久化 Pydantic AI `message_history`
   - 用大模型生成 `SUMMARY.md` 当前会话自然语言摘要
   - 会话结束时用大模型写入 `MEMORY.md` 长期自然语言记忆
-  - `agent/skills/dummy_skill.md` 作为共享 skill 占位
+  - `agent/skills/*.md` 作为共享 skill 注入 prompt
   - deterministic stub 决策路径
   - 可选 Pydantic AI 模型路径
 - Java 外部 agent 集成：
@@ -101,9 +110,7 @@ Minecraft NPC Entity
   - 外部 agent HTTP 闭环
   - 禁用原版 Brain 后的长期行为稳定性
 - 更多 sensor：
-  - 背包
   - 装备
-  - 附近关键方块
   - 光照
   - 敌对威胁详情
   - 物品实体
@@ -111,19 +118,14 @@ Minecraft NPC Entity
 - 更多 observe 事件：
   - 背包变化
   - 看到/拾取物品
-  - 发现方块或工作站
   - 危险升级
   - 路径失败详情
 - 更多 task/tool：
   - 睡觉 / 起床
-  - 丢物品
-  - 给物品
-  - 拾取物品
-  - 移动到方块或坐标
   - 使用方块
   - 使用手持物品
   - 带路
-  - 检查背包
+  - 复杂多步采集/合成/烧炼
 - Agent loop 改进：
   - deliberate 模式触发策略
   - 更完整的工具执行结果反馈

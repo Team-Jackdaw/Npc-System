@@ -14,5 +14,12 @@ public class FunctionRegistration {
         FunctionManager.getInstance().register("wait", new WaitFunction());
         FunctionManager.getInstance().register("stop_task", new StopTaskFunction());
         FunctionManager.getInstance().register("resume_default_behavior", new ResumeDefaultBehaviorFunction());
+        FunctionManager.getInstance().register("inspect_inventory", new InspectInventoryFunction());
+        FunctionManager.getInstance().register("pickup_nearby_item", new PickupNearbyItemFunction());
+        FunctionManager.getInstance().register("drop_item", new DropItemFunction());
+        FunctionManager.getInstance().register("give_item", new GiveItemFunction());
+        FunctionManager.getInstance().register("observe_functional_blocks", new ObserveFunctionalBlocksFunction());
+        FunctionManager.getInstance().register("walk_to_block", new WalkToBlockFunction());
+        FunctionManager.getInstance().register("walk_to_functional_block", new WalkToFunctionalBlockFunction());
     }
 }

@@ -55,6 +55,25 @@ public class ObservationCollectorTest {
         assertTrue(events.stream().anyMatch(event -> event.type() == ObservationType.TASK_STARTED));
     }
 
+    @Test
+    public void detectsFunctionalBlockEnteredRange() {
+        NpcSensorState.Snapshot previous = snapshot(List.of(), List.of(), List.of(), "clear", 20.0f, "idle", List.of());
+        NpcSensorState.Snapshot current = snapshot(
+                List.of(),
+                List.of(),
+                List.of(),
+                "clear",
+                20.0f,
+                "idle",
+                List.of(),
+                List.of(new FunctionalBlockScanner.FunctionalBlockSummary("minecraft:crafting_table", "crafting", new BlockPos(1, 64, 1), 2.0))
+        );
+
+        List<ObservationEvent> events = ObservationCollector.collect(previous, current, null);
+
+        assertTrue(events.stream().anyMatch(event -> event.text().contains("发现附近功能方块 minecraft:crafting_table")));
+    }
+
     private static NpcSensorState.EntitySummary player(String uuid, String name, boolean lookingAtNpc) {
         return new NpcSensorState.EntitySummary(uuid, name, "minecraft:player", 3.0, true, lookingAtNpc);
     }
@@ -67,6 +86,19 @@ public class ObservationCollectorTest {
             float health,
             String taskStatus,
             List<NpcSensorState.HeardChat> chats
+    ) {
+        return snapshot(players, npcs, entities, weather, health, taskStatus, chats, List.of());
+    }
+
+    private static NpcSensorState.Snapshot snapshot(
+            List<NpcSensorState.EntitySummary> players,
+            List<NpcSensorState.EntitySummary> npcs,
+            List<NpcSensorState.EntitySummary> entities,
+            String weather,
+            float health,
+            String taskStatus,
+            List<NpcSensorState.HeardChat> chats,
+            List<FunctionalBlockScanner.FunctionalBlockSummary> functionalBlocks
     ) {
         return new NpcSensorState.Snapshot(
                 players,
@@ -83,7 +115,9 @@ public class ObservationCollectorTest {
                 true,
                 false,
                 10L,
-                taskStatus
+                taskStatus,
+                new NpcInventorySummary(0, 8, 0, List.of()),
+                functionalBlocks
         );
     }
 }

@@ -21,6 +21,34 @@ def test_context_store_creates_default_files(tmp_path):
     assert (context.root / "history.jsonl").exists()
 
 
+def test_context_store_injects_shared_skills(tmp_path):
+    skills_dir = tmp_path / "skills"
+    skills_dir.mkdir()
+    (skills_dir / "movement.md").write_text("# Movement\n\nUse look_at_player.", encoding="utf-8")
+    config = AgentConfig(state_dir=str(tmp_path / "state"), skills_dir=str(skills_dir))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    rendered = context.render_context_instructions()
+    assert "# Shared Skills" in rendered
+    assert "Skill: movement" in rendered
+    assert "Use look_at_player." in rendered
+
+
+def test_context_store_ignores_missing_skills_dir(tmp_path):
+    config = AgentConfig(state_dir=str(tmp_path / "state"), skills_dir=str(tmp_path / "missing"))
+    request = DeliberateAgentRequest.model_validate(
+        {"request_id": "r1", "npc": {"uuid": "npc-1", "kind": "npc"}}
+    )
+
+    context = AgentContextStore(config).for_deliberate(request)
+
+    assert "# Shared Skills" not in context.render_context_instructions()
+
+
 def test_context_store_removes_legacy_memory_and_rag_dirs(tmp_path):
     state_dir = tmp_path / "config" / "npc-system" / "agent-state"
     legacy_memory = state_dir.parent / "memory"

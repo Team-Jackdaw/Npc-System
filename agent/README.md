@@ -39,6 +39,7 @@ Environment variables:
 - `NPC_AGENT_PORT`: defaults to `8765`.
 - `NPC_AGENT_AUTH_TOKEN`: optional bearer token.
 - `NPC_AGENT_STATE_DIR`: defaults to `config/npc-system/agent-state`.
+- `NPC_AGENT_SKILLS_DIR`: defaults to `agent/skills`.
 - `NPC_AGENT_MAX_HISTORY_BYTES`: defaults to `65536`.
 
 ## Context Storage
@@ -54,8 +55,9 @@ On first creation, each context directory copies Markdown files from
 `SOLU.md`, `SUMMARY.md`, and `MEMORY.md`. Existing runtime files are never
 overwritten.
 
-Shared skills live under `agent/skills`. `dummy_skill.md` is a placeholder for
-the future skill-loading system and is not injected into prompts yet.
+Shared skills live under `agent/skills`. Markdown files in this directory are
+loaded into the prompt for every NPC/Master context. Use concise skill files to
+teach the agent stable mappings from player intent to structured actions.
 
 To use the offline deterministic stub:
 

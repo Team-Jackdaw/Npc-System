@@ -36,6 +36,8 @@ public class NpcSensorState {
     private boolean inWater;
     private long lastUpdatedGameTime;
     private String taskStatus = "idle";
+    private NpcInventorySummary inventory = new NpcInventorySummary(0, 0, 0, List.of());
+    private List<FunctionalBlockScanner.FunctionalBlockSummary> functionalBlocks = List.of();
 
     public void update(NPCEntity npc) {
         Level level = npc.level();
@@ -50,6 +52,8 @@ public class NpcSensorState {
         inWater = npc.isInWater();
         lastUpdatedGameTime = level.getGameTime();
         taskStatus = npc.getTaskController().status();
+        inventory = NpcInventorySummary.from(npc.getInventory());
+        functionalBlocks = FunctionalBlockScanner.scan(npc, FunctionalBlockScanner.DEFAULT_RADIUS, FunctionalBlockScanner.MAX_RESULTS);
 
         AABB rangeBox = npc.getBoundingBox().inflate(Config.range);
         nearbyPlayers = level.getEntitiesOfClass(Player.class, rangeBox, Player::isAlive)
@@ -102,6 +106,8 @@ public class NpcSensorState {
         appendEntities(builder, "附近玩家", nearbyPlayers);
         appendEntities(builder, "附近NPC", nearbyNpcs);
         appendEntities(builder, "附近实体", nearbyEntities);
+        builder.append("背包: ").append(inventory.compactText()).append("。\n");
+        appendFunctionalBlocks(builder, functionalBlocks);
         if (!heardChats.isEmpty()) {
             builder.append("最近听到的聊天: ");
             heardChats.forEach(chat -> builder.append(chat.speakerName())
@@ -124,6 +130,14 @@ public class NpcSensorState {
         return List.copyOf(heardChats);
     }
 
+    public NpcInventorySummary inventory() {
+        return inventory;
+    }
+
+    public List<FunctionalBlockScanner.FunctionalBlockSummary> functionalBlocks() {
+        return List.copyOf(functionalBlocks);
+    }
+
     public long lastUpdatedGameTime() {
         return lastUpdatedGameTime;
     }
@@ -144,7 +158,9 @@ public class NpcSensorState {
                 onGround,
                 inWater,
                 lastUpdatedGameTime,
-                taskStatus
+                taskStatus,
+                inventory,
+                List.copyOf(functionalBlocks)
         );
     }
 
@@ -159,6 +175,16 @@ public class NpcSensorState {
                 .append(", ").append(String.format(Locale.ROOT, "%.1f格", entity.distance()))
                 .append(entity.lookingAtNpc() ? ", 正看向我" : "")
                 .append("); "));
+        builder.append("\n");
+    }
+
+    private static void appendFunctionalBlocks(StringBuilder builder, List<FunctionalBlockScanner.FunctionalBlockSummary> blocks) {
+        if (blocks.isEmpty()) {
+            builder.append("附近功能方块: 无。\n");
+            return;
+        }
+        builder.append("附近功能方块: ");
+        blocks.forEach(block -> builder.append(block.compactText()).append("; "));
         builder.append("\n");
     }
 
@@ -201,10 +227,12 @@ public class NpcSensorState {
             boolean onGround,
             boolean inWater,
             long lastUpdatedGameTime,
-            String taskStatus
+            String taskStatus,
+            NpcInventorySummary inventory,
+            List<FunctionalBlockScanner.FunctionalBlockSummary> functionalBlocks
     ) {
         public static Snapshot empty() {
-            return new Snapshot(List.of(), List.of(), List.of(), List.of(), BlockPos.ZERO, "unknown", "unknown", "unknown", 0L, 0.0f, 0.0f, false, false, 0L, "idle");
+            return new Snapshot(List.of(), List.of(), List.of(), List.of(), BlockPos.ZERO, "unknown", "unknown", "unknown", 0L, 0.0f, 0.0f, false, false, 0L, "idle", new NpcInventorySummary(0, 0, 0, List.of()), List.of());
         }
 
         public String summary() {
@@ -222,6 +250,8 @@ public class NpcSensorState {
             appendEntities(builder, "附近玩家", nearbyPlayers);
             appendEntities(builder, "附近NPC", nearbyNpcs);
             appendEntities(builder, "附近实体", nearbyEntities);
+            builder.append("背包: ").append(inventory.compactText()).append("。\n");
+            appendFunctionalBlocks(builder, functionalBlocks);
             if (!heardChats.isEmpty()) {
                 builder.append("最近听到的聊天: ");
                 heardChats.forEach(chat -> builder.append(chat.speakerName())

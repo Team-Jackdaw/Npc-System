@@ -1,6 +1,6 @@
 # 外部 Agent 接口
 
-最后更新：2026-06-13 CST
+最后更新：2026-06-16 CST
 
 状态：Java 端已经具备协议 DTO、HTTP 客户端和 action 执行器；Python 端已经具备 FastAPI、Pydantic schema、Pydantic AI runner 和 per-NPC 上下文管理。启用 `Config.agentEnabled` 后，Java 会通过 HTTP 调用外部 agent。本文是当前线协议参考。
 
@@ -51,7 +51,7 @@ Fast 模式用于短回复、附近事件反应和紧急打断。它使用短字
     "n": ["Bob@5.1"],
     "e": ["Zombie@8.0"]
   },
-  "tools": ["look_at_player", "walk_to_player", "follow_player", "wait", "stop_task"],
+  "tools": ["look_at_player", "walk_to_player", "follow_player", "pickup_nearby_item", "observe_functional_blocks", "wait", "stop_task"],
   "limits": {
     "max_actions": 2,
     "max_reply_chars": 60
@@ -114,7 +114,20 @@ Deliberate 模式用于复杂计划、记忆参与和较长交互。它使用完
       "position": {"x": 10, "y": 64, "z": -5},
       "dimension": "minecraft:overworld",
       "biome": "minecraft:plains",
-      "weather": "clear"
+      "weather": "clear",
+      "inventory": {
+        "occupied_slots": 1,
+        "total_slots": 8,
+        "items": [{"id": "minecraft:apple", "count": 2}]
+      },
+      "functional_blocks": [
+        {
+          "blockId": "minecraft:chest",
+          "category": "storage",
+          "pos": {"x": 11, "y": 64, "z": -7},
+          "distance": 3.0
+        }
+      ]
     }
   },
   "observations": {
