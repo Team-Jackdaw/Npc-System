@@ -37,7 +37,8 @@ public class NPC extends Agent {
                 "give_item",
                 "observe_functional_blocks",
                 "walk_to_block",
-                "walk_to_functional_block"
+                "walk_to_functional_block",
+                "walk_relative"
         ));
     }
 

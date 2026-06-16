@@ -25,7 +25,7 @@ public class WalkToBlockTask implements NpcTask {
 
     @Override
     public boolean canStart(NPCEntity npc) {
-        return NpcTask.super.canStart(npc) && target != null && npc.level().isLoaded(target);
+        return NpcTask.super.canStart(npc) && target != null;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class WalkToBlockTask implements NpcTask {
 
     @Override
     public boolean isFinished(NPCEntity npc) {
-        return target == null || distance(npc) <= stopDistance || ticks >= timeoutTicks || !npc.level().isLoaded(target);
+        return target == null || distance(npc) <= stopDistance || ticks >= timeoutTicks;
     }
 
     @Override

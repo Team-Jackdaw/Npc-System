@@ -84,6 +84,15 @@ Tune the test size:
 NPC_SMOKE_COUNT=100 NPC_SMOKE_SECONDS=30 ./scripts/server-smoke.sh
 ```
 
+Run a real external-agent NPC chain test using the configured provider/model/key:
+
+```bash
+./scripts/agent-chain-smoke.sh
+```
+
+This sends `/npc test chat 终端复杂流程测试` to a generated NPC and expects the
+agent to follow `agent/skills/terminal_chain_test.md`.
+
 ## 8. Documentation
 
 - [Current architecture overview](docs/OVERVIEW.md)

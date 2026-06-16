@@ -42,6 +42,8 @@ Last updated: 2026-06-16 CST
 - `/npc spawnAt <x> <y> <z> [count]`: 在指定坐标生成 NPC，可由服务端 console 执行。
 - `/npc perf <count> [seconds]`: 在世界出生点附近生成一批 NPC 并进行服务端 tick 性能采样。
 - `/npc perf status`: 查看最近一次终端性能采样结果。
+- `/npc test chat <message>`: 使用 `TerminalTester` 模拟玩家向最近 NPC 发送消息。
+- `/npc test status`: 查看最近一次终端 NPC-agent 链路测试状态。
 - `/npc debug`: 查询当前维度中距离命令源最近的 NPC 调试信息。
 - `/npc debug on`: 开启详细日志，记录玩家/NPC/agent 交互。
 - `/npc debug off`: 关闭详细日志，只保留失败日志。
@@ -90,6 +92,34 @@ Last updated: 2026-06-16 CST
    - smoke 汇总日志：`run/logs/npc-smoke.log`
    - agent stub 日志：`run/logs/npc-agent-smoke.log`
    - 插件 debug 日志：`run/config/npc-system/debug.log`
+
+## 终端 NPC-Agent 链路测试
+
+该测试使用真实 Python agent 和真实 skill，不使用 scripted agent。它用于验证“模拟玩家指令 -> agent 选择 skill -> NPC 回复并执行 task -> task 完成回调 agent -> agent 继续下一步 -> 最终结束”的服务端闭环。
+
+1. 确认当前 shell 已设置 agent 所需环境变量，例如：
+   - `NPC_AGENT_PROVIDER`
+   - `NPC_AGENT_MODEL`
+   - `NPC_AGENT_API_KEY`
+   - `NPC_AGENT_BASE_URL` 或供应商默认地址
+2. 运行：
+   ```bash
+   ./scripts/agent-chain-smoke.sh
+   ```
+3. 默认测试消息为 `终端复杂流程测试`，会触发 `agent/skills/terminal_chain_test.md`。
+4. 预期：
+   - 脚本启动真实 Python agent。
+   - 服务端生成 1 个 NPC。
+   - `/npc test chat 终端复杂流程测试` 被发送到最近 NPC。
+   - agent 逐步返回 `wait`、`look_at_player`、`walk_to_player`、`follow_player`、`wait`、`resume_default_behavior`。
+   - 服务端日志出现 `Agent follow-up result`。
+   - 服务端日志出现 `终端链路测试完成`。
+5. 日志位置：
+   - 服务端链路日志：`run/logs/npc-agent-chain-smoke.log`
+   - agent 日志：`run/logs/npc-agent-chain-agent.log`
+6. 限制：
+   - `TerminalTester` 是服务端测试锚点，不是真实网络玩家。
+   - 该测试不覆盖潜行攻击、真实聊天栏、玩家背包和客户端气泡。
 
 ## NPC 生成与默认行为
 
@@ -227,5 +257,5 @@ Last updated: 2026-06-16 CST
 
 - 还没有睡觉、工作站使用、战斗、复杂采集/合成等 Minecraft 行为。
 - 玩家交互目前主要走对话和 agent，不直接生成 `PLAYER` 优先级 task。
-- 外部 agent 每次最多返回 2 个 action，主要用于 `say + do`。
+- 外部 agent 每次最多返回 2 个 action；普通回复使用 `speech` 字段，不再使用 `say` task。
 - agent 主动下发 action 的 polling mailbox/outbox 尚未实现；当前仍依赖 Java 主动请求和 task callback。

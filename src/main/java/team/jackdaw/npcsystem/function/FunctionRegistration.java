@@ -21,5 +21,6 @@ public class FunctionRegistration {
         FunctionManager.getInstance().register("observe_functional_blocks", new ObserveFunctionalBlocksFunction());
         FunctionManager.getInstance().register("walk_to_block", new WalkToBlockFunction());
         FunctionManager.getInstance().register("walk_to_functional_block", new WalkToFunctionalBlockFunction());
+        FunctionManager.getInstance().register("walk_relative", new WalkRelativeFunction());
     }
 }

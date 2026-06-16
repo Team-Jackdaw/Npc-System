@@ -161,6 +161,9 @@ public class AgentRequestBuilder {
     }
 
     private static String speakerName(ConversationWindow window) {
+        if (window.getSyntheticSpeakerName() != null && !window.getSyntheticSpeakerName().isBlank()) {
+            return window.getSyntheticSpeakerName();
+        }
         if (window.getTarget() == null) {
             return "";
         }

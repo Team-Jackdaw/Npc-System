@@ -43,6 +43,7 @@ public class ConversationWindow {
     private String lastUserMessage = "";
     private String lastAssistantMessage = "";
     private String lastAgentResultSummary = "";
+    private String syntheticSpeakerName = "";
 
     public ConversationWindow(UUID uuid) {
         this.uuid = uuid;
@@ -58,6 +59,14 @@ public class ConversationWindow {
 
     public void setTarget(UUID target) {
         this.target = target;
+    }
+
+    public String getSyntheticSpeakerName() {
+        return syntheticSpeakerName;
+    }
+
+    public void setSyntheticSpeakerName(String syntheticSpeakerName) {
+        this.syntheticSpeakerName = syntheticSpeakerName == null ? "" : syntheticSpeakerName;
     }
 
     public String getLastMessage() {

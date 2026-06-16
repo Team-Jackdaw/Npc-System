@@ -102,8 +102,10 @@ Minecraft NPC Entity
   - 已设置 billboard，使气泡朝向玩家视角
 - 终端测试入口：
   - `scripts/server-smoke.sh` 可启动无客户端 dedicated server smoke test。
+  - `scripts/agent-chain-smoke.sh` 可使用真实外部 agent 测试 NPC-agent-task callback 链路。
   - `/npc spawnAt <x> <y> <z> [count]` 支持 console 生成 NPC。
   - `/npc perf <count> [seconds]` 和 `/npc perf status` 支持基础 tick 性能采样。
+  - `/npc test chat <message>` 和 `/npc test status` 支持模拟玩家与 NPC 对话。
 
 ## 待实现
 

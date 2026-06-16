@@ -21,7 +21,7 @@ public class FollowPlayerFunction extends NpcTaskFunction {
         String playerName = stringArg(args, "player", "player_name", "target_player", "target");
         int durationTicks = secondsToTicks(args.get("seconds"), 30);
         double stopDistance = number(args.get("stop_distance"), 3.0);
-        return findPlayer(playerName)
+        return findPlayerLikeTarget(playerName)
                 .map(player -> assign(conversation, new FollowEntityTask(player, 0.6, stopDistance, durationTicks)))
                 .orElseGet(() -> failure("target_not_found", "Player not found: " + playerName, true));
     }

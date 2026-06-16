@@ -1,8 +1,10 @@
 package team.jackdaw.npcsystem.function;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.NPC_AI;
+import team.jackdaw.npcsystem.TerminalNpcTestSupport;
 import team.jackdaw.npcsystem.ai.Agent;
 import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.npc.NPC;
@@ -41,6 +43,14 @@ abstract class NpcTaskFunction extends CustomFunction {
             return Optional.empty();
         }
         return Optional.ofNullable(NPCSystem.server.getPlayerList().getPlayer(name));
+    }
+
+    protected Optional<Entity> findPlayerLikeTarget(String name) {
+        Optional<ServerPlayer> player = findPlayer(name);
+        if (player.isPresent()) {
+            return Optional.of(player.get());
+        }
+        return TerminalNpcTestSupport.findTarget(name);
     }
 
     protected static String stringArg(Map<String, Object> args, String primary, String... aliases) {

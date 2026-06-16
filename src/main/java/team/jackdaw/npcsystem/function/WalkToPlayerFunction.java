@@ -21,7 +21,7 @@ public class WalkToPlayerFunction extends NpcTaskFunction {
         String playerName = stringArg(args, "player", "player_name", "target_player", "target");
         double stopDistance = number(args.get("stop_distance"), 2.0);
         int timeoutTicks = secondsToTicks(args.get("timeout_seconds"), 15);
-        return findPlayer(playerName)
+        return findPlayerLikeTarget(playerName)
                 .map(player -> assign(conversation, new WalkToEntityTask(player, 0.6, stopDistance, timeoutTicks)))
                 .orElseGet(() -> failure("target_not_found", "Player not found: " + playerName, true));
     }
