@@ -64,7 +64,27 @@ around NPC (in the **Chat bar**).
 2. Run `./gradlew build` in the root directory of the repository.
 3. The jar file will be generated in the `build/libs` directory.
 
-## 7. Documentation
+## 7. Terminal Smoke Test
+
+Run a dedicated server smoke test without opening a Minecraft client:
+
+```bash
+./scripts/server-smoke.sh
+```
+
+Run the same test with the Python stub agent:
+
+```bash
+NPC_SMOKE_AGENT=1 ./scripts/server-smoke.sh
+```
+
+Tune the test size:
+
+```bash
+NPC_SMOKE_COUNT=100 NPC_SMOKE_SECONDS=30 ./scripts/server-smoke.sh
+```
+
+## 8. Documentation
 
 - [Current architecture overview](docs/OVERVIEW.md)
 - [External agent interface](docs/AGENT_INTERFACE.md)
@@ -72,6 +92,6 @@ around NPC (in the **Chat bar**).
 - [MC 26.1.2 migration report](docs/MIGRATION_REPORT.md)
 - [Python external agent scaffold](agent/README.md)
 
-## 8. Overall structure:
+## 9. Overall structure:
 
 ![Structure](NPC-System.png)

@@ -1,9 +1,11 @@
 package team.jackdaw.npcsystem;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.Commands.CommandSelection;
 import net.minecraft.server.permissions.LevelBasedPermissionSet;
@@ -45,6 +47,9 @@ public class CommandSet {
     };
 
     private static boolean hasOPPermission(CommandSourceStack source) {
+        if (source.getEntity() == null) {
+            return true;
+        }
         return source.permissions() instanceof LevelBasedPermissionSet permissions
                 && permissions.level().isEqualOrHigherThan(PermissionLevel.GAMEMASTERS);
     }
@@ -64,6 +69,21 @@ public class CommandSet {
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::spawn)
                 )
+                .then(literal("spawnAt")
+                        .requires(CommandSet::hasOPPermission)
+                        .then(argument("x", IntegerArgumentType.integer())
+                                .then(argument("y", IntegerArgumentType.integer())
+                                        .then(argument("z", IntegerArgumentType.integer())
+                                                .executes(context -> spawnAt(context, 1))
+                                                .then(argument("count", IntegerArgumentType.integer(1, 1000))
+                                                        .executes(context -> spawnAt(context, IntegerArgumentType.getInteger(context, "count"))))))))
+                .then(literal("perf")
+                        .requires(CommandSet::hasOPPermission)
+                        .then(literal("status").executes(CommandSet::perfStatus))
+                        .then(argument("count", IntegerArgumentType.integer(1, 1000))
+                                .executes(context -> perf(context, IntegerArgumentType.getInteger(context, "count"), 20))
+                                .then(argument("seconds", IntegerArgumentType.integer(1, 300))
+                                        .executes(context -> perf(context, IntegerArgumentType.getInteger(context, "count"), IntegerArgumentType.getInteger(context, "seconds"))))))
                 .then(literal("saveAll")
                         .requires(CommandSet::hasOPPermission)
                         .executes(CommandSet::saveAll)
@@ -286,6 +306,47 @@ public class CommandSet {
         return 1;
     }
 
+    private static int spawnAt(CommandContext<CommandSourceStack> context, int count) {
+        int x = IntegerArgumentType.getInteger(context, "x");
+        int y = IntegerArgumentType.getInteger(context, "y");
+        int z = IntegerArgumentType.getInteger(context, "z");
+        int spawned = spawnBatch(context.getSource().getLevel(), new BlockPos(x, y, z), count);
+        sendFeedback(context, Component.literal("[npc-system] Spawned " + spawned + " NPC(s) near " + x + ", " + y + ", " + z + "."), true);
+        return spawned;
+    }
+
+    private static int perf(CommandContext<CommandSourceStack> context, int count, int seconds) {
+        if (TerminalPerfMonitor.isRunning()) {
+            sendFeedback(context, Component.literal("[npc-system] Perf sampling is already running: " + TerminalPerfMonitor.status().summary()), false);
+            return 0;
+        }
+        ServerLevel level = context.getSource().getLevel();
+        BlockPos center = level.getRespawnData().pos().offset(0, 1, 0);
+        int spawned = spawnBatch(level, center, count);
+        TerminalPerfMonitor.start(spawned, seconds);
+        sendFeedback(context, Component.literal("[npc-system] Perf sampling started with " + spawned + " NPC(s) for " + seconds + "s."), true);
+        return spawned;
+    }
+
+    private static int perfStatus(CommandContext<CommandSourceStack> context) {
+        sendFeedback(context, Component.literal("[npc-system] Perf status: " + TerminalPerfMonitor.status().summary()), false);
+        return 1;
+    }
+
+    private static int spawnBatch(ServerLevel level, BlockPos center, int count) {
+        int spawned = 0;
+        int side = (int) Math.ceil(Math.sqrt(count));
+        for (int index = 0; index < count; index++) {
+            int dx = index % side;
+            int dz = index / side;
+            BlockPos pos = center.offset(dx * 2, 0, dz * 2);
+            if (NPCRegistration.ENTITY_NPC.spawn(level, pos, EntitySpawnReason.COMMAND) != null) {
+                spawned++;
+            }
+        }
+        return spawned;
+    }
+
     private static int status(CommandContext<CommandSourceStack> context) {
         Component helpText = Component.literal("")
                 .append(Component.literal("[npc-system] NPC System:").withStyle(ChatFormatting.UNDERLINE))
@@ -301,6 +362,7 @@ public class CommandSet {
                 .append("\nChat Bar: ").append(Config.isChatBar ? yes : no)
                 .append("\nBubble Color: ").append(Component.literal(Config.bubbleColor.toString()))
                 .append("\nTime Lasting Per Char: ").append(Component.literal(String.valueOf(Config.timeLastingPerChar)))
+                .append("\nPerf Status: ").append(Component.literal(TerminalPerfMonitor.status().summary()))
                 .append("\nYou can spawn a new NPC by ").append(Component.literal("/npc spawn").withStyle(ChatFormatting.UNDERLINE).withStyle(ChatFormatting.AQUA)).append(". ").withStyle(ChatFormatting.RESET);
         sendFeedback(context, helpText, false);
         return 1;

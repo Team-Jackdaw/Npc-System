@@ -146,6 +146,7 @@ public class NPCSystem implements ModInitializer {
                         ConversationManager.getInstance().remove(npc.getUUID());
                 }
             });
+            TerminalPerfMonitor.tick();
         });
         // start live cycle manager
         LiveCycleManager.start(Config.updateInterval);

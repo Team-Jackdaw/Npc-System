@@ -1,6 +1,6 @@
 # NPC System 实机测试清单
 
-Last updated: 2026-06-12 09:34:13 CST
+Last updated: 2026-06-16 CST
 
 本文面向服务器管理员，用于安装、运行和逐项验证 NPC System。
 
@@ -14,7 +14,7 @@ Last updated: 2026-06-12 09:34:13 CST
    - 产物位置：`build/libs/`
 5. 首次启动服务端，让插件生成配置目录：
    - `config/npc-system/config.json`
-   - `config/npc-system/memory/`
+   - `config/npc-system/agent-state/`
 6. 如需外部 agent，先启动 Python agent 服务：
    - `PYTHONPATH=agent python -m npc_agent.server`
    - 默认地址：`http://127.0.0.1:8765`
@@ -39,6 +39,9 @@ Last updated: 2026-06-12 09:34:13 CST
 
 - `/npc`: 查看插件状态、debug 状态、agent 地址、显示设置。
 - `/npc spawn`: 在管理员当前位置生成 NPC。
+- `/npc spawnAt <x> <y> <z> [count]`: 在指定坐标生成 NPC，可由服务端 console 执行。
+- `/npc perf <count> [seconds]`: 在世界出生点附近生成一批 NPC 并进行服务端 tick 性能采样。
+- `/npc perf status`: 查看最近一次终端性能采样结果。
 - `/npc debug`: 查询当前维度中距离命令源最近的 NPC 调试信息。
 - `/npc debug on`: 开启详细日志，记录玩家/NPC/agent 交互。
 - `/npc debug off`: 关闭详细日志，只保留失败日志。
@@ -60,6 +63,33 @@ Last updated: 2026-06-12 09:34:13 CST
 6. Debug 详细日志同时写入：
    - 服务端标准日志：`logs/latest.log`
    - 插件专用日志：`config/npc-system/debug.log`
+
+## 终端 Smoke Server 测试
+
+该测试不需要进入游戏客户端，适合在本机或 CI 中验证服务端启动、命令注册、NPC 生成、debug 日志、Master/stub agent 通信和基础 tick 性能。
+
+1. 运行基础 smoke：
+   ```bash
+   ./scripts/server-smoke.sh
+   ```
+2. 运行带 Python stub agent 的 smoke：
+   ```bash
+   NPC_SMOKE_AGENT=1 ./scripts/server-smoke.sh
+   ```
+3. 调整 NPC 数量和采样时长：
+   ```bash
+   NPC_SMOKE_COUNT=100 NPC_SMOKE_SECONDS=30 ./scripts/server-smoke.sh
+   ```
+4. 预期：
+   - 脚本自动创建 `run/eula.txt`。
+   - 服务端通过 `runServer` 启动。
+   - 自动执行 `npc`、`npc debug on`、`npc spawnAt`、`npc debug`、`npc perf`、`npc perf status`、`stop`。
+   - 日志中出现 `Terminal perf sampling finished`。
+   - 脚本退出码为 0。
+5. 日志位置：
+   - smoke 汇总日志：`run/logs/npc-smoke.log`
+   - agent stub 日志：`run/logs/npc-agent-smoke.log`
+   - 插件 debug 日志：`run/config/npc-system/debug.log`
 
 ## NPC 生成与默认行为
 
@@ -101,7 +131,7 @@ Last updated: 2026-06-12 09:34:13 CST
 5. 潜行攻击 NPC 开启对话。
 6. 输入：`跟着我`
 7. 预期：
-   - agent 返回 `say + follow_player`；
+   - agent 返回 `speech + follow_player`；
    - NPC 先说话；
    - NPC 开始跟随玩家；
    - 服务端日志记录 agent request、response、action result。
@@ -195,7 +225,7 @@ Last updated: 2026-06-12 09:34:13 CST
 
 ## 当前已知限制
 
-- 还没有睡觉、工作站、物品、背包、战斗等复杂 Minecraft 行为。
+- 还没有睡觉、工作站使用、战斗、复杂采集/合成等 Minecraft 行为。
 - 玩家交互目前主要走对话和 agent，不直接生成 `PLAYER` 优先级 task。
 - 外部 agent 每次最多返回 2 个 action，主要用于 `say + do`。
 - agent 主动下发 action 的 polling mailbox/outbox 尚未实现；当前仍依赖 Java 主动请求和 task callback。

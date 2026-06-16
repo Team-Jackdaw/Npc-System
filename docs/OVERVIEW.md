@@ -100,6 +100,10 @@ Minecraft NPC Entity
   - `TextBubbleEntity` 使用 TextDisplay
   - 支持背景色和透视配置
   - 已设置 billboard，使气泡朝向玩家视角
+- 终端测试入口：
+  - `scripts/server-smoke.sh` 可启动无客户端 dedicated server smoke test。
+  - `/npc spawnAt <x> <y> <z> [count]` 支持 console 生成 NPC。
+  - `/npc perf <count> [seconds]` 和 `/npc perf status` 支持基础 tick 性能采样。
 
 ## 待实现
 
@@ -135,6 +139,8 @@ Minecraft NPC Entity
   - 对真实模型后端的集成测试
   - auth 测试覆盖
   - 模型输出修复和 fallback 策略
+- 测试设施改进：
+  - 假玩家 bot 集成，用于覆盖潜行攻击、聊天栏、玩家移动等服务端交互。
 
 ## 当前默认值
 
@@ -151,4 +157,5 @@ Minecraft NPC Entity
 - `docs/FOUNDATION_PLAN.md`：sensor / observe / tool / task 基础能力设计。
 - `docs/MIGRATION_REPORT.md`：MC 26.1.2 迁移报告。
 - `docs/NPC_RUNTIME_CAPABILITIES.md`：当前游戏内 NPC 运行能力。
+- `CHECK_LIST.md`：实机与终端 smoke 测试清单。
 - `agent/README.md`：Python 外部 agent 脚手架使用说明。
