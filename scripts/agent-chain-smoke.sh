@@ -113,8 +113,16 @@ send_command() {
 send_command "npc debug on"
 send_command "kill @e[type=npcsystem:npc]"
 send_command "kill @e[name=TerminalTester]"
-send_command "npc perf 1 1"
-sleep 3
+send_command "npc spawnAt 0 100 0 1"
+spawn_deadline=$((SECONDS + 30))
+while ! grep -q 'Spawned 1 NPC(s)' "$LOG_FILE"; do
+  if (( SECONDS > spawn_deadline )); then
+    echo "[npc-agent-chain] NPC did not spawn within 30s." >&2
+    exit 1
+  fi
+  sleep 1
+done
+sleep 2
 send_command "npc test chat $TEST_MESSAGE"
 
 while ! grep -q '终端链路测试完成' "$LOG_FILE"; do

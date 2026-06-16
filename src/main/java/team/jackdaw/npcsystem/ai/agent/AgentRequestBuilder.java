@@ -34,7 +34,7 @@ public class AgentRequestBuilder {
         }
         request.near = fastNear(agent);
         request.tools = availableToolNames(conversation);
-        request.limits = limits(2, 60);
+        request.limits = limits(60);
         return request;
     }
 
@@ -53,7 +53,7 @@ public class AgentRequestBuilder {
         request.conversation = conversation(conversation, message);
         request.memory = memory();
         request.available_tools = FunctionManager.getInstance().getAgentToolDescriptors(availableToolNames(conversation));
-        request.limits = limits(2, 200);
+        request.limits = limits(200);
         return request;
     }
 
@@ -183,9 +183,8 @@ public class AgentRequestBuilder {
         return memory;
     }
 
-    private static AgentLimits limits(int maxActions, int maxReplyChars) {
+    private static AgentLimits limits(int maxReplyChars) {
         AgentLimits limits = new AgentLimits();
-        limits.max_actions = maxActions;
         limits.max_reply_chars = maxReplyChars;
         return limits;
     }

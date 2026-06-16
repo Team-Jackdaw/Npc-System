@@ -8,63 +8,46 @@ import team.jackdaw.npcsystem.NPCSystem;
 import team.jackdaw.npcsystem.function.FunctionManager;
 import team.jackdaw.npcsystem.function.ToolResult;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class AgentActionExecutor {
-    private static final int MAX_ACTIONS = 2;
-
     public AgentExecutionResult execute(ConversationWindow conversation, FastAgentResponse response) {
-        List<AgentAction> actions = fastActions(response);
-        if (actions.isEmpty()) {
+        AgentAction action = fastAction(response);
+        if (action == null) {
             return AgentExecutionResult.success(responseText(response), ToolResult.success("no_action", "No action requested."));
         }
-        return execute(conversation, actions, responseText(response));
+        return execute(conversation, action, responseText(response));
     }
 
     public AgentExecutionResult execute(ConversationWindow conversation, DeliberateAgentResponse response) {
-        List<AgentAction> actions = deliberateActions(response);
-        if (actions.isEmpty()) {
+        AgentAction action = deliberateAction(response);
+        if (action == null) {
             return AgentExecutionResult.success(responseText(response), ToolResult.success("no_action", "No action requested."));
         }
-        return execute(conversation, actions, responseText(response));
+        return execute(conversation, action, responseText(response));
     }
 
-    private AgentExecutionResult execute(ConversationWindow conversation, List<AgentAction> actions, String responseText) {
+    private AgentExecutionResult execute(ConversationWindow conversation, AgentAction action, String responseText) {
         String batchId = UUID.randomUUID().toString();
-        boolean callbackOnBatchComplete = actions.stream().anyMatch(AgentActionExecutor::shouldCallback);
-        List<Map<String, Object>> results = new ArrayList<>();
-        boolean anySuccess = false;
-        boolean anyFailure = false;
+        boolean callbackOnBatchComplete = shouldCallback(action);
 
         if (conversation != null) {
             conversation.beginAgentBatch(batchId, callbackOnBatchComplete);
         }
         try {
-            for (AgentAction action : actions.stream().limit(MAX_ACTIONS).toList()) {
-                AgentExecutionResult result = executeOne(conversation, action.name, action.arguments, responseText);
-                results.add(result.toolResult());
-                anySuccess = anySuccess || result.success();
-                anyFailure = anyFailure || !result.success();
-            }
+            AgentExecutionResult result = executeOne(conversation, action.name, action.arguments, responseText);
+            Map<String, Object> toolResult = result.success()
+                    ? ToolResult.success("action_executed", "Agent action executed.", Map.of("result", result.toolResult()))
+                    : result.toolResult();
+            return result.success()
+                    ? AgentExecutionResult.success(responseText, toolResult)
+                    : AgentExecutionResult.failure(responseText, toolResult);
         } finally {
             if (conversation != null) {
                 conversation.endAgentBatch();
             }
         }
-
-        if (actions.size() > MAX_ACTIONS) {
-            anyFailure = true;
-            results.add(ToolResult.failure("too_many_actions", "Only the first 2 actions were accepted.", false));
-        }
-        Map<String, Object> toolResult = anyFailure
-                ? ToolResult.failure(anySuccess ? "partial_actions_executed" : "actions_failed", "Agent actions completed with failures.", Map.of("results", results), false)
-                : ToolResult.success("actions_executed", "Agent actions executed.", Map.of("results", results));
-        return anyFailure && !anySuccess
-                ? AgentExecutionResult.failure(responseText, toolResult)
-                : AgentExecutionResult.success(responseText, toolResult);
     }
 
     private AgentExecutionResult executeOne(ConversationWindow conversation, String name, Map<String, Object> args, String responseText) {
@@ -85,41 +68,30 @@ public class AgentActionExecutor {
         }
     }
 
-    private static List<AgentAction> fastActions(FastAgentResponse response) {
+    private static AgentAction fastAction(FastAgentResponse response) {
         if (response == null) {
-            return List.of();
-        }
-        if (response.actions != null && !response.actions.isEmpty()) {
-            return response.actions.stream()
-                    .filter(action -> "call".equals(action.type))
-                    .filter(action -> !isReplyAction(action.name))
-                    .toList();
+            return null;
         }
         if (!"call".equals(response.a) || isReplyAction(response.name)) {
-            return List.of();
+            return null;
         }
         AgentAction action = new AgentAction();
         action.type = "call";
         action.kind = response.kind;
         action.name = response.name;
         action.arguments = response.args;
-        return List.of(action);
+        action.callback = response.callback;
+        return action;
     }
 
-    private static List<AgentAction> deliberateActions(DeliberateAgentResponse response) {
+    private static AgentAction deliberateAction(DeliberateAgentResponse response) {
         if (response == null) {
-            return List.of();
-        }
-        if (response.actions != null && !response.actions.isEmpty()) {
-            return response.actions.stream()
-                    .filter(action -> "call".equals(action.type))
-                    .filter(action -> !isReplyAction(action.name))
-                    .toList();
+            return null;
         }
         if (response.action == null || !"call".equals(response.action.type) || isReplyAction(response.action.name)) {
-            return List.of();
+            return null;
         }
-        return List.of(response.action);
+        return response.action;
     }
 
     static boolean shouldCallback(AgentAction action) {
@@ -139,16 +111,6 @@ public class AgentActionExecutor {
         if (response.speech != null && !response.speech.isBlank()) {
             return response.speech;
         }
-        if (response.actions != null) {
-            for (AgentAction action : response.actions) {
-                if (isReplyAction(action.name) && action.arguments != null && action.arguments.get("message") != null) {
-                    return action.arguments.get("message").toString();
-                }
-            }
-        }
-        if (isReplyAction(response.name) && response.args != null && response.args.get("message") != null) {
-            return response.args.get("message").toString();
-        }
         return "";
     }
 
@@ -158,16 +120,6 @@ public class AgentActionExecutor {
         }
         if (response.speech != null && !response.speech.isBlank()) {
             return response.speech;
-        }
-        if (response.actions != null) {
-            for (AgentAction action : response.actions) {
-                if (isReplyAction(action.name) && action.arguments != null && action.arguments.get("message") != null) {
-                    return action.arguments.get("message").toString();
-                }
-            }
-        }
-        if (response.action != null && isReplyAction(response.action.name) && response.action.arguments != null && response.action.arguments.get("message") != null) {
-            return response.action.arguments.get("message").toString();
         }
         return "";
     }

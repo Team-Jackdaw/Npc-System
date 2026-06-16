@@ -50,7 +50,8 @@ def test_deliberate_endpoint(monkeypatch, tmp_path):
     body = response.json()
     assert body["request_id"] == "r2"
     assert body["speech"]
-    assert body["actions"][0]["name"] == "follow_player"
+    assert body["action"]["name"] == "follow_player"
+    assert "actions" not in body
 
 
 def test_conversation_end_endpoint(monkeypatch, tmp_path):

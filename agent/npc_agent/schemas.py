@@ -8,7 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field
 class AgentLimits(BaseModel):
     model_config = ConfigDict(extra="allow")
 
-    max_actions: int = 1
     max_reply_chars: int = 0
 
 
@@ -56,7 +55,7 @@ class FastAgentResponse(BaseModel):
     kind: Literal["tool", "task"] | None = None
     name: str | None = None
     args: dict[str, Any] = Field(default_factory=dict)
-    actions: list["AgentAction"] = Field(default_factory=list)
+    callback: bool | None = None
     speech: str | None = None
     note: str | None = None
 
@@ -137,7 +136,6 @@ class DeliberateAgentResponse(BaseModel):
     request_id: str
     mode: Literal["deliberate"] = "deliberate"
     action: AgentAction = Field(default_factory=AgentAction)
-    actions: list[AgentAction] = Field(default_factory=list)
     speech: str | None = None
     memory_updates: list[str] = Field(default_factory=list)
     reasoning_summary: str = ""

@@ -65,8 +65,8 @@ def test_deliberate_stub_follows_player_when_requested():
 
     response = decide_deliberate_stub(request)
 
-    assert response.actions[0].name == "follow_player"
-    assert response.actions[0].arguments["player"] == "Steve"
+    assert response.action.name == "follow_player"
+    assert response.action.arguments["player"] == "Steve"
 
 
 def test_deliberate_stub_returns_speech_then_follow_action():
@@ -82,7 +82,7 @@ def test_deliberate_stub_returns_speech_then_follow_action():
     response = decide_deliberate_stub(request)
 
     assert response.speech == "好，我跟着你。"
-    assert [action.name for action in response.actions] == ["follow_player"]
+    assert response.action.name == "follow_player"
 
 
 def test_deliberate_stub_replies_without_matching_tool():
@@ -113,8 +113,8 @@ def test_master_stub_can_call_command_when_authorized():
 
     response = decide_deliberate_stub(request)
 
-    assert response.actions[0].name == "call_command"
-    assert response.actions[0].arguments["command"] == "time set day"
+    assert response.action.name == "call_command"
+    assert response.action.arguments["command"] == "time set day"
 
 
 def test_master_stub_replies_to_normal_conversation():
@@ -145,6 +145,5 @@ def test_npc_stub_cannot_call_command_even_if_tool_is_present():
 
     response = decide_deliberate_stub(request)
 
-    assert not response.actions
     assert response.action.type == "none"
     assert response.speech

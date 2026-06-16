@@ -52,7 +52,7 @@ async def decide_fast_pydantic_ai(request: FastAgentRequest, config: AgentConfig
             json.dumps(request.model_dump(), ensure_ascii=False),
             instructions=(
                 "You control one Minecraft agent. Return only the structured output. "
-                "Put normal replies in speech. Use at most two actions for real tools/tasks only. "
+                "Put normal replies in speech. Use at most one action for a real tool/task. "
                 "Do not call say or master_reply for normal conversation. "
                 "Use exact argument names from available tool parameters and required fields. "
                 "For normal Master conversation, use speech with a concise message. "
@@ -81,7 +81,7 @@ async def decide_deliberate_pydantic_ai(
                 context.render_context_instructions()
                 + "\n\n"
                 "You control one Minecraft agent. Return the structured output only. "
-                "Put normal replies in speech. Use at most two actions for real tools/tasks only. "
+                "Put normal replies in speech. Use at most one action for a real tool/task. "
                 "Do not call say or master_reply for normal conversation. "
                 "Use exact argument names from available tool parameters and required fields. "
                 "For normal Master conversation, use speech with a concise message. "
@@ -110,11 +110,11 @@ def normalize_fast_response(response: FastAgentResponse, request: FastAgentReque
     response.rid = request.rid
     response.v = 1
     response.mode = "fast"
-    response.actions = response.actions[:2]
     if response.a == "none":
         response.kind = None
         response.name = None
         response.args = {}
+        response.callback = None
     return response
 
 
@@ -125,7 +125,6 @@ def normalize_deliberate_response(
     response.request_id = request.request_id
     response.version = 1
     response.mode = "deliberate"
-    response.actions = response.actions[:2]
     if response.action.type == "none":
         response.action.kind = None
         response.action.name = None

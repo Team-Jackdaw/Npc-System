@@ -120,7 +120,7 @@ NPC 的 `recentEvents` 最多保留 32 条，`importance >= 7` 的事件还会�
 - 玩家任务打断 agent/system 任务时，如果被打断任务允许恢复，会放回队列头部。
 - default 任务被打断后直接丢弃。
 - `stop_task` 会停止当前任务、清空队列并停止导航。
-- 同一批 agent actions 使用同一个 batch；批次内任务全部完成后才触发一次 agent 回调。
+- 每个 agent action 使用一个 batch；需要继续规划时由任务完成回调触发下一次 agent 请求。
 
 当前 tool 下发的 NPC 行为默认来源是 `AGENT`。玩家交互优先级入口已经在任务控制器层支持，但现有玩家直接交互主要还是触发对话，不会自动创建 `PLAYER` 来源 task。
 
@@ -203,7 +203,6 @@ Fast 模式使用短字段以节省 token：
   },
   "tools": ["look_at_player", "walk_to_player"],
   "limits": {
-    "max_actions": 2,
     "max_reply_chars": 60
   }
 }
@@ -220,13 +219,13 @@ Fast 响应字段：
   "kind": null,
   "name": null,
   "args": {},
-  "actions": [],
+  "callback": null,
   "speech": "你好。",
   "note": "reply"
 }
 ```
 
-`speech` 是普通回复字段，由 Java 端直接显示。`actions` 为推荐动作字段；为空时兼容旧的 `a/kind/name/args` 单 action。旧版 `say` action 会被 Java 当作回复文本兼容读取，但不会再作为 task 执行。
+`speech` 是普通回复字段，由 Java 端直接显示。Fast 模式用 `a/kind/name/args/callback` 表达最多一个真实工具或任务调用；没有动作时 `a` 为 `none`。
 
 ### Deliberate 请求字段
 
@@ -280,7 +279,6 @@ Deliberate 模式使用完整字段，适合更长推理：
   },
   "available_tools": [],
   "limits": {
-    "max_actions": 2,
     "max_reply_chars": 200
   }
 }
@@ -300,26 +298,16 @@ Deliberate 响应字段：
     "arguments": {
       "player": "Steve",
       "seconds": 30
-    }
+    },
+    "callback": true
   },
-  "actions": [
-    {
-      "type": "call",
-      "kind": "task",
-      "name": "follow_player",
-      "arguments": {
-        "player": "Steve",
-        "seconds": 30
-      }
-    }
-  ],
   "speech": "好，我跟着你。",
   "memory_updates": [],
   "reasoning_summary": "玩家请求 NPC 跟随。"
 }
 ```
 
-当前 Java 端优先使用 `speech` 作为对话文本。旧版 action 中的 `say.message` / `master_reply.message` 仅作为兼容文本来源，不再执行为 task/tool。`memory_updates` 字段已在协议中存在，但 Java 端不再写入本地持久记忆；持久上下文由外部 agent 管理。
+当前 Java 端使用 `speech` 作为唯一对话文本来源。Deliberate 模式只接受单个 `action`；复杂多步流程通过 `callback=true` 的任务完成回调逐步推进。`memory_updates` 字段已在协议中存在，但 Java 端不再写入本地持久记忆；持久上下文由外部 agent 管理。
 
 ### Master Agent
 

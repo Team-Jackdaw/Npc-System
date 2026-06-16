@@ -10,11 +10,9 @@ import team.jackdaw.npcsystem.ai.ConversationWindow;
 import team.jackdaw.npcsystem.ai.master.Master;
 import team.jackdaw.npcsystem.ai.npc.NPC;
 import team.jackdaw.npcsystem.function.FunctionManager;
-import team.jackdaw.npcsystem.function.MasterReplyFunction;
 import team.jackdaw.npcsystem.function.MasterPermissionFunction;
 import team.jackdaw.npcsystem.function.TestFunction;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,7 +24,6 @@ class AgentActionExecutorTest {
     static void registerFunction() {
         FunctionManager.getInstance().register("agent_test_weather", new TestFunction());
         FunctionManager.getInstance().register("agent_test_master_only", new MasterPermissionFunction());
-        FunctionManager.getInstance().register("master_reply", new MasterReplyFunction());
     }
 
     @Test
@@ -71,7 +68,7 @@ class AgentActionExecutorTest {
 
         assertTrue(result.success());
         assertEquals("success", result.toolResult().get("status"));
-        assertEquals("actions_executed", result.toolResult().get("code"));
+        assertEquals("action_executed", result.toolResult().get("code"));
     }
 
     @Test
@@ -86,38 +83,7 @@ class AgentActionExecutorTest {
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
 
         assertFalse(result.success());
-        assertEquals("actions_failed", result.toolResult().get("code"));
-    }
-
-    @Test
-    void actionsListExecutesMultipleActions() {
-        FastAgentResponse response = new FastAgentResponse();
-        response.rid = "r1";
-        response.actions = List.of(
-                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius")),
-                action("agent_test_weather", Map.of("location", "Berlin", "format", "fahrenheit"))
-        );
-
-        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
-
-        assertTrue(result.success());
-        assertEquals("actions_executed", result.toolResult().get("code"));
-    }
-
-    @Test
-    void actionsListIsLimitedToTwoActions() {
-        FastAgentResponse response = new FastAgentResponse();
-        response.rid = "r1";
-        response.actions = List.of(
-                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius")),
-                action("agent_test_weather", Map.of("location", "Berlin", "format", "fahrenheit")),
-                action("agent_test_weather", Map.of("location", "Rome", "format", "celsius"))
-        );
-
-        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
-
-        assertTrue(result.success());
-        assertEquals("partial_actions_executed", result.toolResult().get("code"));
+        assertEquals("function_not_found", result.toolResult().get("code"));
     }
 
     @Test
@@ -127,12 +93,15 @@ class AgentActionExecutorTest {
         ConversationWindow conversation = new ConversationWindow(npc.getUUID());
         FastAgentResponse response = new FastAgentResponse();
         response.rid = "r1";
-        response.actions = List.of(action("agent_test_master_only", Map.of()));
+        response.a = "call";
+        response.kind = "tool";
+        response.name = "agent_test_master_only";
+        response.args = Map.of();
 
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
 
         assertFalse(result.success());
-        assertEquals("actions_failed", result.toolResult().get("code"));
+        assertEquals("permission_denied", result.toolResult().get("code"));
     }
 
     @Test
@@ -140,26 +109,15 @@ class AgentActionExecutorTest {
         ConversationWindow conversation = Master.getMaster().getConversationWindows();
         FastAgentResponse response = new FastAgentResponse();
         response.rid = "r1";
-        response.actions = List.of(action("agent_test_master_only", Map.of()));
+        response.a = "call";
+        response.kind = "tool";
+        response.name = "agent_test_master_only";
+        response.args = Map.of();
 
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
 
         assertTrue(result.success());
-        assertEquals("actions_executed", result.toolResult().get("code"));
-    }
-
-    @Test
-    void masterReplyActionProvidesResponseText() {
-        ConversationWindow conversation = Master.getMaster().getConversationWindows();
-        FastAgentResponse response = new FastAgentResponse();
-        response.rid = "r1";
-        response.actions = List.of(action("master_reply", Map.of("message", "我在。")));
-
-        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(conversation, response);
-
-        assertTrue(result.success());
-        assertEquals("我在。", result.responseText());
-        assertEquals("no_action", result.toolResult().get("code"));
+        assertEquals("action_executed", result.toolResult().get("code"));
     }
 
     @Test
@@ -177,33 +135,20 @@ class AgentActionExecutorTest {
     }
 
     @Test
-    void speechResponseExecutesOnlyNonReplyActions() {
+    void speechResponseCanAccompanySingleAction() {
         FastAgentResponse response = new FastAgentResponse();
         response.rid = "r1";
+        response.a = "call";
+        response.kind = "tool";
+        response.name = "agent_test_weather";
+        response.args = Map.of("location", "Paris", "format", "celsius");
         response.speech = "我先看看天气。";
-        response.actions = List.of(
-                action("say", Map.of("message", "这条不应作为任务执行。")),
-                action("agent_test_weather", Map.of("location", "Paris", "format", "celsius"))
-        );
 
         AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
 
         assertTrue(result.success());
-        assertEquals("actions_executed", result.toolResult().get("code"));
+        assertEquals("action_executed", result.toolResult().get("code"));
         assertEquals("我先看看天气。", result.responseText());
-    }
-
-    @Test
-    void legacySayActionIsConvertedToResponseTextButNotExecuted() {
-        FastAgentResponse response = new FastAgentResponse();
-        response.rid = "r1";
-        response.actions = List.of(action("say", Map.of("message", "旧版回复。")));
-
-        AgentActionExecutor.AgentExecutionResult result = new AgentActionExecutor().execute(null, response);
-
-        assertTrue(result.success());
-        assertEquals("no_action", result.toolResult().get("code"));
-        assertEquals("旧版回复。", result.responseText());
     }
 
     @Test

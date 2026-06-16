@@ -14,8 +14,7 @@ Python agent 可通过环境变量选择模型供应商：`ollama`、`deepseek`�
 - 响应必须回填请求中的 `request_id` / `rid`。
 - `mode` 为 `fast` 或 `deliberate`。
 - 普通文字回复统一放在 `speech` 字段，不占 action 数量。
-- `actions` 最多包含 2 个真实工具或任务调用。
-- 旧版单 action 字段仍兼容，但只建议用于过渡。
+- 每次响应最多包含 1 个真实工具或任务调用。
 - action 调用的函数来自 Java `FunctionManager`。
 - `kind: "task"` 表示启动 Minecraft 内 NPC 任务；`kind: "tool"` 表示其他工具。
 - `npc.kind` 为 `npc` 或 `master`。
@@ -53,7 +52,6 @@ Fast 模式用于短回复、附近事件反应和紧急打断。它使用短字
   },
   "tools": ["look_at_player", "walk_to_player", "follow_player", "pickup_nearby_item", "observe_functional_blocks", "wait", "stop_task"],
   "limits": {
-    "max_actions": 2,
     "max_reply_chars": 60
   }
 }
@@ -70,25 +68,13 @@ Fast 模式用于短回复、附近事件反应和紧急打断。它使用短字
   "kind": null,
   "name": null,
   "args": {},
-  "actions": [
-    {
-      "type": "call",
-      "kind": "task",
-      "name": "look_at_player",
-      "arguments": {
-        "player": "Steve",
-        "seconds": 3
-      },
-      "callback": false,
-      "label": "look_at_speaker"
-    }
-  ],
+  "callback": false,
   "speech": "你好。",
   "note": "reply"
 }
 ```
 
-`speech` 是 NPC/Master 的普通回复，由 Java 端直接显示在聊天栏和/或头顶气泡。`actions` 只用于真实工具和任务。Java 仍兼容旧版 `say` / `master_reply` action，把其中的 `message` 当作回复文本读取，但不会再执行成 task/tool。
+`speech` 是 NPC/Master 的普通回复，由 Java 端直接显示在聊天栏和/或头顶气泡。Fast 模式使用 `a/kind/name/args/callback` 表示单个真实工具或任务调用；如果没有动作，`a` 为 `none`。
 
 ## Deliberate 模式
 
@@ -154,7 +140,6 @@ Deliberate 模式用于复杂计划、记忆参与和较长交互。它使用完
     }
   ],
   "limits": {
-    "max_actions": 2,
     "max_reply_chars": 200
   }
 }
@@ -174,27 +159,17 @@ Deliberate 模式用于复杂计划、记忆参与和较长交互。它使用完
     "arguments": {
       "player": "Steve",
       "seconds": 30
-    }
+    },
+    "callback": true,
+    "label": "follow_request"
   },
-  "actions": [
-    {
-      "type": "call",
-      "kind": "task",
-      "name": "follow_player",
-      "arguments": {
-        "player": "Steve",
-        "seconds": 30
-      },
-      "label": "follow_request"
-    }
-  ],
   "speech": "好，我跟着你。",
   "memory_updates": [],
   "reasoning_summary": "玩家请求 NPC 跟随。"
 }
 ```
 
-`actions` 优先于旧版单 action 字段。`reasoning_summary` 是简短决策摘要，不应包含隐藏思维链。
+Deliberate 模式只使用单个 `action` 字段。复杂多步流程通过 `callback=true` 的任务完成回调逐步推进。`reasoning_summary` 是简短决策摘要，不应包含隐藏思维链。
 
 ## Agent 侧上下文
 

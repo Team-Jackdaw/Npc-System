@@ -25,7 +25,7 @@ def test_fast_schema_round_trip():
             "evt": [["CHAT_HEARD", 7, "Steve: hi", 123]],
             "near": {"p": ["Steve@3.0"], "n": [], "e": []},
             "tools": [],
-            "limits": {"max_actions": 1, "max_reply_chars": 60},
+            "limits": {"max_reply_chars": 60},
             "future_field": "allowed",
         }
     )
@@ -61,7 +61,7 @@ def test_deliberate_schema_round_trip():
             "conversation": {"speaker": "Steve", "message": "follow me", "history": []},
             "memory": {"recent": [], "relevant": []},
             "available_tools": [{"name": "follow_player", "kind": "task", "required": ["player"]}],
-            "limits": {"max_actions": 1, "max_reply_chars": 200},
+            "limits": {"max_reply_chars": 200},
             "future_field": "allowed",
         }
     )
@@ -74,11 +74,9 @@ def test_deliberate_schema_round_trip():
 
     response = DeliberateAgentResponse(
         request_id=request.request_id,
-        actions=[
-            {"type": "call", "kind": "task", "name": "follow_player", "arguments": {"player": "Steve"}},
-        ],
+        action={"type": "call", "kind": "task", "name": "follow_player", "arguments": {"player": "Steve"}},
         speech="好。",
         reasoning_summary="follow request",
     )
     assert response.speech == "好。"
-    assert response.actions[0].name == "follow_player"
+    assert response.action.name == "follow_player"

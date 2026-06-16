@@ -38,18 +38,17 @@ class AgentProtocolTest {
 
         FastAgentResponse response = new FastAgentResponse();
         response.rid = parsedRequest.rid;
-        AgentAction fastAction = new AgentAction();
-        fastAction.type = "call";
-        fastAction.kind = "task";
-        fastAction.name = "look_at_player";
-        fastAction.arguments = Map.of("player", "Steve", "seconds", 3);
-        fastAction.callback = false;
-        response.actions = List.of(fastAction);
+        response.a = "call";
+        response.kind = "task";
+        response.name = "look_at_player";
+        response.args = Map.of("player", "Steve", "seconds", 3);
+        response.callback = false;
         response.speech = "hi";
 
         FastAgentResponse parsedResponse = GSON.fromJson(GSON.toJson(response), FastAgentResponse.class);
-        assertEquals("look_at_player", parsedResponse.actions.getFirst().name);
-        assertEquals("Steve", parsedResponse.actions.getFirst().arguments.get("player"));
+        assertEquals("look_at_player", parsedResponse.name);
+        assertEquals("Steve", parsedResponse.args.get("player"));
+        assertEquals(false, parsedResponse.callback);
         assertEquals("hi", parsedResponse.speech);
     }
 
@@ -96,13 +95,13 @@ class AgentProtocolTest {
         follow.kind = "task";
         follow.name = "follow_player";
         follow.arguments = Map.of("player", "Steve");
-        response.actions = List.of(follow);
+        response.action = follow;
         response.speech = "好。";
         response.memory_updates = List.of();
         response.reasoning_summary = "Player asked for follow.";
 
         DeliberateAgentResponse parsedResponse = GSON.fromJson(GSON.toJson(response), DeliberateAgentResponse.class);
-        assertEquals("follow_player", parsedResponse.actions.getFirst().name);
+        assertEquals("follow_player", parsedResponse.action.name);
         assertEquals("好。", parsedResponse.speech);
     }
 }

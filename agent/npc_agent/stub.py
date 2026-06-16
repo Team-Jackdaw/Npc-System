@@ -43,15 +43,13 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
         if command:
             return DeliberateAgentResponse(
                 request_id=request.request_id,
-                actions=[
-                    AgentAction(
-                        type="call",
-                        kind="tool",
-                        name="call_command",
-                        arguments={"command": command},
-                        label="admin_command",
-                    )
-                ],
+                action=AgentAction(
+                    type="call",
+                    kind="tool",
+                    name="call_command",
+                    arguments={"command": command},
+                    label="admin_command",
+                ),
                 speech=f"执行命令：/{command}",
                 reasoning_summary="The administrator explicitly requested a Minecraft command.",
             )
@@ -66,15 +64,13 @@ def decide_deliberate_stub(request: DeliberateAgentRequest) -> DeliberateAgentRe
     if speaker and "follow_player" in tool_names and any(word in lower_message for word in ["follow", "跟着", "跟随"]):
         return DeliberateAgentResponse(
             request_id=request.request_id,
-            actions=[
-                AgentAction(
-                    type="call",
-                    kind="task",
-                    name="follow_player",
-                    arguments={"player": speaker, "seconds": 30},
-                    label="follow_request",
-                )
-            ],
+            action=AgentAction(
+                type="call",
+                kind="task",
+                name="follow_player",
+                arguments={"player": speaker, "seconds": 30},
+                label="follow_request",
+            ),
             speech="好，我跟着你。",
             reasoning_summary="The player asked this NPC to follow.",
         )

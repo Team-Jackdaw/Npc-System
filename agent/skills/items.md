@@ -5,7 +5,7 @@ NPC 有自己的背包。需要先确认或操作背包时，使用物品工具�
 玩家要求 “捡起来”“捡苹果”“把附近东西捡起来”时：
 
 - `speech`: 简短确认，例如“我去捡。”
-- `actions`: 调用 `pickup_nearby_item`，可传 `item`、`count`、`max_distance`。
+- `action`: 调用 `pickup_nearby_item`，可传 `item`、`count`、`max_distance`。
 - 捡取是移动任务，通常设置 `callback=true`。
 
 玩家要求 “给我苹果”“把木头给我”时：
